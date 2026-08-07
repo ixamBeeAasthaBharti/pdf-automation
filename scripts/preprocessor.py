@@ -4,9 +4,7 @@ from pathlib import Path
 
 
 def clean_html(input_file, output_file):
-    with open(input_file, "r", encoding="utf-8") as f:
-        
-        html = f.read()
+    html = Path(input_file).read_text(encoding="utf-8")
 
     soup = BeautifulSoup(html, "lxml")
 
@@ -45,19 +43,10 @@ def clean_html(input_file, output_file):
     preprocessed = str(soup)
     preprocessed = re.sub(r'\n\s*\n', '\n', preprocessed)
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(preprocessed)
+    Path(output_file).write_text(
+        preprocessed,
+        encoding="utf-8",
+)
 
     print(f"Preprocessed HTML saved to: {output_file}")
 
-   
-
-ROOT = Path(__file__).parent.parent
-
-if __name__ == "__main__":
-    input_path = ROOT / "input" / "input.html"
-    output_path = ROOT / "temp" / "preprocessed.html"
-
-    output_path.parent.mkdir(exist_ok=True)
-
-    clean_html(input_path, output_path)

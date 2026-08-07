@@ -5,8 +5,9 @@ from chunker import chunk_html, MAX_CHARS
 from gemini_runner import run_gemini
 from merger import merge_chunks
 import shutil
-from image_extractor import extract_images
-from figure_extractor import extract_figures
+from pymupdf_image_extractor import extract_images
+from html_image_replacer import replace_images
+
 
 # =====================================================
 # PATHS
@@ -14,7 +15,16 @@ from figure_extractor import extract_figures
 
 ROOT = Path(__file__).parent.parent
 
-INPUT_FILE = ROOT / "input" / "input.html"
+INPUT_DIR = ROOT / "input"
+
+html_files = sorted(INPUT_DIR.glob("*.html"))
+
+if len(html_files) != 1:
+    raise RuntimeError(
+        f"Expected exactly one HTML file in {INPUT_DIR}, found {len(html_files)}"
+    )
+
+INPUT_FILE = html_files[0]
 PREPROCESSED_FILE = ROOT / "temp" / "preprocessed.html"
 
 CHUNK_DIR = ROOT / "chunks"
@@ -27,15 +37,22 @@ def clean_previous_run():
         ROOT / "chunks",
         ROOT / "processed",
         ROOT / "output",
+        ROOT / "images",
+        ROOT / "temp",
     ]
 
     for folder in folders:
 
         if folder.exists():
-
             shutil.rmtree(folder)
 
         folder.mkdir(parents=True, exist_ok=True)
+
+# Remove previous image map
+    image_map = ROOT / "image_map.json"
+
+    if image_map.exists():
+        image_map.unlink()
 
 
 # =====================================================
@@ -44,51 +61,54 @@ def clean_previous_run():
 
 def main():
 
-   print("=" * 60)
-print("Step 1/5 : Cleanup & Preprocessing")
-print("=" * 60)
+    print("=" * 60)
+    print("Step 1/6 : Cleanup & Preprocessing")
+    print("=" * 60)
 
-clean_previous_run()
+    clean_previous_run()
 
-PREPROCESSED_FILE.parent.mkdir(exist_ok=True)
+    PREPROCESSED_FILE.parent.mkdir(exist_ok=True)
 
-clean_html(
-    INPUT_FILE,
-    PREPROCESSED_FILE,
-)
+    clean_html(
+        INPUT_FILE,
+        PREPROCESSED_FILE,
+    )
 
-print("=" * 60)
-print("Step 2/5 : Extract Images")
-print("=" * 60)
+    print("=" * 60)
+    print("Step 2/6 : Extract Images")
+    print("=" * 60)
 
-extract_images()
-extract_figures()
+    extract_images()
+    
 
-print("=" * 60)
-print("Step 3/5 : Chunking")
-print("=" * 60)
+    print("=" * 60)
+    print("Step 3/6 : Replace HTML Images")
+    print("=" * 60)
 
-chunk_html(
-    PREPROCESSED_FILE,
-    CHUNK_DIR,
-    max_chars=MAX_CHARS,
-)
+    replace_images()
 
-print("=" * 60)
-print("Step 4/5 : Gemini Processing")
-print("=" * 60)
+    print("=" * 60)
+    print("Step 4/6 : Chunking")
+    print("=" * 60)
 
-run_gemini()
+    chunk_html(
+        PREPROCESSED_FILE,
+        CHUNK_DIR,
+        max_chars=MAX_CHARS,
+    )
 
-print("=" * 60)
-print("Step 5/5 : Merge")
-print("=" * 60)
+    print("=" * 60)
+    print("Step 5/6 : Gemini Processing")
+    print("=" * 60)
 
-merge_chunks()
+    run_gemini()
 
-print("\n✅ Pipeline completed successfully!")
-print(f"\nOutput saved to:\n{OUTPUT_FILE}")
+    print("=" * 60)
+    print("Step 6/6 : Merge")
+    print("=" * 60)
 
+    merge_chunks()
 
-if __name__ == "__main__":
-    main()
+    print("\n✅ Pipeline completed successfully!")
+    print(f"\nOutput saved to:\n{OUTPUT_FILE}")
+
