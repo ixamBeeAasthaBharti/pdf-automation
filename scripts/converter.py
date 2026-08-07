@@ -6,7 +6,7 @@ from gemini_runner import run_gemini
 from merger import merge_chunks
 import shutil
 from pymupdf_image_extractor import extract_images
-from html_image_replacer import replace_images
+from html_reconstructor import reconstruct_html
 
 
 # =====================================================
@@ -62,33 +62,34 @@ def clean_previous_run():
 def main():
 
     print("=" * 60)
-    print("Step 1/6 : Cleanup & Preprocessing")
+    print("Step 1/7 : Cleanup")
     print("=" * 60)
 
     clean_previous_run()
 
-    PREPROCESSED_FILE.parent.mkdir(exist_ok=True)
+    print("=" * 60)
+    print("Step 2/7 : Extract Images")
+    print("=" * 60)
+
+    extract_images()
+
+    print("=" * 60)
+    print("Step 3/7 : Reconstruct HTML")
+    print("=" * 60)
+
+    reconstruct_html()
+
+    print("=" * 60)
+    print("Step 4/7 : Preprocess HTML")
+    print("=" * 60)
 
     clean_html(
-        INPUT_FILE,
+        PREPROCESSED_FILE,
         PREPROCESSED_FILE,
     )
 
     print("=" * 60)
-    print("Step 2/6 : Extract Images")
-    print("=" * 60)
-
-    extract_images()
-    
-
-    print("=" * 60)
-    print("Step 3/6 : Replace HTML Images")
-    print("=" * 60)
-
-    replace_images()
-
-    print("=" * 60)
-    print("Step 4/6 : Chunking")
+    print("Step 5/7 : Chunking")
     print("=" * 60)
 
     chunk_html(
@@ -98,13 +99,13 @@ def main():
     )
 
     print("=" * 60)
-    print("Step 5/6 : Gemini Processing")
+    print("Step 6/7 : Gemini Processing")
     print("=" * 60)
 
     run_gemini()
 
     print("=" * 60)
-    print("Step 6/6 : Merge")
+    print("Step 7/7 : Merge")
     print("=" * 60)
 
     merge_chunks()
@@ -112,3 +113,6 @@ def main():
     print("\n✅ Pipeline completed successfully!")
     print(f"\nOutput saved to:\n{OUTPUT_FILE}")
 
+
+if __name__ == "__main__":
+    main()
