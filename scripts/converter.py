@@ -110,7 +110,7 @@ def main():
 
     merge_chunks()
 
-    print("\n✅ Pipeline completed successfully!")
+    print("\n[SUCCESS] Pipeline completed successfully!")
     print(f"\nOutput saved to:\n{OUTPUT_FILE}")
 
 

@@ -6,22 +6,34 @@
    COVER PAGE
    ===================================================== */
 
+/* Cover page container: handles padding and border inset */
+article.cover-article {
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+/* Inner box with the navy border */
 .cover-page {
-  min-height: 520px;
+  border: 2px solid var(--navy);
+  border-radius: 4px;
+
+  /* height & layout */
+  min-height: 700px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   text-align: center;
-  padding: 3.5rem 2rem 2.5rem;
-  border-bottom: 1px solid var(--hairline);
-  margin-bottom: 0;
-  gap: 0;
+  box-sizing: border-box;
+
+  /* padding inside the blue border */
+  padding: 2rem 1.5rem;
 }
 
 /* Logo block */
 .cover-logo-wrap {
-  margin-bottom: 3.5rem;
+  margin-top: 0.5rem;   /* Move logo down slightly from the very top of border */
+  margin-bottom: 0;
 }
 
 .cover-logo-img {
@@ -31,36 +43,36 @@
   margin: 0 auto;
 }
 
-/* "Study Notes" green label */
+/* "Study Notes" green label — NOT italic */
 .cover-study-notes {
   font-family: Arial, Helvetica, sans-serif;
   color: var(--green);
   font-weight: 700;
-  font-style: italic;
-  font-size: 1.05rem;
+  font-style: normal;
+  font-size: 1.15rem;
   letter-spacing: .06em;
-  margin: 0 0 1rem;
+  margin: 0 0 .85rem;
 }
 
 /* Main document title */
 .cover-title {
-  /* Override the section h2 rule so the cover title looks distinct */
   display: block;
   font-family: var(--serif);
   color: var(--navy);
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: 0;
   background: none;
   border: none;
   padding: 0;
-  margin: 0 0 1.5rem;
+  margin: 0;
 }
 
-/* Contact line at the bottom of the cover */
+/* Contact line — pinned to the bottom of the cover */
 .cover-contact {
-  margin-top: 2rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem; /* breathing room from bottom of border */
 }
 
 .cover-contact p {
@@ -71,11 +83,6 @@
 
 .cover-contact a {
   color: var(--green);
-}
-
-/* Keep article > header styles away from cover-page */
-article > .cover-page {
-  border-bottom: 1px solid var(--hairline);
 }
 :root {
   --navy: #1b3a6b;

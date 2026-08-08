@@ -77,7 +77,7 @@ def chunk_html(input_file: Path, output_dir: Path, max_chars=MAX_CHARS):
             f"{current_chars:,} chars"
         )
 
-    print(f"\n✅ Created {chunk_number} chunks")
+    print(f"\n[OK] Created {chunk_number} chunks")
 
 
 if __name__ == "__main__":

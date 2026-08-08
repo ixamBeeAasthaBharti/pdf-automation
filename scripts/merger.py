@@ -63,23 +63,28 @@ def build_cover(soup: BeautifulSoup) -> None:
     else:
         logo_html = ""     # cover still looks fine without a logo
 
-    # --- Build cover HTML ---
-    cover_html = f"""
-<div class="cover-page">
-  {logo_html}
-  <div class="cover-body">
-    <p class="cover-study-notes">{study_notes_text}</p>
-    <h1 class="cover-title">{doc_title_text}</h1>
+    # --- Build cover HTML as a separate article ---
+    cover_article_html = f"""
+<article class="cover-article">
+  <div class="cover-page">
+    {logo_html}
+    <div class="cover-body">
+      <p class="cover-study-notes">{study_notes_text}</p>
+      <h1 class="cover-title">{doc_title_text}</h1>
+    </div>
+    <div class="cover-contact">
+      {contact_html}
+    </div>
   </div>
-  <div class="cover-contact">
-    {contact_html}
-  </div>
-</div>
+</article>
 """
 
-    # Replace the original <header> with the new cover div
-    cover_soup = BeautifulSoup(cover_html, "html.parser")
-    header.replace_with(cover_soup)
+    # Insert the cover article before the main article
+    cover_soup = BeautifulSoup(cover_article_html, "html.parser")
+    article.insert_before(cover_soup)
+
+    # Decompose the original header from the content article
+    header.decompose()
 
     # Update the <title> tag to the actual document name
     title_tag = soup.find("title")
