@@ -33,7 +33,8 @@ article.cover-article {
 
 /* Logo block */
 .cover-logo-wrap {
-  margin-top: 0.5rem;   /* Move logo down slightly from the very top of border */
+  margin-top: 0.5rem;
+  /* Move logo down slightly from the very top of border */
   margin-bottom: 0;
 }
 
@@ -73,7 +74,8 @@ article.cover-article {
 /* Contact line — pinned to the bottom of the cover */
 .cover-contact {
   margin-top: 0;
-  margin-bottom: 1.5rem; /* breathing room from bottom of border */
+  margin-bottom: 1.5rem;
+  /* breathing room from bottom of border */
 }
 
 .cover-contact p {
@@ -85,6 +87,7 @@ article.cover-article {
 .cover-contact a {
   color: var(--green);
 }
+
 :root {
   --navy: #1b3a6b;
   --green: #6ABE52;
@@ -123,7 +126,7 @@ article {
   max-width: 720px;
   background: var(--page);
   border: 1px solid var(--hairline);
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 12px 30px -18px rgba(27,58,107,.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
   border-radius: 6px;
   margin: 2rem auto 3rem;
   padding: 2rem 2.25rem 2.5rem;
@@ -132,13 +135,13 @@ article {
 /* =====================================================
    ARTICLE HEADER  (title block at the top)
    ===================================================== */
-article > header {
+article>header {
   border-bottom: 2px solid var(--hairline);
   margin-bottom: 1.75rem;
   padding-bottom: 1rem;
 }
 
-article > header h1 {
+article>header h1 {
   font-family: Arial, Helvetica, sans-serif;
   color: var(--navy);
   font-size: 1.5rem;
@@ -147,7 +150,7 @@ article > header h1 {
   margin: 0 0 .2rem;
 }
 
-article > header h2 {
+article>header h2 {
   font-family: Arial, Helvetica, sans-serif;
   color: var(--green-header);
   font-size: 1.15rem;
@@ -158,7 +161,7 @@ article > header h2 {
   padding: 0;
 }
 
-article > header p {
+article>header p {
   font-size: .88rem;
   color: var(--ink-soft);
   margin: 0;
@@ -169,12 +172,13 @@ article > header p {
    ===================================================== */
 
 /* Running header paragraph Gemini adds inside section > header */
-section > header {
+section>header {
   margin-bottom: .75rem;
 }
 
-section > header p.running-header {
-  display: none; /* suppress the repeating running header text */
+section>header p.running-header {
+  display: none;
+  /* suppress the repeating running header text */
 }
 
 /* The main section title bar */
@@ -198,24 +202,24 @@ section h2,
    ===================================================== */
 
 /* Top-level list */
-section > ul,
-section main > ul,
+section>ul,
+section main>ul,
 ul.notes-list {
   list-style: none;
   padding-left: 0;
   margin-bottom: 0;
 }
 
-section > ul > li,
-ul.notes-list > li {
+section>ul>li,
+ul.notes-list>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .75rem;
   line-height: 1.8;
 }
 
-section > ul > li::before,
-ul.notes-list > li::before {
+section>ul>li::before,
+ul.notes-list>li::before {
   content: "–";
   position: absolute;
   left: 0;
@@ -225,7 +229,7 @@ ul.notes-list > li::before {
 }
 
 /* First-level nested list */
-section > ul > li > ul,
+section>ul>li>ul,
 ul.notes-sub {
   list-style: none;
   padding-left: 1.45rem;
@@ -233,16 +237,16 @@ ul.notes-sub {
   margin-bottom: .6rem;
 }
 
-section > ul > li > ul > li,
-ul.notes-sub > li {
+section>ul>li>ul>li,
+ul.notes-sub>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .6rem;
   line-height: 1.75;
 }
 
-section > ul > li > ul > li::before,
-ul.notes-sub > li::before {
+section>ul>li>ul>li::before,
+ul.notes-sub>li::before {
   content: "✓";
   position: absolute;
   left: 0;
@@ -252,7 +256,7 @@ ul.notes-sub > li::before {
 }
 
 /* Second-level nested list */
-section > ul > li > ul > li > ul,
+section>ul>li>ul>li>ul,
 ul.notes-subsub {
   list-style: none;
   padding-left: 1.45rem;
@@ -260,16 +264,16 @@ ul.notes-subsub {
   margin-bottom: .5rem;
 }
 
-section > ul > li > ul > li > ul > li,
-ul.notes-subsub > li {
+section>ul>li>ul>li>ul>li,
+ul.notes-subsub>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .5rem;
   line-height: 1.75;
 }
 
-section > ul > li > ul > li > ul > li::before,
-ul.notes-subsub > li::before {
+section>ul>li>ul>li>ul>li::before,
+ul.notes-subsub>li::before {
   content: "○";
   position: absolute;
   left: 0;
@@ -284,7 +288,7 @@ section ol {
   margin: .6rem 0;
 }
 
-section ol > li {
+section ol>li {
   margin-bottom: .6rem;
   line-height: 1.8;
 }
@@ -358,7 +362,7 @@ section table,
   border: 1px solid var(--hairline);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
   background: var(--page);
   margin: .75rem 0 1.25rem;
 }
@@ -375,7 +379,7 @@ section table thead th,
 
 section table thead th:not(:last-child),
 .notes-table thead th:not(:last-child) {
-  border-right: 1px solid rgba(255,255,255,0.18);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 section table td,
@@ -416,29 +420,36 @@ section table tbody tr:nth-child(odd),
   background: #3a6ea5;
   color: #fff;
 }
+
 .notes-table.blue thead th:not(:last-child) {
-  border-right: 1px solid rgba(255,255,255,0.18);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
 }
+
 .notes-table.blue tbody tr:nth-child(odd) {
   background: #e9f0f7;
 }
+
 .notes-table.blue {
   border-color: #d0deec;
 }
+
 .notes-table.blue td,
 .notes-table.blue tbody th {
   border-top-color: #d0deec;
 }
+
 .notes-table.blue tbody td:not(:last-child),
 .notes-table.blue tbody th:not(:last-child) {
   border-right-color: #d0deec;
 }
 
 @media (max-width: 768px) {
+
   section table,
   .notes-table {
     min-width: 560px;
   }
+
   section {
     overflow-x: auto;
   }
@@ -465,7 +476,7 @@ section table tbody tr:nth-child(odd),
   max-width: 720px;
   background: var(--page);
   border: 1px solid var(--hairline);
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 12px 30px -18px rgba(27,58,107,.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
   border-radius: 6px;
   margin-left: auto;
   margin-right: auto;
@@ -528,7 +539,7 @@ section table tbody tr:nth-child(odd),
   font-family: Arial, Helvetica, sans-serif;
   background: var(--page);
   border-bottom: 1px solid var(--hairline);
-  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
   transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -544,11 +555,11 @@ section table tbody tr:nth-child(odd),
 }
 
 .doc-header.scrolled {
-  background: rgba(255,253,248,0.72);
+  background: rgba(255, 253, 248, 0.72);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 12px rgba(27,58,107,0.08);
-  border-bottom-color: rgba(230,221,201,0.5);
+  box-shadow: 0 2px 12px rgba(27, 58, 107, 0.08);
+  border-bottom-color: rgba(230, 221, 201, 0.5);
 }
 
 .doc-header .title {
@@ -601,14 +612,14 @@ ul.notes-list {
   margin-bottom: 0;
 }
 
-ul.notes-list > li {
+ul.notes-list>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .75rem;
   line-height: 1.8;
 }
 
-ul.notes-list > li::before {
+ul.notes-list>li::before {
   content: "–";
   position: absolute;
   left: 0;
@@ -624,14 +635,14 @@ ul.notes-sub {
   margin-bottom: .6rem;
 }
 
-ul.notes-sub > li {
+ul.notes-sub>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .6rem;
   line-height: 1.75;
 }
 
-ul.notes-sub > li::before {
+ul.notes-sub>li::before {
   content: "✓";
   position: absolute;
   left: 0;
@@ -647,14 +658,14 @@ ul.notes-subsub {
   margin-bottom: .5rem;
 }
 
-ul.notes-subsub > li {
+ul.notes-subsub>li {
   position: relative;
   padding-left: 1.35rem;
   margin-bottom: .5rem;
   line-height: 1.75;
 }
 
-ul.notes-subsub > li::before {
+ul.notes-subsub>li::before {
   content: "○";
   position: absolute;
   left: 0;
@@ -670,7 +681,7 @@ ul.notes-subsub > li::before {
   font-size: .97rem;
 }
 
-.content-note ul.notes-list > li::before {
+.content-note ul.notes-list>li::before {
   color: #a99a5f;
 }
 
@@ -681,7 +692,7 @@ ul.notes-subsub > li::before {
   background: linear-gradient(180deg, #faf7f0 0%, #f4eee1 100%);
   border-radius: 12px;
   border: 1px solid var(--hairline);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 5px rgba(0,0,0,0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 5px rgba(0, 0, 0, 0.03);
   padding: 1.5rem 1.25rem !important;
   overflow: hidden;
 }
@@ -720,7 +731,7 @@ ul.notes-subsub > li::before {
   max-width: 280px;
   padding: 0.5rem 0.5rem !important;
   font-size: 0.85rem;
-  box-shadow: 0 4px 12px -5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 4px 12px -5px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,12 +760,29 @@ ul.notes-subsub > li::before {
   color: var(--navy);
 }
 
-.node-red    { background: linear-gradient(135deg, #e06c69, #b94b47); }
-.node-green  { background: linear-gradient(135deg, #97b558, #6e8833); }
-.node-purple { background: linear-gradient(135deg, #9b7ecc, #70559f); }
-.node-blue   { background: linear-gradient(135deg, #57b9c9, #348493); }
-.node-teal   { background: linear-gradient(135deg, #6ec4c0, #449793); }
-.node-olive  { background: linear-gradient(135deg, #a7cc66, #7da33c); }
+.node-red {
+  background: linear-gradient(135deg, #e06c69, #b94b47);
+}
+
+.node-green {
+  background: linear-gradient(135deg, #97b558, #6e8833);
+}
+
+.node-purple {
+  background: linear-gradient(135deg, #9b7ecc, #70559f);
+}
+
+.node-blue {
+  background: linear-gradient(135deg, #57b9c9, #348493);
+}
+
+.node-teal {
+  background: linear-gradient(135deg, #6ec4c0, #449793);
+}
+
+.node-olive {
+  background: linear-gradient(135deg, #a7cc66, #7da33c);
+}
 
 .flow-sequence .flow-node {
   border-radius: 8px;
@@ -847,7 +875,7 @@ footer.doc-footer {
     margin: 1rem auto 2rem;
   }
 
-  article > header h1 {
+  article>header h1 {
     font-size: 1.2rem;
   }
 
