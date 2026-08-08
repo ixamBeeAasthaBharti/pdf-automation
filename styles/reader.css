@@ -1,6 +1,82 @@
 /* =====================================================
    DESIGN TOKENS
    ===================================================== */
+
+/* =====================================================
+   COVER PAGE
+   ===================================================== */
+
+.cover-page {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 2rem 2.5rem;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 0;
+  gap: 0;
+}
+
+/* Logo block */
+.cover-logo-wrap {
+  margin-bottom: 3.5rem;
+}
+
+.cover-logo-img {
+  width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* "Study Notes" green label */
+.cover-study-notes {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 1.05rem;
+  letter-spacing: .06em;
+  margin: 0 0 1rem;
+}
+
+/* Main document title */
+.cover-title {
+  /* Override the section h2 rule so the cover title looks distinct */
+  display: block;
+  font-family: var(--serif);
+  color: var(--navy);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+/* Contact line at the bottom of the cover */
+.cover-contact {
+  margin-top: 2rem;
+}
+
+.cover-contact p {
+  font-size: .85rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.cover-contact a {
+  color: var(--green);
+}
+
+/* Keep article > header styles away from cover-page */
+article > .cover-page {
+  border-bottom: 1px solid var(--hairline);
+}
 :root {
   --navy: #1b3a6b;
   --green: #6ABE52;
