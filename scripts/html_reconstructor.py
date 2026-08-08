@@ -69,11 +69,16 @@ def reconstruct_html():
 
         x0, y0, x1, y1 = image["bbox"]
 
-        left = x0 / 12
+        left_em = x0 / 12
         top = y0 / 12
 
-        width = (x1 - x0) / 12
-        height = (y1 - y0) / 12
+        width_em = (x1 - x0) / 12
+        height_em = (y1 - y0) / 12
+
+        # Convert PDF points → CSS pixels (96 px/in ÷ 72 pt/in = 4/3)
+        PT_TO_PX = 96 / 72
+        width_px = round((x1 - x0) * PT_TO_PX)
+        height_px = round((y1 - y0) * PT_TO_PX)
 
         img = soup.new_tag("img")
 
@@ -83,12 +88,17 @@ def reconstruct_html():
 
         img["class"] = "pdf24_figure"
 
+        # width/height attributes ensure the image renders at its correct
+        # PDF size even after Gemini converts the layout to semantic HTML
+        img["width"] = width_px
+        img["height"] = height_px
+
         img["style"] = (
             f"position:absolute;"
-            f"left:{left}em;"
-            f"top:{top}em;"
-            f"width:{width}em;"
-            f"height:{height}em;"
+            f"left:{left_em:.4f}em;"
+            f"top:{top:.4f}em;"
+            f"width:{width_em:.4f}em;"
+            f"height:{height_em:.4f}em;"
         )
 
         pdf24_view.append(img)
