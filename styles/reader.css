@@ -8,6 +8,7 @@
 
 /* Cover page container: handles padding and border inset */
 article.cover-article {
+  max-width: 752px;
   padding: 1.25rem;
   margin-bottom: 2rem;
 }
