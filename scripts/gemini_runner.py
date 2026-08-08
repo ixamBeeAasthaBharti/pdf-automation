@@ -375,7 +375,7 @@ def process_chunk(chunk_file: Path):
 
             output.write_text(result, encoding="utf-8")
 
-            print(f"✓ Saved {output.name}")
+            print(f"[OK] Saved {output.name}")
 
             return
 

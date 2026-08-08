@@ -1,0 +1,898 @@
+/* =====================================================
+   DESIGN TOKENS
+   ===================================================== */
+
+/* =====================================================
+   COVER PAGE
+   ===================================================== */
+
+/* Cover page container: handles padding and border inset */
+article.cover-article {
+  max-width: 752px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+/* Inner box with the navy border */
+.cover-page {
+  border: 2px solid var(--navy);
+  border-radius: 4px;
+
+  /* height & layout */
+  min-height: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  box-sizing: border-box;
+
+  /* padding inside the blue border */
+  padding: 2rem 1.5rem;
+}
+
+/* Logo block */
+.cover-logo-wrap {
+  margin-top: 0.5rem;
+  /* Move logo down slightly from the very top of border */
+  margin-bottom: 0;
+}
+
+.cover-logo-img {
+  width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* "Study Notes" green label — NOT italic */
+.cover-study-notes {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green);
+  font-weight: 700;
+  font-style: normal;
+  font-size: 1.15rem;
+  letter-spacing: .06em;
+  margin: 0 0 .85rem;
+}
+
+/* Main document title */
+.cover-title {
+  display: block;
+  font-family: var(--serif);
+  color: var(--navy);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Contact line — pinned to the bottom of the cover */
+.cover-contact {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  /* breathing room from bottom of border */
+}
+
+.cover-contact p {
+  font-size: .85rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.cover-contact a {
+  color: var(--green);
+}
+
+:root {
+  --navy: #1b3a6b;
+  --green: #6ABE52;
+  --green-light: #eef8ea;
+  --green-header: #f2871d;
+  --row-alt: #fdeee0;
+  --border-navy: #1b3a6b;
+
+  /* Kindle / paperwhite reading tokens */
+  --paper: #f6f1e7;
+  --page: #fffdf8;
+  --ink: #2b2620;
+  --ink-soft: #4a443c;
+  --hairline: #e6ddc9;
+  --serif: 'Lora', Georgia, 'Iowan Old Style', 'Apple Garamond', Baskerville, serif;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  font-family: var(--serif);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 1rem;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =====================================================
+   PAGE CARD  (wraps the whole article)
+   ===================================================== */
+article {
+  width: 100%;
+  max-width: 720px;
+  background: var(--page);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
+  border-radius: 6px;
+  margin: 2rem auto 3rem;
+  padding: 2rem 2.25rem 2.5rem;
+}
+
+/* =====================================================
+   ARTICLE HEADER  (title block at the top)
+   ===================================================== */
+article>header {
+  border-bottom: 2px solid var(--hairline);
+  margin-bottom: 1.75rem;
+  padding-bottom: 1rem;
+}
+
+article>header h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--navy);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin: 0 0 .2rem;
+}
+
+article>header h2 {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green-header);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 .5rem;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+article>header p {
+  font-size: .88rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* =====================================================
+   SECTION HEADERS  — the green bar before each h2
+   ===================================================== */
+
+/* Running header paragraph Gemini adds inside section > header */
+section>header {
+  margin-bottom: .75rem;
+}
+
+section>header p.running-header {
+  display: none;
+  /* suppress the repeating running header text */
+}
+
+/* The main section title bar */
+section h2,
+.section-title {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--green-light);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: .95rem;
+  letter-spacing: .04em;
+  padding: .45rem .8rem;
+  border-left: 4px solid var(--green);
+  border-radius: 2px;
+  margin: 1.5rem 0 .85rem;
+}
+
+/* =====================================================
+   BULLET LISTS  (native ul/li inside sections)
+   ===================================================== */
+
+/* Top-level list */
+section>ul,
+section main>ul,
+ul.notes-list {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+section>ul>li,
+ul.notes-list>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .75rem;
+  line-height: 1.8;
+}
+
+section>ul>li::before,
+ul.notes-list>li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 700;
+  top: 0;
+}
+
+/* First-level nested list */
+section>ul>li>ul,
+ul.notes-sub {
+  list-style: none;
+  padding-left: 1.45rem;
+  margin-top: .6rem;
+  margin-bottom: .6rem;
+}
+
+section>ul>li>ul>li,
+ul.notes-sub>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .6rem;
+  line-height: 1.75;
+}
+
+section>ul>li>ul>li::before,
+ul.notes-sub>li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--navy);
+  font-size: .78rem;
+  top: .3rem;
+}
+
+/* Second-level nested list */
+section>ul>li>ul>li>ul,
+ul.notes-subsub {
+  list-style: none;
+  padding-left: 1.45rem;
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+
+section>ul>li>ul>li>ul>li,
+ul.notes-subsub>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .5rem;
+  line-height: 1.75;
+}
+
+section>ul>li>ul>li>ul>li::before,
+ul.notes-subsub>li::before {
+  content: "○";
+  position: absolute;
+  left: 0;
+  color: var(--ink-soft);
+  font-size: .68rem;
+  top: .4rem;
+}
+
+/* Ordered lists (Gemini uses <ol> for numbered examples) */
+section ol {
+  padding-left: 1.5rem;
+  margin: .6rem 0;
+}
+
+section ol>li {
+  margin-bottom: .6rem;
+  line-height: 1.8;
+}
+
+/* =====================================================
+   STRONG  (key terms highlighted in navy)
+   ===================================================== */
+strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+/* =====================================================
+   CHEMICAL STRUCTURE  (monospace pre blocks)
+   ===================================================== */
+pre.chemical-structure,
+pre {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: .88rem;
+  background: #f4f0e6;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: .65rem 1rem;
+  overflow-x: auto;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: .75rem 0;
+}
+
+/* =====================================================
+   FIGURES / IMAGES
+   ===================================================== */
+figure {
+  margin: .75rem 0;
+  text-align: center;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+figcaption {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: .82rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin-top: .5rem;
+}
+
+/* =====================================================
+   TABLES
+   ===================================================== */
+.table-responsive {
+  padding: 3px 3px 6px 3px;
+  margin: 0 -3px;
+  overflow-x: auto;
+}
+
+/* Apply the notes-table style to ALL native tables in sections */
+section table,
+.notes-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: .92rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+  background: var(--page);
+  margin: .75rem 0 1.25rem;
+}
+
+section table thead th,
+.notes-table thead th {
+  background: var(--green-header);
+  color: #fff;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+section table thead th:not(:last-child),
+.notes-table thead th:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+section table td,
+section table tbody th,
+.notes-table td,
+.notes-table tbody th {
+  padding: 1.1rem 1.25rem;
+  border-top: 1px solid var(--hairline);
+  vertical-align: top;
+  line-height: 1.65;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+section table tbody td:not(:last-child),
+section table tbody th:not(:last-child),
+.notes-table tbody td:not(:last-child),
+.notes-table tbody th:not(:last-child) {
+  border-right: 1px solid var(--hairline);
+}
+
+section table tbody th,
+.notes-table tbody th {
+  background: transparent;
+  color: var(--navy);
+  font-weight: 700;
+  text-align: left;
+  white-space: normal;
+}
+
+section table tbody tr:nth-child(odd),
+.notes-table tbody tr:nth-child(odd) {
+  background: var(--row-alt);
+}
+
+/* Blue table variant */
+.notes-table.blue thead th {
+  background: #3a6ea5;
+  color: #fff;
+}
+
+.notes-table.blue thead th:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.notes-table.blue tbody tr:nth-child(odd) {
+  background: #e9f0f7;
+}
+
+.notes-table.blue {
+  border-color: #d0deec;
+}
+
+.notes-table.blue td,
+.notes-table.blue tbody th {
+  border-top-color: #d0deec;
+}
+
+.notes-table.blue tbody td:not(:last-child),
+.notes-table.blue tbody th:not(:last-child) {
+  border-right-color: #d0deec;
+}
+
+@media (max-width: 768px) {
+
+  section table,
+  .notes-table {
+    min-width: 560px;
+  }
+
+  section {
+    overflow-x: auto;
+  }
+}
+
+/* =====================================================
+   CLASS-BASED RULES (original — kept verbatim)
+   ===================================================== */
+
+.logo {
+  width: 240px;
+  height: auto;
+}
+
+.doc-header .logo {
+  min-width: 12px;
+  width: auto;
+  height: 44px;
+  padding: 3px;
+}
+
+.page {
+  width: 100%;
+  max-width: 720px;
+  background: var(--page);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
+  border-radius: 6px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cover {
+  min-height: 900px;
+}
+
+.cover-border {
+  border: 2px solid var(--navy);
+  border-radius: 4px;
+}
+
+.cover .brand-name {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.cover .brand-name span {
+  color: var(--green);
+}
+
+.cover .tagline {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.cover .study-notes {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: .03em;
+}
+
+.cover h1,
+.cover .cover-title-line {
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.35;
+  margin: 0.5em 0;
+}
+
+.cover .amp {
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 1.6rem;
+  font-style: italic;
+}
+
+.doc-header {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+  transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+.read-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--navy));
+  transition: width 0.08s linear;
+  z-index: 10;
+}
+
+.doc-header.scrolled {
+  background: rgba(255, 253, 248, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 12px rgba(27, 58, 107, 0.08);
+  border-bottom-color: rgba(230, 221, 201, 0.5);
+}
+
+.doc-header .title {
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: .95rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.doc-header .brand-mini {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 1.1rem;
+}
+
+.doc-header .brand-mini span {
+  color: var(--green);
+}
+
+.doc-header .tagline-mini {
+  color: var(--green);
+  font-size: .7rem;
+  font-weight: 700;
+  font-style: italic;
+}
+
+main.content-wrap {
+  padding: 0.5rem 1.75rem 1.5rem;
+}
+
+.section-title {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--green-light);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: .95rem;
+  letter-spacing: .04em;
+  padding: .45rem .8rem;
+  border-left: 4px solid var(--green);
+  border-radius: 2px;
+}
+
+ul.notes-list {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+ul.notes-list>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .75rem;
+  line-height: 1.8;
+}
+
+ul.notes-list>li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 700;
+  top: 0;
+}
+
+ul.notes-sub {
+  list-style: none;
+  padding-left: 1.45rem;
+  margin-top: .6rem;
+  margin-bottom: .6rem;
+}
+
+ul.notes-sub>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .6rem;
+  line-height: 1.75;
+}
+
+ul.notes-sub>li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--navy);
+  font-size: .78rem;
+  top: .3rem;
+}
+
+ul.notes-subsub {
+  list-style: none;
+  padding-left: 1.45rem;
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+
+ul.notes-subsub>li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: .5rem;
+  line-height: 1.75;
+}
+
+ul.notes-subsub>li::before {
+  content: "○";
+  position: absolute;
+  left: 0;
+  color: var(--ink-soft);
+  font-size: .68rem;
+  top: .4rem;
+}
+
+.content-note {
+  background: #faf7ee;
+  border-left: 3px solid #c9bd98;
+  border-radius: 2px;
+  font-size: .97rem;
+}
+
+.content-note ul.notes-list>li::before {
+  color: #a99a5f;
+}
+
+/* =====================================================
+   FLOW DIAGRAMS
+   ===================================================== */
+.flow-diagram {
+  background: linear-gradient(180deg, #faf7f0 0%, #f4eee1 100%);
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 5px rgba(0, 0, 0, 0.03);
+  padding: 1.5rem 1.25rem !important;
+  overflow: hidden;
+}
+
+.flow-sequence {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1.5rem 0 !important;
+  overflow: visible;
+}
+
+.flow-diagram-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.flow-sequence-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+}
+
+.flow-node {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 280px;
+  padding: 0.5rem 0.5rem !important;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px -5px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  min-height: 2.75rem;
+}
+
+.flow-bg-arrow {
+  display: none;
+}
+
+.flow-op {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--green);
+  font-family: Arial, Helvetica, sans-serif;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.25rem 0;
+}
+
+.flow-op.eq {
+  color: var(--navy);
+}
+
+.node-red {
+  background: linear-gradient(135deg, #e06c69, #b94b47);
+}
+
+.node-green {
+  background: linear-gradient(135deg, #97b558, #6e8833);
+}
+
+.node-purple {
+  background: linear-gradient(135deg, #9b7ecc, #70559f);
+}
+
+.node-blue {
+  background: linear-gradient(135deg, #57b9c9, #348493);
+}
+
+.node-teal {
+  background: linear-gradient(135deg, #6ec4c0, #449793);
+}
+
+.node-olive {
+  background: linear-gradient(135deg, #a7cc66, #7da33c);
+}
+
+.flow-sequence .flow-node {
+  border-radius: 8px;
+  padding: 0.5rem 0.5rem !important;
+}
+
+.flow-arrow-glyph {
+  font-family: Arial, Helvetica, sans-serif;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0;
+  font-size: 1.4rem;
+  color: var(--ink-soft);
+}
+
+/* =====================================================
+   FOOTER
+   ===================================================== */
+footer.doc-footer {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #9a9182;
+  font-size: .82rem;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (min-width: 768px) {
+  .flow-diagram {
+    padding: 1.75rem 1.5rem !important;
+  }
+
+  .flow-diagram-grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1.25rem;
+    width: 100%;
+  }
+
+  .flow-sequence-grid {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    height: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .flow-node {
+    position: relative;
+    z-index: 2;
+    width: 120px;
+    flex: 0 0 auto;
+  }
+
+  .flow-op {
+    margin: 0;
+    height: auto;
+    align-self: center;
+  }
+
+  .flow-sequence-grid .flow-arrow-glyph {
+    display: flex;
+    font-size: 1.3rem;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .flow-arrow-glyph {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 576px) {
+  body {
+    font-size: 0.95rem;
+  }
+
+  article {
+    padding: 1.25rem 1rem 1.5rem;
+    margin: 1rem auto 2rem;
+  }
+
+  article>header h1 {
+    font-size: 1.2rem;
+  }
+
+  .cover {
+    padding: 2rem 1rem;
+  }
+
+  .cover h1,
+  .cover .cover-title-line {
+    font-size: 1.4rem;
+  }
+
+  .flow-node {
+    font-size: .85rem;
+  }
+
+  .flow-op {
+    font-size: 1.2rem;
+  }
+}
