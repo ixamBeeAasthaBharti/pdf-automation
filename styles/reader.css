@@ -56,7 +56,28 @@ article.cover-article {
   margin: 0 0 .85rem;
 }
 
-/* Main document title */
+/* Extra meta lines on cover (e.g. "Previous Year paper", "Professional Knowledge") */
+.cover-meta-line {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--green);
+  font-weight: 700;
+  font-style: normal;
+  font-size: 1.05rem;
+  letter-spacing: .04em;
+  margin: 0 0 .6rem;
+  text-transform: uppercase;
+}
+
+/* Subtitle line beneath the main title (exam code / year) */
+.cover-subtitle {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: .6rem 0 0;
+  letter-spacing: .01em;
+}
+
 .cover-title {
   display: block;
   font-family: var(--serif);

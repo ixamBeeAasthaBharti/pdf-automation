@@ -12,7 +12,7 @@ PROCESSED_DIR  = ROOT / "processed"
 OUTPUT_DIR     = ROOT / "output"
 OUTPUT_FILE    = OUTPUT_DIR / "output.html"
 ASSETS_DIR     = ROOT / "assets"
-LOGO_FILE      = ASSETS_DIR / "logo.png"          # drop your logo here once
+LOGO_FILE      = ASSETS_DIR / "logo.png"          
 IMAGE_MAP_FILE = ROOT / "image_map.json"
 
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -27,10 +27,15 @@ def build_cover(soup: BeautifulSoup) -> None:
     Replaces the <article><header> Gemini generates with a proper
     cover page that mirrors the branded PDF title page.
 
-    Structure extracted from the header:
-      h1  → "Study Notes"  (green label on the cover)
-      h2  → document title (large navy heading)
-      p   → contact line   (shown at the bottom of the cover)
+    Strategy:
+      - Collect ALL children of <header> in DOM order.
+      - The first <h1> becomes the main document title (navy, large).
+      - The first <h2>, if present, becomes the subtitle (exam code / year).
+      - Remaining <p> / <h3> / <h4> tags become body lines (green label style).
+      - The LAST <p> that contains a URL or phone number is treated as the
+        contact line and pinned to the bottom of the cover.
+      - Everything else ("Study Notes", "Professional Knowledge", etc.) is
+        stacked in the cover body above the title.
 
     The logo is read from  assets/logo.png  — drop any PNG/JPG there
     once and every PDF run will pick it up automatically.
@@ -44,14 +49,47 @@ def build_cover(soup: BeautifulSoup) -> None:
     if not header:
         return
 
-    # --- Extract text from the existing header ---
-    h1_tag  = header.find("h1")
-    h2_tag  = header.find("h2")
-    p_tag   = header.find("p")
+    # --- Collect every direct child element of <header> ---
+    children = [c for c in header.children if hasattr(c, 'name') and c.name]
 
-    study_notes_text = h1_tag.get_text(strip=True) if h1_tag else "Study Notes"
-    doc_title_text   = h2_tag.get_text(strip=True) if h2_tag else ""
-    contact_html     = str(p_tag) if p_tag else ""
+    h1_tag = header.find("h1")
+    h2_tag = header.find("h2")
+
+    main_title    = h1_tag.get_text(" ", strip=True) if h1_tag else "Document"
+    sub_title     = h2_tag.get_text(" ", strip=True) if h2_tag else ""
+
+    # --- Identify contact paragraph (last <p> with a URL or phone digits) ---
+    import re
+    all_p = header.find_all("p")
+    contact_tag = None
+    for p in reversed(all_p):
+        txt = p.get_text()
+        if re.search(r'(https?://|www\.|\d{7,})', txt):
+            contact_tag = p
+            break
+    contact_html = str(contact_tag) if contact_tag else ""
+
+    # --- Build extra body lines (everything except h1, h2, and contact p) ---
+    body_lines_html = []                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+    for child in children:
+        if child is h1_tag:
+            continue
+        if child is h2_tag:
+            continue
+        if contact_tag and child is contact_tag:
+            continue
+        line_text = child.get_text(" ", strip=True)
+        if line_text:
+            body_lines_html.append(
+                f'<p class="cover-meta-line">{line_text}</p>'
+            )
+
+    extra_body = "\n      ".join(body_lines_html)
+
+    sub_title_html = (
+        f'<p class="cover-subtitle">{sub_title}</p>'
+        if sub_title else ""
+    )
 
     # --- Logo img tag (relative to output/output.html) ---
     if LOGO_FILE.exists():
@@ -69,8 +107,9 @@ def build_cover(soup: BeautifulSoup) -> None:
   <div class="cover-page">
     {logo_html}
     <div class="cover-body">
-      <p class="cover-study-notes">{study_notes_text}</p>
-      <h1 class="cover-title">{doc_title_text}</h1>
+      {extra_body}
+      <h1 class="cover-title">{main_title}</h1>
+      {sub_title_html}
     </div>
     <div class="cover-contact">
       {contact_html}
@@ -88,8 +127,8 @@ def build_cover(soup: BeautifulSoup) -> None:
 
     # Update the <title> tag to the actual document name
     title_tag = soup.find("title")
-    if title_tag and doc_title_text:
-        title_tag.string = f"{study_notes_text} – {doc_title_text}"
+    if title_tag and main_title:
+        title_tag.string = main_title
 
 
 # =====================================================

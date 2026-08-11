@@ -356,6 +356,28 @@ Use the supplied image ONLY to
 - correct OCR errors
 Only reconstruct a complete HTML table from the image if the table does not already exist in the HTML.
 Never replace a correct HTML table with a newly generated one.
+
+TABLE IMAGES (CRITICAL)
+If the image classification step determined the image is a TABLE:
+- You MUST extract all text from it and convert it into a proper HTML table.
+- Do NOT keep it as an <img> element.
+- Do NOT wrap it inside <figure>.
+- Remove the <img> tag entirely.
+- Reconstruct the table using:
+  <div class="table-responsive">
+  <table>
+  <thead><tr><th>...</th></tr></thead>
+  <tbody><tr><td>...</td></tr></tbody>
+  </table>
+  </div>
+- Preserve all cell content exactly as it appears in the image.
+- Preserve header rows using <th> in a <thead>.
+- Preserve merged cells using colspan or rowspan where applicable.
+- Preserve every row and every column.
+- Do not summarize or abbreviate any cell content.
+- The resulting HTML table must contain every piece of data visible in the image.
+- If the table has a title or caption visible in the image, add a <caption> element.
+
 -----------------------------------------------------
 CHARTS
 Charts are visual content.
