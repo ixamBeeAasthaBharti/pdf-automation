@@ -254,10 +254,17 @@ def process_chunk(chunk_file: Path):
 
         src = img.get("src", "")
 
-        if not src.startswith("images/"):
+        # Accept both 'images/...' and '../images/...' (chunks use the latter)
+        if "images/" not in src:
             continue
 
-        page_image = ROOT / src
+        # Normalise: strip any leading '../' so ROOT / 'images/...' resolves correctly
+        clean_src = src.lstrip("./").lstrip("..").lstrip("/")
+        if not clean_src.startswith("images/"):
+            # fallback: just take the part from 'images/' onward
+            clean_src = "images/" + src.split("images/", 1)[1]
+
+        page_image = ROOT / clean_src
 
         page_number = int(page_image.stem.split("_")[1])
 
@@ -320,18 +327,38 @@ def process_chunk(chunk_file: Path):
 
                 contents.append(
                 f"""
-            VISUAL FOR HTML IMAGE
+VISUAL FOR HTML IMAGE
 
-            This binary corresponds to:
+This binary corresponds to:
 
-            <img src="images/{image['path'].name}">
+<img src="images/{image['path'].name}">
 
-            Do NOT replace the src.
+INSTRUCTIONS:
 
-            Use the attached binary ONLY to understand what this HTML image contains.
-            If the attached image is a cropped figure, treat it as the authoritative visual for this HTML image.
+First, visually classify this image:
 
-            END VISUAL
+IF THE IMAGE CONTAINS A TABLE OR STRUCTURED TABULAR CONTENT:
+This includes:
+- A traditional grid with rows and columns.
+- A two-column or multi-column COMPARISON layout (e.g. "Companies Act, 2013" vs "SEBI Regulations").
+- Side-by-side coloured boxes presenting data under column headings.
+- Key-value layouts (e.g. Particulars | Details).
+- Any study note snippet where the MAIN content is organised in parallel columns.
+NOTE: Decorative headers, logos, italic chapter titles, and page numbers at the top of the image are NOT the table — extract them as headings, then extract the table below them.
+Action:
+- Replace the <img src="images/{image['path'].name}"> tag with a semantic HTML table.
+- Do NOT keep the <img> tag.
+- Output format: <div class="extracted-table-block"> containing any headings above and the table itself.
+- Extract every cell, heading, and note exactly as visible.
+- See TABLE IMAGES (CRITICAL) in the system prompt for the full format.
+
+IF THE IMAGE IS NOT A TABLE (pure diagram, chart, logo, photograph, flowchart, formula):
+- Keep the <img src="images/{image['path'].name}"> tag exactly once.
+- Do NOT change the src attribute.
+- For charts/diagrams: wrap in <figure><img src="images/{image['path'].name}"><figcaption>...</figcaption></figure>.
+- Do not convert to text or description.
+
+END VISUAL
                 """
                 )
 
@@ -348,7 +375,7 @@ def process_chunk(chunk_file: Path):
             print(f"Sending {len(images)} visual references to Gemini")
 
             response = client.models.generate_content(
-                model="gemini-3.5-flash",
+                model="gemini-3.6-flash",
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=0,
@@ -359,7 +386,7 @@ def process_chunk(chunk_file: Path):
 
             print("=" * 60)
             print("IMG TAGS IN SOURCE :", html.count("<img"))
-            print("IMG TAGS IN RESULT :", result.count("<img"))
+            print("IMG TAGS IN RESULT :", result.count("<img"), "(table images intentionally converted to HTML)")
             print("=" * 60)
 
             if result.startswith("```html"):

@@ -222,7 +222,7 @@ Every existing meaningful element must appear exactly once in the output.
 
 This includes:
 
-- img
+- img (unless the image contains a table — see TABLE IMAGES below)
 - table
 - tr
 - td
@@ -232,38 +232,57 @@ This includes:
 - p
 - headings
 
-If an <img> exists in the input HTML, it MUST exist in the output HTML.
-
-Do not remove images because another image appears similar.
+For every <img> in the input HTML:
+- If the corresponding attached image visually contains a TABLE: replace the <img> with a semantic HTML table. Do NOT keep the <img> tag.
+- If the image is anything else (diagram, chart, logo, photograph, formula, decorative): keep the <img> tag exactly once with the original src.
 
 Do not merge multiple images into one.
 
 Do not move images to another section.
 
-Preserve every image exactly once using the same src attribute.
+For non-table images: preserve the src attribute exactly as provided.
 
 =====================================================
-IMAGE HANDLING
+IMAGE HANDLING — TWO-PATH DECISION
 =====================================================
-The HTML is the PRIMARY source.
-The supplied images are SECONDARY evidence.
-Use the images ONLY to:
+For EVERY attached image, first classify it visually:
+
+PATH A — IMAGE IS A TABLE
+A table means ANY of the following:
+- A visible grid with rows and columns of data.
+- A two-column or multi-column COMPARISON LAYOUT (e.g. "Companies Act, 2013" vs "SEBI Regulations, 2015").
+- Side-by-side coloured boxes presenting structured information under column headings.
+- A key-value layout (e.g. "Particulars" | "Details").
+- Any content where information is organised in parallel columns, even without visible grid lines.
+- Study note snippets that contain a comparison or structured multi-column box.
+
+IMPORTANT: Even if the overall image is a screenshot of a study material page with decorative headers, logos, or page numbers — if the MAIN CONTENT inside is tabular/structured in columns, classify it as a TABLE.
+
+If the image is a table:
+- Extract ALL visible content from the image into semantic HTML.
+- Replace the <img> tag with the extracted content. Do NOT keep the <img>.
+- See TABLE IMAGES section below for exact output format.
+
+PATH B — IMAGE IS NOT A TABLE
+All other image types fall here:
+- Diagrams, charts, graphs, flowcharts
+- Logos, photographs, illustrations
+- Mathematical expressions
+- Decorative elements
+- Screenshots of text (unless structured as a table grid)
+For these:
+- Keep the <img> tag exactly once.
+- Preserve the src attribute exactly as given.
+- Do NOT replace with text, HTML, or description.
+- For charts/diagrams: wrap inside <figure><img src="..."><figcaption>...</figcaption></figure>.
+
+The supplied HTML and images belong to the SAME PDF document.
+Use the supplied images to:
 - recover missing information,
 - correct OCR errors,
-- reconstruct formulas,
-- reconstruct tables,
-- preserve charts and diagrams.
-The HTML is always the authoritative source.
-Images should only be used to recover information that is missing, incorrect, or unreadable in the HTML.
-Never replace correct HTML with image-derived text.
-The supplied HTML and images belong to the SAME PDF document.
-The HTML may contain incomplete OCR, missing mathematical notation,
-missing tables, missing diagrams, or placeholder <img> elements.
-Use BOTH the HTML and the supplied images together to reconstruct
-the document.
-Treat every supplied image as belonging to the corresponding HTML
-section in which it is referenced.
-Whenever an image represents a chart, graph, diagram, map, flowchart or illustration, wrap it inside <figure> and generate a meaningful <figcaption> from the surrounding text if one is available.
+- reconstruct formulas (from PATH B images),
+- detect and extract tables (PATH A images).
+Never duplicate information that already exists in the HTML text outside the image.
 
 When an HTML image has a corresponding attached visual:
 
@@ -325,7 +344,8 @@ Before producing the answer verify:
 ✓ formulas reconstructed correctly
 ✓ existing figures preserved
 ✓ charts remain images
-✓ existing image sources reused
+✓ non-table image sources reused unchanged
+✓ table images replaced with <div class="extracted-table-block">
 ✓ no information omitted
 ------------------------------------------------------------
 Produce the highest quality semantic HTML possible while preserving the original document exactly.
@@ -357,26 +377,43 @@ Use the supplied image ONLY to
 Only reconstruct a complete HTML table from the image if the table does not already exist in the HTML.
 Never replace a correct HTML table with a newly generated one.
 
-TABLE IMAGES (CRITICAL)
-If the image classification step determined the image is a TABLE:
-- You MUST extract all text from it and convert it into a proper HTML table.
-- Do NOT keep it as an <img> element.
-- Do NOT wrap it inside <figure>.
-- Remove the <img> tag entirely.
-- Reconstruct the table using:
-  <div class="table-responsive">
-  <table>
-  <thead><tr><th>...</th></tr></thead>
-  <tbody><tr><td>...</td></tr></tbody>
-  </table>
-  </div>
-- Preserve all cell content exactly as it appears in the image.
-- Preserve header rows using <th> in a <thead>.
-- Preserve merged cells using colspan or rowspan where applicable.
-- Preserve every row and every column.
-- Do not summarize or abbreviate any cell content.
-- The resulting HTML table must contain every piece of data visible in the image.
-- If the table has a title or caption visible in the image, add a <caption> element.
+TABLE IMAGES (CRITICAL — OVERRIDES IMAGE PRESERVATION)
+This rule overrides the general image preservation rule.
+If the attached image visually contains a TABLE (a grid with rows and columns):
+
+STEP 1 — Remove the <img> tag. Do NOT keep it. Do NOT wrap it in <figure>.
+
+STEP 2 — Extract EVERYTHING visible in the image, top to bottom:
+
+A) Text ABOVE the table (headings, numbered titles, captions):
+   - Bold heading/title  -> <h4 class="extracted-heading">...</h4>
+   - Italic/smaller line -> <p class="extracted-subheading">...</p>
+   Do NOT duplicate text that already exists in the surrounding HTML.
+
+B) The table itself:
+   <div class="table-responsive">
+     <table>
+       <thead><tr><th>...</th></tr></thead>
+       <tbody><tr><td>...</td></tr></tbody>
+     </table>
+   </div>
+   - Preserve every cell's content exactly.
+   - Use <th> in <thead> for header rows.
+   - Use colspan / rowspan for merged cells.
+   - Preserve bullet points inside cells as <ul><li>.
+   - Do not summarize or abbreviate anything.
+
+C) Text BELOW the table:
+   <p class="extracted-note">...</p>
+
+STEP 3 — Wrap A + B + C in ONE outer div:
+<div class="extracted-table-block">
+  ...headings (A)...
+  <div class="table-responsive"><table>...</table></div>
+  ...footnotes (C)...
+</div>
+
+Place the extracted-table-block exactly where the original <img> was in the document.
 
 -----------------------------------------------------
 CHARTS
@@ -450,10 +487,14 @@ The HTML already contains image filenames such as:
 
 images/image_035.png
 
-When using an image:
-
+For NON-TABLE images:
 - NEVER change the filename.
 - NEVER substitute another image.
 - NEVER use the next or previous image.
 - The binary image attached immediately after each filename description corresponds exactly to that filename.
 - Reuse the existing filename exactly as provided.
+
+For TABLE images:
+- Remove the <img> tag entirely.
+- Do NOT reuse the filename — there is no img tag to reuse.
+- Replace with <div class="extracted-table-block"> as described above.

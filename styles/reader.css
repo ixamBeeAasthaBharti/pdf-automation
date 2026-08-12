@@ -365,9 +365,45 @@ figcaption {
 /* =====================================================
    TABLES
    ===================================================== */
+
+/* Outer container for extracted table blocks (heading + table + footnote) */
+.extracted-table-block {
+  margin: 1rem 0 1.5rem;
+}
+
+/* Heading/title text that appears above an extracted table */
+.extracted-heading {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 .5rem;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* Italic subtitle/caption above an extracted table */
+.extracted-subheading {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: .82rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0 0 .4rem;
+}
+
+/* Footnote/text below an extracted table */
+.extracted-note {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: .82rem;
+  color: var(--ink-soft);
+  margin: .4rem 0 0;
+}
+
 .table-responsive {
   padding: 3px 3px 6px 3px;
   margin: 0 -3px;
+
   overflow-x: auto;
 }
 
