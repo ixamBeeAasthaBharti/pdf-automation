@@ -333,30 +333,31 @@ This binary corresponds to:
 
 <img src="images/{image['path'].name}">
 
-INSTRUCTIONS:
+INSTRUCTIONS — classify this image into exactly ONE of these three paths:
 
-First, visually classify this image:
-
-IF THE IMAGE CONTAINS A TABLE OR STRUCTURED TABULAR CONTENT:
-This includes:
-- A traditional grid with rows and columns.
-- A two-column or multi-column COMPARISON layout (e.g. "Companies Act, 2013" vs "SEBI Regulations").
-- Side-by-side coloured boxes presenting data under column headings.
-- Key-value layouts (e.g. Particulars | Details).
-- Any study note snippet where the MAIN content is organised in parallel columns.
-NOTE: Decorative headers, logos, italic chapter titles, and page numbers at the top of the image are NOT the table — extract them as headings, then extract the table below them.
+PATH A — IF THE IMAGE CONTAINS A TABLE OR STRUCTURED TABULAR CONTENT:
+This includes: traditional grid tables, two-column comparison layouts, side-by-side coloured boxes, key-value layouts, any parallel-column structured content.
+NOTE: Decorative headers, logos, page numbers at the top are NOT the table — extract them as headings above the table.
 Action:
-- Replace the <img src="images/{image['path'].name}"> tag with a semantic HTML table.
+- Replace <img src="images/{image['path'].name}"> with <div class="extracted-table-block"> containing headings + table.
 - Do NOT keep the <img> tag.
-- Output format: <div class="extracted-table-block"> containing any headings above and the table itself.
-- Extract every cell, heading, and note exactly as visible.
-- See TABLE IMAGES (CRITICAL) in the system prompt for the full format.
+- See TABLE IMAGES (CRITICAL) in the system prompt for full format.
 
-IF THE IMAGE IS NOT A TABLE (pure diagram, chart, logo, photograph, flowchart, formula):
+PATH B — IF THE IMAGE IS TEXT-ONLY (headings, paragraphs, bullets — NO diagrams or drawings):
+Text-only = only readable text content. No flowcharts, no arrows between boxes, no node diagrams, no charts.
+Examples: bullet-point study notes, definition sections, legal provisions with paragraphs.
+NOT text-only if the main content is a flowchart or diagram (even if it has text labels).
+Action:
+- Replace <img src="images/{image['path'].name}"> with <div class="extracted-text-block">.
+- Do NOT keep the <img> tag.
+- Extract all text in reading order using <h4 class="extracted-heading">, <p>, <ul><li>, <strong>, <em>.
+- Skip watermarks, logos, page numbers, dividing lines.
+
+PATH C — IF THE IMAGE IS A VISUAL (flowchart, diagram, chart, photograph, UI screenshot):
+Action:
 - Keep the <img src="images/{image['path'].name}"> tag exactly once.
 - Do NOT change the src attribute.
-- For charts/diagrams: wrap in <figure><img src="images/{image['path'].name}"><figcaption>...</figcaption></figure>.
-- Do not convert to text or description.
+- Wrap in <figure><img src="images/{image['path'].name}"><figcaption>...</figcaption></figure>.
 
 END VISUAL
                 """

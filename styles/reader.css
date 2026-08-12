@@ -400,6 +400,27 @@ figcaption {
   margin: .4rem 0 0;
 }
 
+/* Extracted text-only images — flows inline with the document, no special box */
+.extracted-text-block {
+  margin: .75rem 0 1rem;
+}
+
+.extracted-text-block p {
+  margin: .4rem 0;
+  line-height: 1.7;
+}
+
+.extracted-text-block ul,
+.extracted-text-block ol {
+  margin: .35rem 0 .35rem 1.4rem;
+  padding: 0;
+}
+
+.extracted-text-block li {
+  margin-bottom: .25rem;
+  line-height: 1.65;
+}
+
 .table-responsive {
   padding: 3px 3px 6px 3px;
   margin: 0 -3px;

@@ -243,9 +243,9 @@ Do not move images to another section.
 For non-table images: preserve the src attribute exactly as provided.
 
 =====================================================
-IMAGE HANDLING — TWO-PATH DECISION
+IMAGE HANDLING — THREE-PATH DECISION
 =====================================================
-For EVERY attached image, first classify it visually:
+For EVERY attached image, classify it into exactly ONE of these three paths:
 
 PATH A — IMAGE IS A TABLE
 A table means ANY of the following:
@@ -255,33 +255,49 @@ A table means ANY of the following:
 - A key-value layout (e.g. "Particulars" | "Details").
 - Any content where information is organised in parallel columns, even without visible grid lines.
 - Study note snippets that contain a comparison or structured multi-column box.
+IMPORTANT: Even if the overall image has decorative headers, logos, or page numbers — if the MAIN CONTENT is tabular/structured in columns, classify it as PATH A.
+Action:
+- Extract ALL visible content into semantic HTML. Remove the <img> tag.
+- See TABLE IMAGES (CRITICAL) section below for exact output format.
 
-IMPORTANT: Even if the overall image is a screenshot of a study material page with decorative headers, logos, or page numbers — if the MAIN CONTENT inside is tabular/structured in columns, classify it as a TABLE.
+PATH B — IMAGE IS TEXT-ONLY
+Text-only means the image contains ONLY readable text with no drawings, diagrams, or charts:
+- Section headings / subheadings
+- Paragraphs of explanation or definitions
+- Bullet point lists or numbered lists
+- Highlighted or bold key terms followed by explanations
+- Study note snippets with ONLY text content (no arrows, no boxes connected by lines, no flowcharts)
+Examples: A section like "Appointment of Directors (Section 152)" with bullet points; "Belated Return [Section 139(4)]" with paragraphs.
+NOT text-only: any image where the main informational content is a flowchart, diagram, node-and-arrow chart, or visual illustration — even if it also has some text labels.
+Action:
+- Extract ALL visible text in reading order. Remove the <img> tag.
+- Output format:
+  <div class="extracted-text-block">
+    <h4 class="extracted-heading">Section Title Here</h4>
+    <p>Paragraph text...</p>
+    <ul><li>Bullet point...</li></ul>
+  </div>
+- Use <h4 class="extracted-heading"> for section headings.
+- Use <p> for paragraphs.
+- Use <ul><li> for bullet lists, <ol><li> for numbered lists.
+- Use <strong> for bold text, <em> for italics.
+- Preserve highlighted/underlined terms using <strong> or <u>.
+- Skip decorative elements: watermarks, logos, page numbers, dividing lines.
+- Do NOT duplicate text that already exists outside the image in the surrounding HTML.
 
-If the image is a table:
-- Extract ALL visible content from the image into semantic HTML.
-- Replace the <img> tag with the extracted content. Do NOT keep the <img>.
-- See TABLE IMAGES section below for exact output format.
-
-PATH B — IMAGE IS NOT A TABLE
-All other image types fall here:
-- Diagrams, charts, graphs, flowcharts
-- Logos, photographs, illustrations
-- Mathematical expressions
-- Decorative elements
-- Screenshots of text (unless structured as a table grid)
-For these:
-- Keep the <img> tag exactly once.
-- Preserve the src attribute exactly as given.
-- Do NOT replace with text, HTML, or description.
-- For charts/diagrams: wrap inside <figure><img src="..."><figcaption>...</figcaption></figure>.
+PATH C — IMAGE IS A VISUAL (diagram, chart, flowchart, photograph, screenshot of UI)
+All remaining images fall here:
+- Flowcharts (boxes connected by arrows, node-and-arrow diagrams)
+- Bar/pie/line charts, graphs
+- Photographs, illustrations
+- Screenshots of external applications or exam portals
+- Images where the main content is a DIAGRAM even if it also has text labels
+Action:
+- Keep the <img> tag exactly once with the original src.
+- For flowcharts/diagrams: wrap in <figure><img src="..."><figcaption>...</figcaption></figure>.
+- Do NOT replace with text or description.
 
 The supplied HTML and images belong to the SAME PDF document.
-Use the supplied images to:
-- recover missing information,
-- correct OCR errors,
-- reconstruct formulas (from PATH B images),
-- detect and extract tables (PATH A images).
 Never duplicate information that already exists in the HTML text outside the image.
 
 When an HTML image has a corresponding attached visual:
