@@ -1831,4 +1831,64 @@ article:not(.cover-article) a:hover {
     #dynamic-toc {
         display: none;
     }
-}
+}
+
+/* =========================================================
+   SCALABLE TYPOGRAPHY REGISTRY (KINDLE READER SCALING)
+   ========================================================= */
+article,
+article.cover-article {
+    font-size: calc(1rem * var(--reader-font-scale, 1));
+}
+
+/* Cover page text scaling */
+.cover-title {
+    font-size: calc(2.2rem * var(--reader-font-scale, 1)) !important;
+}
+
+.cover-subtitle {
+    font-size: calc(1rem * var(--reader-font-scale, 1)) !important;
+}
+
+.cover-meta-line,
+.cover-study-notes {
+    font-size: calc(1.05rem * var(--reader-font-scale, 1)) !important;
+}
+
+/* Headings & Section titles scaling */
+article section h2,
+article .section-title {
+    font-size: calc(1.08rem * var(--reader-font-scale, 1)) !important;
+}
+
+article section h3 {
+    font-size: calc(1.02rem * var(--reader-font-scale, 1)) !important;
+}
+
+article section h4 {
+    font-size: calc(0.94rem * var(--reader-font-scale, 1)) !important;
+}
+
+article .extracted-heading {
+    font-size: calc(0.93rem * var(--reader-font-scale, 1)) !important;
+}
+
+/* Tables & Table Cells scaling */
+article table,
+article .notes-table,
+article .table-responsive > table {
+    font-size: calc(0.88rem * var(--reader-font-scale, 1)) !important;
+}
+
+article table thead th,
+article .notes-table thead th {
+    font-size: calc(0.92rem * var(--reader-font-scale, 1)) !important;
+}
+
+article table tbody td,
+article table tbody th,
+article .notes-table tbody td,
+article .notes-table tbody th {
+    font-size: calc(0.88rem * var(--reader-font-scale, 1)) !important;
+}
+
