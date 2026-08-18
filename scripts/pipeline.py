@@ -51,16 +51,16 @@ ARCHIVE_DIR = ROOT / "storage" / "archive"
 # --fetch
 # ─────────────────────────────────────────────────────────────────────────────
 
-def do_fetch(count: int = 1):
+def do_fetch(count: int = 1, target_ids: list[int] = None):
     """Fetch the next N unprocessed PDFs from MySQL."""
     print("\n" + "=" * 65)
-    print(f" PIPELINE - FETCH MODE  (count={count})")
+    print(f" PIPELINE - FETCH MODE  (count={count}, ids={target_ids})")
     print("=" * 65)
 
     init_db()
     init_pdf_jobs_db()
 
-    fetched_ids = fetch_next(count=count)
+    fetched_ids = fetch_next(count=count, target_ids=target_ids)
 
     if not fetched_ids:
         print("\n[Pipeline] Nothing to fetch. All eligible PDFs are processed.")
@@ -301,12 +301,16 @@ Examples:
     )
     parser.add_argument("--fetch",   action="store_true", help="Fetch next PDF(s) from MySQL")
     parser.add_argument("--count",   type=int, default=1,  help="Number of PDFs to fetch (use with --fetch, default: 1)")
+    parser.add_argument("--ids",     type=str, help="Comma-separated specific MySQL IDs to fetch (e.g. 1474,7908)")
     parser.add_argument("--process", action="store_true", help="Process HTML-ready queue items")
     parser.add_argument("--status",  action="store_true", help="Show current job statuses")
     args = parser.parse_args()
 
     if args.fetch:
-        do_fetch(count=args.count)
+        target_ids = None
+        if args.ids:
+            target_ids = [int(x.strip()) for x in args.ids.split(",") if x.strip().isdigit()]
+        do_fetch(count=args.count, target_ids=target_ids)
     elif args.process:
         do_process()
     elif args.status:

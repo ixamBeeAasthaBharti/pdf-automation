@@ -32,7 +32,7 @@ QUEUE_DIR = ROOT / "storage" / "queue"
 BASE_URL  = "https://www.ixambee.com/miscellaneous-pdf/"
 
 
-def fetch_next(count: int = 1) -> list[int]:
+def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
     """
     Fetch the next N eligible rows from MySQL, download their PDFs, and
     register them in local SQLite + MySQL htmltopdfautomation.
@@ -49,17 +49,25 @@ def fetch_next(count: int = 1) -> list[int]:
     conn   = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Pick next N unprocessed, active, non-expired PDFs (lowest id first)
-    cursor.execute("""
-        SELECT id, content
-        FROM   tbl_studymaterial_lang_map
-        WHERE  type_order      = 2
-          AND  status          = 1
-          AND  htmltopdfstatus = 0
-          AND  (expiry_date IS NULL OR expiry_date > NOW())
-        ORDER  BY id ASC
-        LIMIT  %s
-    """, (count,))
+    if target_ids:
+        placeholders = ', '.join(['%s'] * len(target_ids))
+        cursor.execute(f"""
+            SELECT id, content
+            FROM   tbl_studymaterial_lang_map
+            WHERE  id IN ({placeholders})
+        """, tuple(target_ids))
+    else:
+        # Pick next N unprocessed, active, non-expired PDFs (lowest id first)
+        cursor.execute("""
+            SELECT id, content
+            FROM   tbl_studymaterial_lang_map
+            WHERE  type_order      = 2
+              AND  status          = 1
+              AND  htmltopdfstatus = 0
+              AND  (expiry_date IS NULL OR expiry_date > NOW())
+            ORDER  BY id ASC
+            LIMIT  %s
+        """, (count,))
     rows = cursor.fetchall()
 
     if not rows:

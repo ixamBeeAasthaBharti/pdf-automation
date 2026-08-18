@@ -285,6 +285,7 @@ def merge_chunks(
         up = "../"  # fallback if output_file is outside ROOT
 
     css_href   = f"{up}styles/reader.css"
+    logo_src   = f"{up}assets/logo.png"
 
     # Images live in the SAME directory as output_file (sibling 'images/' folder)
     # → always just 'images/' relative to the HTML file, no '../' needed

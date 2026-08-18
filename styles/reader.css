@@ -1857,3 +1857,471 @@ article .notes-table tbody td,
 article .notes-table tbody th {
     font-size: calc(0.88rem * var(--reader-font-scale, 1)) !important;
 }
+
+
+/* =========================================================
+   FINAL MOBILE READER OVERRIDES
+   ========================================================= */
+
+/* ---------- Tablet ---------- */
+
+@media (max-width: 768px) {
+
+    /* -----------------------------
+       STICKY HEADER
+       ----------------------------- */
+
+    .doc-header-inner {
+        padding: 0.6rem 0.85rem;
+        min-height: 48px;
+        gap: 0.65rem;
+    }
+
+    .doc-header .title {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+
+        font-size: 0.92rem;
+        line-height: 1.2;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .header-right {
+        flex: 0 0 auto;
+        gap: 0.55rem;
+    }
+
+    .header-font-control {
+        gap: 0.35rem;
+        margin-bottom: 0;
+    }
+
+    .font-btn-sep {
+        width: 30px;
+        height: 25px;
+        border-radius: 5px;
+        font-size: 0.78rem;
+    }
+
+    .header-logo-img {
+        height: 32px;
+        width: auto;
+    }
+
+
+    /* -----------------------------
+       READING CARD
+       ----------------------------- */
+
+    article:not(.cover-article) {
+        width: calc(100% - 1rem);
+        max-width: none;
+
+        margin: 0.75rem auto 1.5rem;
+
+        padding: 1.35rem 1rem 1.75rem;
+
+        border-radius: 9px;
+    }
+
+    article:not(.cover-article) main {
+        width: 100%;
+        max-width: none;
+    }
+
+
+    /* -----------------------------
+       READING TEXT
+       ----------------------------- */
+
+    article:not(.cover-article) p {
+        font-size: 1rem;
+        line-height: 1.58;
+        margin: 0.55rem 0 0.85rem;
+    }
+
+    article:not(.cover-article) section h2,
+    article:not(.cover-article) .section-title {
+        margin: 1.45rem 0 0.75rem;
+        padding: 0.55rem 0.7rem 0.55rem 0.8rem;
+
+        font-size: 1rem !important;
+        line-height: 1.35;
+    }
+
+    article:not(.cover-article) section h3 {
+        margin: 1.15rem 0 0.55rem;
+        font-size: 0.96rem !important;
+        line-height: 1.4;
+    }
+
+    article:not(.cover-article) section h4 {
+        font-size: 0.9rem !important;
+    }
+
+
+    /* -----------------------------
+       LISTS
+       ----------------------------- */
+
+    article:not(.cover-article) section>ul>li,
+    article:not(.cover-article) section main>ul>li,
+    article:not(.cover-article) ul.notes-list>li {
+        padding-left: 1.15rem;
+        margin-bottom: 0.4rem;
+        line-height: 1.55;
+    }
+
+    article:not(.cover-article) section>ul>li>ul,
+    article:not(.cover-article) section main>ul>li>ul,
+    article:not(.cover-article) ul.notes-sub {
+        padding-left: 0.85rem;
+    }
+
+
+    /* -----------------------------
+       TABLES
+       ----------------------------- */
+
+    /*
+       Don't force the whole page to 560px.
+       Only the table itself should scroll.
+    */
+
+    section {
+        max-width: 100%;
+    }
+
+    section table,
+    .notes-table {
+        min-width: 0;
+    }
+
+    .table-responsive {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    article:not(.cover-article) .table-responsive>table {
+        min-width: 430px;
+    }
+
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) {
+        font-size: 0.8rem !important;
+    }
+
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th,
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) tbody td {
+        padding: 0.45rem 0.4rem;
+    }
+
+
+    /* -----------------------------
+       IMAGES
+       ----------------------------- */
+
+    article:not(.cover-article) figure {
+        width: 100%;
+        margin: 0.9rem auto 1.1rem;
+    }
+
+    article:not(.cover-article) figure img {
+        max-width: 100%;
+        height: auto;
+    }
+
+
+    /* -----------------------------
+       CALLOUTS
+       ----------------------------- */
+
+    article:not(.cover-article) .content-note {
+        margin: 0.85rem 0;
+        padding: 0.75rem 0.85rem;
+    }
+
+
+    /* -----------------------------
+       FLOW DIAGRAMS
+       ----------------------------- */
+
+    article:not(.cover-article) .flow-diagram {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 1rem 0.75rem !important;
+    }
+
+    article:not(.cover-article) .flow-node {
+        max-width: 260px;
+        font-size: 0.82rem;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 576px) {
+
+    /* -----------------------------
+       HEADER
+       ----------------------------- */
+
+    .doc-header-inner {
+        min-height: 44px;
+        padding: 0.5rem 0.65rem;
+        gap: 0.45rem;
+    }
+
+    .doc-header .title {
+        font-size: 0.84rem;
+    }
+
+    .header-right {
+        gap: 0.4rem;
+    }
+
+    .header-font-control {
+        gap: 0.25rem;
+    }
+
+    .font-btn-sep {
+        width: 28px;
+        height: 24px;
+
+        border-radius: 5px;
+
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .header-logo-img {
+        height: 29px;
+    }
+
+
+    /* -----------------------------
+       CONTENT CARD
+       ----------------------------- */
+
+    article:not(.cover-article) {
+        width: calc(100% - 0.5rem);
+
+        margin: 0.25rem auto 1rem;
+
+        padding: 1rem 0.8rem 1.4rem;
+
+        border-radius: 8px;
+
+        box-shadow:
+            0 2px 12px rgba(48, 38, 24, 0.055);
+    }
+
+
+    /* -----------------------------
+       BODY TEXT
+       ----------------------------- */
+
+    body {
+        font-size: 0.94rem;
+    }
+
+    article:not(.cover-article) p {
+        font-size: 0.96rem;
+        line-height: 1.58;
+        margin: 0.5rem 0 0.75rem;
+    }
+
+
+    /* -----------------------------
+       HEADINGS
+       ----------------------------- */
+
+    article:not(.cover-article) section h2,
+    article:not(.cover-article) .section-title {
+        margin: 1.25rem 0 0.7rem;
+
+        padding: 0.5rem 0.65rem 0.5rem 0.7rem;
+
+        font-size: 0.92rem !important;
+        line-height: 1.35;
+    }
+
+    article:not(.cover-article) section h3 {
+        margin: 1rem 0 0.5rem;
+
+        font-size: 0.9rem !important;
+    }
+
+    article:not(.cover-article) section h4 {
+        font-size: 0.86rem !important;
+    }
+
+
+    /* -----------------------------
+       LISTS
+       ----------------------------- */
+
+    article:not(.cover-article) section>ul>li,
+    article:not(.cover-article) section main>ul>li,
+    article:not(.cover-article) ul.notes-list>li {
+        padding-left: 1.05rem;
+        margin-bottom: 0.34rem;
+        line-height: 1.53;
+    }
+
+    article:not(.cover-article) section>ul>li>ul,
+    article:not(.cover-article) section main>ul>li>ul,
+    article:not(.cover-article) ul.notes-sub {
+        padding-left: 0.7rem;
+    }
+
+
+    /* -----------------------------
+       HIGHLIGHTED TEXT
+       ----------------------------- */
+
+    article:not(.cover-article) strong {
+        padding: 0 0.04em;
+    }
+
+
+    /* -----------------------------
+       TABLES
+       ----------------------------- */
+
+    article:not(.cover-article) .table-responsive {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) {
+        min-width: 430px;
+        font-size: 0.76rem !important;
+    }
+
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th,
+    article:not(.cover-article) .table-responsive>table:not(.notes-table) tbody td {
+        padding: 0.4rem 0.3rem;
+    }
+
+
+    /* -----------------------------
+       COVER PAGE
+       ----------------------------- */
+
+    article.cover-article {
+        width: calc(100% - 0.5rem);
+        box-sizing: border-box;
+
+        padding: 0.65rem;
+
+        margin: 0.25rem auto 1rem;
+    }
+
+    .cover-page {
+        min-height: 500px;
+
+        padding: 1.5rem 0.85rem;
+
+        border-width: 1.5px;
+        border-radius: 4px;
+    }
+
+    .cover-logo-img {
+        width: 145px;
+        max-width: 75%;
+    }
+
+    .cover-study-notes {
+        font-size: 0.9rem !important;
+        letter-spacing: 0.04em;
+    }
+
+    .cover-meta-line {
+        font-size: 0.82rem !important;
+        letter-spacing: 0.025em;
+    }
+
+    .cover-subtitle {
+        font-size: 0.82rem !important;
+    }
+
+    .cover-title {
+        font-size: 1.55rem !important;
+        line-height: 1.25;
+    }
+
+    .cover-contact {
+        margin-bottom: 0.5rem;
+    }
+
+    .cover-contact p {
+        font-size: 0.72rem;
+    }
+}
+
+
+/* =========================================================
+   EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .doc-header-inner {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .doc-header .title {
+        font-size: 0.78rem;
+    }
+
+    .header-right {
+        gap: 0.3rem;
+    }
+
+    .font-btn-sep {
+        width: 26px;
+        height: 23px;
+        font-size: 0.7rem;
+    }
+
+    .header-logo-img {
+        height: 26px;
+    }
+
+    article:not(.cover-article) {
+        width: calc(100% - 0.35rem);
+        padding-left: 0.72rem;
+        padding-right: 0.72rem;
+    }
+
+    article:not(.cover-article) p {
+        font-size: 0.94rem;
+    }
+
+    article:not(.cover-article) section h2,
+    article:not(.cover-article) .section-title {
+        font-size: 0.89rem !important;
+    }
+
+    .cover-title {
+        font-size: 1.4rem !important;
+    }
+
+    .cover-logo-img {
+        width: 130px;
+    }
+}
