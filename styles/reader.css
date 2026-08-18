@@ -1651,6 +1651,8 @@ article:not(.cover-article) a:hover {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    align-self: flex-end;
+    margin-bottom: 3px;
 }
 
 .font-btn-sep {
@@ -1658,8 +1660,8 @@ article:not(.cover-article) a:hover {
     border: 1px solid #d8e7d2;
     border-radius: 6px;
 
-    width: 34px;
-    height: 28px;
+    width: 32px;
+    height: 26px;
     padding: 0;
 
     color: #4f943b;
@@ -1714,7 +1716,7 @@ article:not(.cover-article) a:hover {
 }
 
 .header-logo-img {
-    height: 34px;
+    height: 40px;
     width: auto;
     display: block;
 }
