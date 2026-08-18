@@ -311,21 +311,14 @@ def merge_chunks(
   <div class="doc-header-inner">
     <div class="title">Study Notes</div>
     <div class="header-right">
-      <div class="font-size-control">
-        <button id="font-size-toggle" class="font-size-btn" aria-label="Text size settings" title="Text size">
-          <span class="aa-icon">Aa</span>
-        </button>
-        <div id="font-size-popover" class="font-size-popover hidden" role="dialog" aria-label="Text size controls">
-          <div class="popover-row">
-            <button id="font-size-dec" class="font-btn" aria-label="Decrease text size">A−</button>
-            <input type="range" id="font-size-slider" min="0" max="6" step="1" value="0" aria-label="Text size slider"/>
-            <button id="font-size-inc" class="font-btn" aria-label="Increase text size">A+</button>
-          </div>
-          <div id="font-size-value" class="font-size-value">100%</div>
-        </div>
+      <div class="header-font-control">
+        <button id="font-size-dec" class="font-btn-sep" aria-label="Decrease font size" title="Decrease font size">A−</button>
+        <button id="font-size-inc" class="font-btn-sep" aria-label="Increase font size" title="Increase font size">A+</button>
       </div>
       <div class="header-logo-wrap"><img src="{logo_src}" alt="ixamBee Logo" class="header-logo-img"/></div>
     </div>
+
+
   </div>
   <div id="read-progress" class="read-progress"></div>
 </header>
@@ -381,47 +374,20 @@ def merge_chunks(
     document.documentElement.style.setProperty('--reader-font-scale', level.scale);
     localStorage.setItem('readerFontScale', index);
 
-    const valueEl = document.getElementById('font-size-value');
-    const sliderEl = document.getElementById('font-size-slider');
     const decBtn = document.getElementById('font-size-dec');
     const incBtn = document.getElementById('font-size-inc');
 
-    if (valueEl) valueEl.textContent = level.label;
-    if (sliderEl) sliderEl.value = index;
     if (decBtn) decBtn.disabled = (index === 0);
     if (incBtn) incBtn.disabled = (index === FONT_LEVELS.length - 1);
   }}
+
 
   // Apply saved/default scale immediately
   applyFontScale(currentFontIndex);
 
   document.addEventListener("DOMContentLoaded", () => {{
-    const toggleBtn = document.getElementById('font-size-toggle');
-    const popover = document.getElementById('font-size-popover');
-    const sliderEl = document.getElementById('font-size-slider');
     const decBtn = document.getElementById('font-size-dec');
     const incBtn = document.getElementById('font-size-inc');
-
-    if (toggleBtn && popover) {{
-      toggleBtn.addEventListener('click', (e) => {{
-        e.stopPropagation();
-        popover.classList.toggle('hidden');
-        toggleBtn.classList.toggle('active', !popover.classList.contains('hidden'));
-      }});
-
-      document.addEventListener('click', (e) => {{
-        if (!popover.contains(e.target) && !toggleBtn.contains(e.target)) {{
-          popover.classList.add('hidden');
-          toggleBtn.classList.remove('active');
-        }}
-      }});
-    }}
-
-    if (sliderEl) {{
-      sliderEl.addEventListener('input', (e) => {{
-        applyFontScale(parseInt(e.target.value, 10));
-      }});
-    }}
 
     if (decBtn) {{
       decBtn.addEventListener('click', (e) => {{
@@ -442,6 +408,7 @@ def merge_chunks(
     }}
 
     // Dynamic Table of Contents & ScrollSpy
+
     const tocList = document.getElementById('toc-list');
     const sections = document.querySelectorAll('article:not(.cover-article) section, main section');
     
