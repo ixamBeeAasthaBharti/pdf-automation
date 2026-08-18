@@ -1,0 +1,7 @@
+﻿beautifulsoup4
+lxml
+python-dotenv
+google-genai
+mysql-connector-python
+PyMuPDF
+requests
