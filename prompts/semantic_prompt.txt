@@ -382,16 +382,15 @@ Preserve every mathematical symbol exactly.
 Never simplify or rewrite equations.
 -----------------------------------------------------
 TABLES
-If the HTML already contains a correct table,
-preserve the existing HTML table.
-Use the supplied image ONLY to
-- recover missing rows
-- recover missing columns
-- recover missing cells
-- recover merged cells
-- correct OCR errors
-Only reconstruct a complete HTML table from the image if the table does not already exist in the HTML.
-Never replace a correct HTML table with a newly generated one.
+- If the HTML already contains a correct table, preserve the existing HTML table.
+- Many tables in the document are NOT represented as <table> tags or as images in the input HTML. Instead, they are represented as absolute-positioned <div> or <span> elements that are aligned side-by-side (sharing the same or very similar vertical 'top' coordinates, but different horizontal 'left' coordinates).
+- You MUST identify these aligned text blocks and reconstruct them into clean, semantic HTML tables.
+- Look for groups of lines where text is arranged in columns (e.g., two parallel columns like "Farm Activity" on the left and "Non-Farm Activity" on the right).
+- Reconstruct them using <table>, <thead>, <tbody>, <tr>, <th>, and <td>.
+- Never convert a two-column or multi-column table layout into a list (like <ul>, <ol>, or <dl>). It MUST be represented as a <table>.
+- Use the supplied image ONLY to recover missing elements or correct OCR errors.
+- Never replace a correct HTML table with a newly generated one.
+
 
 TABLE IMAGES (CRITICAL — OVERRIDES IMAGE PRESERVATION)
 This rule overrides the general image preservation rule.

@@ -134,12 +134,10 @@
 
 #     print(f"📄 Output saved to:\n{OUTPUT_FILE}")
 # if __name__ == "__main__":
-#     run_gemini()
-
-
 from importlib.resources import contents
 from pathlib import Path
 import os
+import sys
 import time
 import json
 from dotenv import load_dotenv
@@ -147,18 +145,51 @@ from google import genai
 from google.genai import types
 from bs4 import BeautifulSoup
 
+# Force UTF-8 output on Windows terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # =====================================================
-# LOAD ENVIRONMENT
+# LOAD ENVIRONMENT — multi-key rotation
 # =====================================================
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
-API_KEY = os.getenv("GEMINI_API_KEY")
-print(f"Using API key: {API_KEY[:10]}...{API_KEY[-4:]}")
+def _load_api_keys() -> list[str]:
+    """
+    Read GEMINI_API_KEY_1, _2, _3 (and the legacy GEMINI_API_KEY) from .env.
+    Returns a deduplicated list of all non-empty keys in priority order.
+    """
+    candidates = [
+        os.getenv("GEMINI_API_KEY_1", ""),
+        os.getenv("GEMINI_API_KEY_2", ""),
+        os.getenv("GEMINI_API_KEY_3", ""),
+        os.getenv("GEMINI_API_KEY", ""),   # legacy single-key fallback
+    ]
+    seen = set()
+    keys = []
+    for k in candidates:
+        k = k.strip()
+        if k and k not in seen:
+            seen.add(k)
+            keys.append(k)
+    return keys
 
-if not API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY not found in .env")
+API_KEYS = _load_api_keys()
 
-client = genai.Client(api_key=API_KEY)
+if not API_KEYS:
+    raise ValueError(
+        "No Gemini API keys found in .env.\n"
+        "Set GEMINI_API_KEY_1 (and optionally _2, _3)."
+    )
+
+print(f"[Gemini] Loaded {len(API_KEYS)} API key(s). Primary: {API_KEYS[0][:10]}...{API_KEYS[0][-4:]}")
+
+# Build a client for each key — rotated on quota exhaustion
+_CLIENTS = [genai.Client(api_key=k) for k in API_KEYS]
+
+# Keep a legacy reference so existing code that uses `client` still works
+client = _CLIENTS[0]
+
 
 # =====================================================
 # PATHS
@@ -241,7 +272,12 @@ def get_figure(page_number):
 
     return None
 
-def process_chunk(chunk_file: Path):
+def process_chunk(chunk_file: Path, processed_dir: Path = None, image_dir: Path = None):
+    # Fall back to legacy global paths when called from converter.py / standalone
+    if processed_dir is None:
+        processed_dir = PROCESSED_DIR
+    if image_dir is None:
+        image_dir = ROOT / "images"
 
     html = chunk_file.read_text(encoding="utf-8")
     full_prompt = build_prompt(html)
@@ -264,7 +300,9 @@ def process_chunk(chunk_file: Path):
             # fallback: just take the part from 'images/' onward
             clean_src = "images/" + src.split("images/", 1)[1]
 
-        page_image = ROOT / clean_src
+        # Resolve image path: prefer the per-doc image_dir, then fall back to ROOT
+        candidate = image_dir / Path(clean_src).name
+        page_image = candidate if candidate.exists() else ROOT / clean_src
 
         page_number = int(page_image.stem.split("_")[1])
 
@@ -312,21 +350,35 @@ def process_chunk(chunk_file: Path):
         else:
             print(f"   {image['path'].name} -> using PAGE")
 
-    for attempt in range(5):  #for debugging change back to 5 afterwards#################
-        try:
+    # ------------------------------------------------------------------
+    # Two-level retry: 5 attempts per key, then rotate to next key.
+    # Quota / rate-limit signals: 429, 503, RESOURCE_EXHAUSTED
+    # ------------------------------------------------------------------
+    RETRIES_PER_KEY = 5
+    QUOTA_SIGNALS   = ("429", "503", "resource_exhausted", "quota", "rate")
 
-            print(f"\n{'=' * 60}")
-            print(f"\nAttempt {attempt + 1}/5")
-            print(f"Processing: {chunk_file.name}")
-            print(f"Characters: {len(html):,}")
-            print(f"{'=' * 60}")
+    def _is_quota_error(exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return any(sig in msg for sig in QUOTA_SIGNALS)
 
-            contents = [full_prompt]
+    for key_idx, active_client in enumerate(_CLIENTS):
+        key_label = f"Key {key_idx + 1}/{len(_CLIENTS)} ({API_KEYS[key_idx][:10]}...)"
+        print(f"\n[Gemini] Using {key_label}")
 
-            for image in images:
+        for attempt in range(RETRIES_PER_KEY):
+            try:
+                print(f"\n{'=' * 60}")
+                print(f"Attempt {attempt + 1}/{RETRIES_PER_KEY}  |  {key_label}")
+                print(f"Processing: {chunk_file.name}")
+                print(f"Characters: {len(html):,}")
+                print(f"{'=' * 60}")
 
-                contents.append(
-                f"""
+                contents = [full_prompt]
+
+                for image in images:
+
+                    contents.append(
+                    f"""
 VISUAL FOR HTML IMAGE
 
 This binary corresponds to:
@@ -363,98 +415,114 @@ END VISUAL
                 """
                 )
 
-                contents.append(
-                    types.Part.from_bytes(
-                        data=image["bytes"],
-                        mime_type="image/png",
+                    contents.append(
+                        types.Part.from_bytes(
+                            data=image["bytes"],
+                            mime_type="image/png",
+                        )
                     )
+
+                print(f"Sending {len(images)} visual references to Gemini")
+
+                response = active_client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        temperature=0,
+                    ),
                 )
-            
 
-            print(f"Sending {len(image_parts)} images to Gemini")
+                result = response.text.strip()
 
-            print(f"Sending {len(images)} visual references to Gemini")
+                print("=" * 60)
+                print("IMG TAGS IN SOURCE :", html.count("<img"))
+                print("IMG TAGS IN RESULT :", result.count("<img"), "(table images intentionally converted to HTML)")
+                print("=" * 60)
 
-            response = client.models.generate_content(
-                model="gemini-3.6-flash",
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    temperature=0,
-                ),
-            )
+                if result.startswith("```html"):
+                    result = result[7:].lstrip()
+                elif result.startswith("```"):
+                    result = result[3:].lstrip()
+                if result.endswith("```"):
+                    result = result[:-3].rstrip()
 
-            result = response.text.strip()
+                output = processed_dir / chunk_file.name
+                output.write_text(result, encoding="utf-8")
+                print(f"[OK] Saved {output.name}")
+                return  # success — done
 
-            print("=" * 60)
-            print("IMG TAGS IN SOURCE :", html.count("<img"))
-            print("IMG TAGS IN RESULT :", result.count("<img"), "(table images intentionally converted to HTML)")
-            print("=" * 60)
+            except Exception as e:
+                print(f"[Gemini] Attempt {attempt + 1}/{RETRIES_PER_KEY} failed: {e}")
 
-            if result.startswith("```html"):
-                result = result[7:].lstrip()
+                if _is_quota_error(e):
+                    # Quota/rate error — wait briefly then retry on same key
+                    wait = min(30 * (attempt + 1), 120)
+                    if attempt < RETRIES_PER_KEY - 1:
+                        print(f"[Gemini] Rate limit hit. Waiting {wait}s before retry...")
+                        time.sleep(wait)
+                    else:
+                        # All retries on this key exhausted — break to next key
+                        print(f"[Gemini] All {RETRIES_PER_KEY} attempts on {key_label} failed.")
+                        if key_idx < len(_CLIENTS) - 1:
+                            print(f"[Gemini] Rotating to Key {key_idx + 2}...")
+                        break  # exit inner loop → try next key
+                else:
+                    # Non-retriable error (bad request, auth failure, etc.)
+                    raise
 
-            elif result.startswith("```"):
-                result = result[3:].lstrip()
-
-            if result.endswith("```"):
-                result = result[:-3].rstrip()
-
-            output = PROCESSED_DIR / chunk_file.name
-
-            output.write_text(result, encoding="utf-8")
-
-            print(f"[OK] Saved {output.name}")
-
-            return
-
-        except Exception as e:
-
-            print(f"Attempt {attempt + 1}/5 failed")
-            print(e)
-
-            if "503" not in str(e):
-                raise
-
-            wait = min(30 * (attempt + 1), 120)
-
-            print(f"Retrying in {wait} sec")
-
-            time.sleep(wait)
-
-    raise RuntimeError(f"Failed: {chunk_file.name}")
+    # All keys exhausted
+    raise RuntimeError(
+        f"[Gemini] All {len(_CLIENTS)} API key(s) exhausted for {chunk_file.name}.\n"
+        f"         Keys tried: {len(_CLIENTS)}  |  Attempts per key: {RETRIES_PER_KEY}\n"
+        f"         Total attempts: {len(_CLIENTS) * RETRIES_PER_KEY}\n"
+        f"         Check your daily quota at https://aistudio.google.com"
+    )
 
 
 
 # =====================================================
 # SEND TO GEMINI
 # =====================================================
-def run_gemini():
+def run_gemini(
+    chunk_dir: Path = None,
+    processed_dir: Path = None,
+    image_dir: Path = None,
+    figure_dir: Path = None,
+):
+    """
+    Process all chunks in chunk_dir through Gemini.
+    Optional path parameters override the legacy global paths so this function
+    can be called from batch_runner / pipeline with per-document isolated dirs.
+    """
+    # Fall back to legacy global paths when called from converter.py / standalone
+    if chunk_dir is None:
+        chunk_dir = CHUNK_DIR
+    if processed_dir is None:
+        processed_dir = PROCESSED_DIR
+    if image_dir is None:
+        image_dir = ROOT / "images"
 
-    if not CHUNK_DIR.exists():
+    if not chunk_dir.exists():
         raise FileNotFoundError(
-            f"Chunk directory not found:\n{CHUNK_DIR}"
+            f"Chunk directory not found:\n{chunk_dir}"
         )
 
-    PROCESSED_DIR.mkdir(exist_ok=True)
+    processed_dir.mkdir(parents=True, exist_ok=True)
 
-    chunks = sorted(CHUNK_DIR.glob("chunk_*.html"))
-
-   
+    chunks = sorted(chunk_dir.glob("chunk_*.html"))
 
     print(f"\nFound {len(chunks)} chunks\n")
 
     for index, chunk in enumerate(chunks, start=1):
         print(f"\nChunk {index}/{len(chunks)}")
 
-        processed = PROCESSED_DIR / chunk.name
+        processed = processed_dir / chunk.name
 
         if processed.exists():
-
             print(f"Skipping {chunk.name}")
-
             continue
 
-        process_chunk(chunk)
+        process_chunk(chunk, processed_dir=processed_dir, image_dir=image_dir)
 
     print("\nAll chunks processed.")
     
