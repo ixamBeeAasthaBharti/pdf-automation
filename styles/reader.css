@@ -8,9 +8,11 @@
 
 /* Cover page container: handles padding and border inset */
 article.cover-article {
-    max-width: 752px;
+    width: 100%;
+    max-width: 792px;
+    box-sizing: border-box;
     padding: 1.25rem;
-    margin-bottom: 2rem;
+    margin: 2rem auto;
 }
 
 /* Inner box with the navy border */
@@ -144,7 +146,8 @@ body {
    ===================================================== */
 article {
     width: 100%;
-    max-width: 720px;
+    max-width: 792px;
+    box-sizing: border-box;
     background: var(--page);
     border: 1px solid var(--hairline);
     box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
@@ -1035,6 +1038,19 @@ article:not(.cover-article) {
     box-sizing: border-box;
 }
 
+article.cover-article {
+    width: min(100% - 2rem, 820px);
+    max-width: 820px;
+    margin: 2.25rem auto 2rem;
+    background: var(--reader-page);
+    border: 1px solid rgba(230, 221, 205, .9);
+    border-radius: 10px;
+    box-shadow:
+        0 2px 8px rgba(48, 38, 24, .035),
+        0 18px 45px rgba(48, 38, 24, .07);
+    box-sizing: border-box;
+}
+
 
 article:not(.cover-article) main {
     width: 100%;
@@ -1873,12 +1889,20 @@ article .notes-table tbody th {
 
     /* ---------- Article ---------- */
 
-    article:not(.cover-article) {
+    article:not(.cover-article),
+    article.cover-article {
         width: calc(100% - 16px);
         max-width: none;
         margin: .5rem auto 1.5rem;
-        padding: 1.15rem .9rem 1.5rem;
         box-sizing: border-box;
+    }
+
+    article:not(.cover-article) {
+        padding: 1.15rem .9rem 1.5rem;
+    }
+
+    article.cover-article {
+        padding: 0.65rem;
     }
 
     article:not(.cover-article) main {
@@ -2050,7 +2074,8 @@ article .notes-table tbody th {
         max-width: 85px;
     }
 
-    article:not(.cover-article) {
+    article:not(.cover-article),
+    article.cover-article {
         width: calc(100% - 10px);
         padding-left: .8rem;
         padding-right: .8rem;
