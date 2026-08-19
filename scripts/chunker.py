@@ -14,14 +14,17 @@ def chunk_html(input_file: Path, output_dir: Path, max_chars=MAX_CHARS):
 
     soup = BeautifulSoup(html, "lxml")
 
-    # Find every PDF24 page
+    # Find pages (PDF24 div#page_... or div.page or PyMuPDF section.pdf-page)
     pages = soup.find_all(
-        "div",
-        id=lambda x: x and x.startswith("page_")
+        lambda tag: tag.name in ["div", "section"] and (
+            (tag.get("id") and tag.get("id").startswith("page_")) or
+            ("page" in tag.get("class", [])) or
+            ("pdf-page" in tag.get("class", []))
+        )
     )
 
     if not pages:
-        raise RuntimeError("No pages found.")
+        raise RuntimeError("No pages found in HTML.")
 
     chunk_number = 1
 

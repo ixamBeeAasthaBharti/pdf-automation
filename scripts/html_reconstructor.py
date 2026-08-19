@@ -60,8 +60,11 @@ def reconstruct_html(
     image_map = json.loads(image_map_path.read_text(encoding="utf-8")) if image_map_path.exists() else []
 
     pages = soup.find_all(
-        "div",
-        id=lambda x: x and x.startswith("page_")
+        lambda tag: tag.name in ["div", "section"] and (
+            (tag.get("id") and tag.get("id").startswith("page_")) or
+            ("page" in tag.get("class", [])) or
+            ("pdf-page" in tag.get("class", []))
+        )
     )
 
     for page in pages:
@@ -141,7 +144,7 @@ def reconstruct_html(
                 parent_container.append(child)
 
 
-    print(f"Pages found : {len(soup.find_all(id=lambda x: x and x.startswith('page_')))}")
+    print(f"Pages found : {len(pages)}")
     print(f"Images found: {len(image_map)}")
 
     output_html.parent.mkdir(parents=True, exist_ok=True)

@@ -425,12 +425,18 @@ END VISUAL
                 print(f"Sending {len(images)} visual references to Gemini")
 
                 response = active_client.models.generate_content(
-                    model="gemini-3.6-flash",
+                    model="gemini-3.5-flash",
                     contents=contents,
                     config=types.GenerateContentConfig(
                         temperature=0,
                     ),
                 )
+
+                if not response.text:
+                    finish_reason = "UNKNOWN"
+                    if response.candidates and len(response.candidates) > 0:
+                        finish_reason = response.candidates[0].finish_reason
+                    raise ValueError(f"'NoneType' object has no attribute 'strip'. Gemini API returned empty text. Finish reason: {finish_reason}")
 
                 result = response.text.strip()
 

@@ -32,34 +32,36 @@ QUEUE_DIR = ROOT / "storage" / "queue"
 BASE_URL  = "https://www.ixambee.com/miscellaneous-pdf/"
 
 
-def fetch_next(count: int = 1) -> list[int]:
+def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
     """
-    Fetch the next N eligible rows from MySQL, download their PDFs, and
-    register them in local SQLite + MySQL htmltopdfautomation.
+    Fetch the next N eligible rows from MySQL (or specific target IDs), 
+    download their PDFs, and register them in local SQLite + MySQL htmltopdfautomation.
 
-    Filters applied:
-      - type_order  = 2
-      - status      = 1       (active/published content only)
-      - expiry_date > NOW()   (not expired)
-      - htmltopdfstatus = 0   (not yet processed by this pipeline)
-
-    Returns a list of mysql_ids that were fetched (may be fewer than
-    requested if not enough eligible rows exist).
+    Returns a list of mysql_ids that were fetched.
     """
     conn   = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Pick next N unprocessed, active, non-expired PDFs (lowest id first)
-    cursor.execute("""
-        SELECT id, content
-        FROM   tbl_studymaterial_lang_map
-        WHERE  type_order      = 2
-          AND  status          = 1
-          AND  htmltopdfstatus = 0
-          AND  (expiry_date IS NULL OR expiry_date > NOW())
-        ORDER  BY id ASC
-        LIMIT  %s
-    """, (count,))
+    if target_ids:
+        format_strings = ','.join(['%s'] * len(target_ids))
+        query = f"""
+            SELECT id, content
+            FROM   tbl_studymaterial_lang_map
+            WHERE  id IN ({format_strings})
+        """
+        cursor.execute(query, tuple(target_ids))
+    else:
+        cursor.execute("""
+            SELECT id, content
+            FROM   tbl_studymaterial_lang_map
+            WHERE  type_order      = 2
+              AND  status          = 1
+              AND  htmltopdfstatus = 0
+              AND  (expiry_date IS NULL OR expiry_date > NOW())
+            ORDER  BY id ASC
+            LIMIT  %s
+        """, (count,))
+        
     rows = cursor.fetchall()
 
     if not rows:
