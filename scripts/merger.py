@@ -303,25 +303,58 @@ def merge_chunks(
 <title>Study Notes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{css_href}"/>
+<style>
+  /* Width design */
+  .page, article {{ max-width: 900px !important; margin: 2rem auto !important; }}
+  
+  /* Font controls design matching screenshot */
+  .font-controls {{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }}
+  .font-btn {{
+    background: none;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.85rem;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    color: #999;
+  }}
+  .font-btn.active, .font-btn:hover {{
+    border-color: var(--green);
+    color: var(--green);
+    background-color: var(--green-light);
+  }}
+  
+  /* Header layout overrides for screenshot */
+  .doc-header .title {{
+    color: var(--navy) !important;
+    font-weight: 700 !important;
+  }}
+</style>
 </head>
 <body>
 
-<header class="doc-header">
-  <div class="doc-header-inner">
-    <div class="title">Study Notes</div>
-    <div class="header-right">
-      <div class="header-font-control">
-        <button id="font-size-dec" class="font-btn-sep" aria-label="Decrease font size" title="Decrease font size">A−</button>
-        <button id="font-size-inc" class="font-btn-sep" aria-label="Increase font size" title="Increase font size">A+</button>
-      </div>
-      <div class="header-logo-wrap"><img src="{logo_src}" alt="ixamBee Logo" class="header-logo-img"/></div>
+<header class="doc-header d-flex align-items-center justify-content-between sticky-top py-2 px-4">
+  <span class="title">Study Notes</span>
+  
+  <div class="d-flex align-items-center gap-3">
+    <!-- Font size controls -->
+    <div class="font-controls">
+      <button onclick="changeFontSize(-1)" class="font-btn">A-</button>
+      <button onclick="changeFontSize(1)" class="font-btn active">A+</button>
     </div>
-
-
+    <img src="{logo_src}" alt="ixamBee Logo" class="logo" style="height: 32px; width: auto;">
   </div>
-  <div id="read-progress" class="read-progress"></div>
+  
+  <!-- Reading progress bar -->
+  <div class="read-progress" id="read-progress" aria-hidden="true"></div>
 </header>
 
 
@@ -333,6 +366,15 @@ def merge_chunks(
   const globalProgressBar = document.getElementById('read-progress');
   const tocProgressBar = document.getElementById('toc-progress-bar');
   
+  // Font resize logic
+  let currentFontSize = 1;
+  function changeFontSize(step) {{
+    currentFontSize += step * 0.1;
+    if (currentFontSize < 0.8) currentFontSize = 0.8;
+    if (currentFontSize > 1.6) currentFontSize = 1.6;
+    document.body.style.fontSize = currentFontSize + 'rem';
+  }}
+
   // Smooth scrolling & progress calculation
   window.addEventListener('scroll', () => {{
     const scrollTop = window.scrollY;
@@ -482,6 +524,7 @@ def merge_chunks(
     # Chunks from reconstructor use '../images/' (relative to chunk dir)
     # Gemini PATH-C output uses 'images/' — both must resolve to sibling images/
     raw_html = raw_html.replace('src="../images/', f'src="{images_prefix}')
+    raw_html = raw_html.replace('src="./images/',  f'src="{images_prefix}')
     raw_html = raw_html.replace('src="images/',    f'src="{images_prefix}')
 
     # --------------------------------------------------

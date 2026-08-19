@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).parent.parent
 
-MAX_CHARS = 180000
+MAX_CHARS = 50000
 
 
 def chunk_html(input_file: Path, output_dir: Path, max_chars=MAX_CHARS):

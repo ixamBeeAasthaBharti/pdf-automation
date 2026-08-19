@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Study Notes</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="../../../styles/reader.css" rel="stylesheet" />
+  <style>
+    /* Width design */
+    .page,
+    article {
+      max-width: 900px !important;
+      margin: 2rem auto !important;
+    }
+
+    /* Font controls design matching screenshot */
+    .font-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .font-btn {
+      background: none;
+      border: 1px solid #dcdcdc;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .font-btn.active,
+    .font-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background-color: var(--green-light);
+    }
+
+    /* Header layout overrides for screenshot */
+    .doc-header .title {
+      color: var(--navy) !important;
+      font-weight: 700 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="doc-header d-flex align-items-center justify-content-between sticky-top py-2 px-4">
+    <span class="title">Study Notes</span>
+    <div class="d-flex align-items-center gap-3">
+      <!-- Font size controls -->
+      <div class="font-controls">
+        <button class="font-btn" onclick="changeFontSize(-1)">A-</button>
+        <button class="font-btn active" onclick="changeFontSize(1)">A+</button>
+      </div>
+
+    </div>
+    <!-- Reading progress bar -->
+    <div aria-hidden="true" class="read-progress" id="read-progress"></div>
+  </header>
+
+  <article class="cover-article">
+    <div class="cover-page">
+      <div class="cover-logo-wrap"><img alt="ixamBee" class="cover-logo-img" src="../assets/logo.png" /></div>
+      <div class="cover-body">
+        <h1 class="cover-title">Study Notes</h1>
+        <p class="cover-subtitle">Public Goods</p>
+      </div>
+      <div class="cover-contact">
+      </div>
+    </div>
+  </article>
+  <article>
+
+    <main>
+      <section id="public-goods">
+        <h2>Public Goods</h2>
+        <section id="introduction-public-goods">
+          <h3>Introduction: Public goods</h3>
+          <ul>
+            <li>A pure public goods is defined, as goods that one person’s consumption of the goods does not reduce the
+              amount available to others i.e. the consumption of a public good is non-rival.</li>
+          </ul>
+          <div class="extracted-table-block">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Excludable</th>
+                    <th>Non-Excludable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>Rival</th>
+                    <td>
+                      <strong>Private Goods</strong><br />
+                      "Typical Goods"<br />
+                      (Clothes, Food, Flowers, etc.)
+                    </td>
+                    <td>
+                      <strong>Common Goods</strong><br />
+                      "Common Pool Resources"<br />
+                      (Mines, Fisheries, Forests, etc.)
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Non-Rival</th>
+                    <td>
+                      <strong>Club Goods</strong><br />
+                      "Artificially Scarce Goods"<br />
+                      (Cable TV, Private Parks, Cinemas, etc.)
+                    </td>
+                    <td>
+                      <strong>Public Goods</strong><br />
+                      "Collective Goods"<br />
+                      (Air, News, Sunshine, etc.)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="extracted-note">Figure 1. Distinction of goods<br />Source: Web search</p>
+          </div>
+          <ul>
+            <li>Public goods once produced, can be consumed by an additional consumer at no additional cost.</li>
+            <li>The benefits are available to all without mutual interference</li>
+            <li>Supplies of these goods are available to each person in community</li>
+            <li>Thus, existence of public goods creates problems for price system</li>
+            <li>They are underproduced or may not be produced at all in the private sector</li>
+            <li>Therefore, either they are provided by government or government forces the people to contribute to the
+              production of public goods, and then allow all citizens to consume them.</li>
+          </ul>
+        </section>
+        <section id="characteristics-of-public-goods">
+          <h3>Characteristics of Public goods</h3>
+          <figure>
+            <img alt="Characteristics of Public goods" height="124" src="images/page_002_img_001.png" width="204" />
+            <figcaption>Figure 2. Characteristics of Public goods<br />Source: Web search</figcaption>
+          </figure>
+          <ul>
+            <li>
+              There are two basic characteristics of public goods
+              <ul>
+                <li>
+                  <strong>Non-rival consumption:</strong> A good is non-rival in consumption when, with a given level of
+                  production, consumption by one person need not diminish the quantity consumed by anyone else.
+                  <ul>
+                    <li>A number of people may simultaneously consume the same good.</li>
+                    <li>The cost of extending the service or providing the good to another person is zero</li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Non-exclusion:</strong> Non-exclusion means that it is impossible to confine the benefits of
+                  the good (once produced) to selected persons
+                  <ul>
+                    <li>It is impossible to exclude anyone from enjoying the benefits of a public good</li>
+                    <li>A person, whether he pays for it or not, will benefit from the production of the public good
+                      (free-rider)</li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li>Some other features of public goods includes Non-Rejectable, free-rider problem</li>
+            <li><strong>Indivisibility:</strong> All consumers can get equal amount benefit from public goods provided
+              they are capable of consuming it.</li>
+            <li><strong>Externality:</strong> The benefits accrued from public good are external to the consumer. They
+              are subject to the principle of consumer sovereignty. They are produced on the basis of individual
+              preference, but the satisfaction derived from public goods by an individual consumer is independent of his
+              own contribution. This is so because, the cost met by government through budget</li>
+            <li><strong>Benefit Obscure:</strong> It is very difficult to realise the benefit from public good</li>
+            <li><strong>Payee and Beneficiary not identical:</strong> The same who pays for it to make its provision
+              certainly are not a real beneficiary</li>
+            <li>
+              Examples
+              <ul>
+                <li>National Defence</li>
+                <li>Roads</li>
+                <li>Government parks</li>
+                <li>Street lights</li>
+                <li>Traffic lights</li>
+              </ul>
+            </li>
+          </ul>
+          <figure>
+            <img alt="Examples of Public goods" height="216" src="images/page_002_img_002.png" width="189" />
+            <figcaption>Figure 3. Examples of Public goods<br />Source: Web search</figcaption>
+          </figure>
+        </section>
+        <section id="market-failure-of-public-good">
+          <h3>Market Failure of Public Good</h3>
+          <p>Market failure is a situation where there is inefficient distribution of goods and services in the free
+            market.</p>
+          <section id="optimal-quantity">
+            <h4>Optimal Quantity</h4>
+            <ul>
+              <li>The demand curve is the marginal social benefit curve</li>
+              <li>The supply curve is the marginal social cost curve</li>
+              <li>The optimal quantity of the Public good to be produced is given by MSB=MSC (Fig 4.)</li>
+              <li>i.e. Marginal Social benefit = Marginal Social Cost</li>
+            </ul>
+            <figure>
+              <img alt="Optimal amount of Public goods" height="204" src="images/page_003_img_003.png" width="246" />
+              <figcaption>Figure 4. Optimal amount of Public goods<br />Source: Web search</figcaption>
+            </figure>
+          </section>
+          <section id="underproduction-of-public-goods">
+            <h4>Underproduction of Public Goods</h4>
+            <ul>
+              <li>Presence of <strong>free riders</strong> makes it difficult or impossible for market to provide public
+                goods efficiently.</li>
+              <li>Therefore, the quantity Q, produced otherwise is reduced to Q1. (Fig 5.)</li>
+              <li>Q1Q is the underproduction</li>
+              <li>And ABC represents the welfare loss</li>
+              <li>In this case private arrangements are usually ineffective</li>
+              <li>For efficient production, public good must be subsidized or provided by governments</li>
+              <li>However, in the real world application of public goods theory has certain problems</li>
+              <li>Many public goods are successfully produced in the private sector</li>
+              <li>Many of the goods actually produced do not correspond to economic definition of public goods.</li>
+              <li>Thus, public goods certainly exist but production in the public sector neither necessary nor
+                sufficient for the efficient production of public goods</li>
+            </ul>
+            <p class="summary">Figure 5. Market failure of Public goods<br />Source: Web search</p>
+          </section>
+        </section>
+      </section>
+    </main>
+  </article>
+  <script>
+    const header = document.querySelector('.doc-header');
+    const globalProgressBar = document.getElementById('read-progress');
+    const tocProgressBar = document.getElementById('toc-progress-bar');
+
+    // Font resize logic
+    let currentFontSize = 1;
+    function changeFontSize(step) {
+      currentFontSize += step * 0.1;
+      if (currentFontSize < 0.8) currentFontSize = 0.8;
+      if (currentFontSize > 1.6) currentFontSize = 1.6;
+      document.body.style.fontSize = currentFontSize + 'rem';
+    }
+
+    // Smooth scrolling & progress calculation
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      if (header) {
+        header.classList.toggle('scrolled', scrollTop > 10);
+      }
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progressPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      if (globalProgressBar) {
+        globalProgressBar.style.width = progressPercent + '%';
+      }
+      if (tocProgressBar) {
+        tocProgressBar.style.width = progressPercent + '%';
+      }
+    }, { passive: true });
+
+    // Kindle-style Font Size Controls
+    const FONT_LEVELS = [
+      { label: '100%', scale: 1.0 },
+      { label: '110%', scale: 1.1 },
+      { label: '120%', scale: 1.2 },
+      { label: '130%', scale: 1.3 },
+      { label: '140%', scale: 1.4 },
+      { label: '155%', scale: 1.55 },
+      { label: '170%', scale: 1.7 }
+    ];
+
+    let currentFontIndex = 0;
+    const savedFontIndex = localStorage.getItem('readerFontScale');
+    if (savedFontIndex !== null && !isNaN(savedFontIndex)) {
+      const parsedIndex = parseInt(savedFontIndex, 10);
+      if (parsedIndex >= 0 && parsedIndex < FONT_LEVELS.length) {
+        currentFontIndex = parsedIndex;
+      }
+    }
+
+    function applyFontScale(index) {
+      currentFontIndex = index;
+      const level = FONT_LEVELS[index];
+      document.documentElement.style.setProperty('--reader-font-scale', level.scale);
+      localStorage.setItem('readerFontScale', index);
+
+      const decBtn = document.getElementById('font-size-dec');
+      const incBtn = document.getElementById('font-size-inc');
+
+      if (decBtn) decBtn.disabled = (index === 0);
+      if (incBtn) incBtn.disabled = (index === FONT_LEVELS.length - 1);
+    }
+
+
+    // Apply saved/default scale immediately
+    applyFontScale(currentFontIndex);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const decBtn = document.getElementById('font-size-dec');
+      const incBtn = document.getElementById('font-size-inc');
+
+      if (decBtn) {
+        decBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (currentFontIndex > 0) {
+            applyFontScale(currentFontIndex - 1);
+          }
+        });
+      }
+
+      if (incBtn) {
+        incBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (currentFontIndex < FONT_LEVELS.length - 1) {
+            applyFontScale(currentFontIndex + 1);
+          }
+        });
+      }
+
+      // Dynamic Table of Contents & ScrollSpy
+
+      const tocList = document.getElementById('toc-list');
+      const sections = document.querySelectorAll('article:not(.cover-article) section, main section');
+
+      if (tocList && sections.length > 0) {
+        sections.forEach(section => {
+          const heading = section.querySelector('h2.section-title, h2, h1, h3');
+          const sectionId = section.getAttribute('aria-labelledby') || section.id || heading?.id;
+
+          if (heading) {
+            if (!section.id) {
+              section.id = (sectionId || heading.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace('-heading', '-section');
+            }
+            const targetId = section.id;
+
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `#${targetId}`;
+            a.textContent = heading.textContent.trim();
+
+            a.addEventListener('click', (e) => {
+              e.preventDefault();
+              const targetEl = document.getElementById(targetId);
+              if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth' });
+                history.pushState(null, null, `#${targetId}`);
+              }
+            });
+
+            li.appendChild(a);
+            tocList.appendChild(li);
+          }
+        });
+
+        const tocLinks = tocList.querySelectorAll('a');
+        const observerOptions = {
+          root: null,
+          rootMargin: '-15% 0px -60% 0px',
+          threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              tocLinks.forEach(link => {
+                link.classList.remove('active');
+                link.removeAttribute('aria-current');
+                if (link.getAttribute('href') === `#${id}`) {
+                  link.classList.add('active');
+                  link.setAttribute('aria-current', 'true');
+                }
+              });
+            }
+          });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+      }
+    });
+  </script>
+</body>
+
+</html>

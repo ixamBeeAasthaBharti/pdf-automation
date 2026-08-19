@@ -259,6 +259,10 @@ The number of <img> tags in the output must equal the number in the input.
 
 Return ONLY valid HTML.
 
+CRITICAL: DO NOT output any reasoning, thinking, or explanations.
+CRITICAL: Your entire response MUST be raw, valid HTML and nothing else.
+CRITICAL: Do NOT output any text before the HTML starts or after it ends.
+
 Do not wrap the output inside markdown code fences.
 """
 
@@ -411,6 +415,7 @@ Action:
 - Do NOT change the src attribute.
 - Wrap in <figure><img src="images/{image['path'].name}"><figcaption>...</figcaption></figure>.
 
+CRITICAL: DO NOT EXPLAIN YOUR CLASSIFICATION. DO NOT THINK OUT LOUD. JUST APPLY THE ACTION DIRECTLY TO THE HTML.
 END VISUAL
                 """
                 )
@@ -425,7 +430,7 @@ END VISUAL
                 print(f"Sending {len(images)} visual references to Gemini")
 
                 response = active_client.models.generate_content(
-                    model="gemini-3.5-flash",
+                    model="gemini-3.6-flash",
                     contents=contents,
                     config=types.GenerateContentConfig(
                         temperature=0,
