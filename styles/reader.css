@@ -97,7 +97,8 @@ article.cover-article {
 /* Responsive cover image styling */
 .cover-image-wrap {
     margin: 1.5rem auto 0;
-    max-width: 640px; /* Larger layout */
+    max-width: 640px;
+    /* Larger layout */
     width: 100%;
     display: flex;
     justify-content: center;
@@ -1706,6 +1707,7 @@ article:not(.cover-article) a:hover {
     left: 0;
     right: 0;
     width: 100%;
+    max-width: 100%;
     margin: 0;
     padding: 0;
     z-index: 1000;
@@ -1714,6 +1716,7 @@ article:not(.cover-article) a:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
     font-family: Arial, Helvetica, sans-serif;
+    overflow: visible;
 }
 
 .doc-header.scrolled {
@@ -1975,7 +1978,6 @@ article .notes-table tbody th {
     body {
         width: 100%;
         max-width: 100%;
-        overflow-x: hidden;
     }
 
     /* ---------- Article ---------- */
@@ -2020,6 +2022,7 @@ article .notes-table tbody th {
         overflow: hidden;
     }
 
+
     .doc-header-inner {
         width: 100%;
         max-width: 100%;
@@ -2027,6 +2030,20 @@ article .notes-table tbody th {
         padding: .55rem .75rem;
         gap: .5rem;
         box-sizing: border-box;
+        position: relative;
+    }
+
+
+    .read-progress {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 0%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--green), var(--navy));
+        transition: width 0.08s linear;
+        z-index: 1001;
+        display: block;
     }
 
     .doc-header .title {
@@ -2136,6 +2153,7 @@ article .notes-table tbody th {
    ========================================================= */
 
 @media (max-width: 480px) {
+
 
     .doc-header-inner {
         padding: .5rem .6rem;
