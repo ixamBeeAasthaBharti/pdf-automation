@@ -81,10 +81,17 @@ if (preg_match('/<body[^>]*>(.*?)<\/body>/si', $rawHtml, $bm)) {
 /* Remove the old embedded sticky header (master.php renders its own) */
 $bodyContent = preg_replace('/<header\s[^>]*class="[^"]*doc-header[^"]*"[^>]*>.*?<\/header>/si', '', $bodyContent);
 
-/* Format cover title to make the topic large and "Study Notes" small */
+/* Format cover title for documents where topic is in cover-subtitle */
 $bodyContent = preg_replace(
     '/(<h1[^>]*class="[^"]*cover-title[^"]*"[^>]*>)(.*?)(<\/h1>)\s*<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si',
     '<p class="cover-study-notes">$2</p>$1$4$3',
+    $bodyContent
+);
+
+/* Format cover title for documents where title and topic are combined in a single cover-title */
+$bodyContent = preg_replace(
+    '/(<h1[^>]*class="[^"]*cover-title[^"]*"[^>]*>)\s*Study Notes:\s*(.*?)(<\/h1>)/si',
+    '<p class="cover-study-notes">Study Notes</p>$1$2$3',
     $bodyContent
 );
 
