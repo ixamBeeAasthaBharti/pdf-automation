@@ -1159,12 +1159,7 @@ article:not(.cover-article) section h4 {
 article:not(.cover-article) strong {
     color: var(--reader-navy);
     font-weight: 800;
-    background:
-        linear-gradient(to bottom,
-            transparent 55%,
-            var(--reader-highlight) 55%,
-            var(--reader-highlight) 94%,
-            transparent 94%);
+    background: none;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
     padding: 0 .08em;
