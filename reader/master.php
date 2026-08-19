@@ -66,9 +66,9 @@ $rawHtml = str_replace('src="../images/', 'src="' . $imgBase, $rawHtml);
 /* ── Extract page title ── */
 $pageTitle = 'Study Notes';
 if (preg_match('/<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si', $rawHtml, $m)) {
-    $pageTitle = trim(strip_tags($m[1]));
+    $pageTitle = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
 } elseif (preg_match('/<title[^>]*>(.*?)<\/title>/si', $rawHtml, $m)) {
-    $extracted = trim(strip_tags($m[1]));
+    $extracted = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
     $pageTitle = preg_replace('/^Study Notes:\s*/i', '', $extracted);
 }
 

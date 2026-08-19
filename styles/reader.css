@@ -94,6 +94,23 @@ article.cover-article {
     margin: 0;
 }
 
+/* Responsive cover image styling */
+.cover-image-wrap {
+    margin: 1.5rem auto 0;
+    max-width: 640px; /* Larger layout */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.cover-dashboard-img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1.5px solid rgba(230, 221, 205, 0.8);
+    object-fit: contain;
+}
+
 /* Contact line — pinned to the bottom of the cover */
 .cover-contact {
     margin-top: 0;
@@ -1136,7 +1153,7 @@ article:not(.cover-article) section h4 {
 
 /* Avoid making the table's h3 look like an unrelated subsection heading. */
 #rural-economy-structure>h3 {
-    width: min(100%, 640px);
+    width: 100%;
     margin: 1rem auto .2rem;
     padding: .58rem .9rem;
     color: #fff;
