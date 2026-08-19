@@ -1440,14 +1440,84 @@ article:not(.cover-article) section>p:first-of-type {
     margin-top: .45rem;
 }
 
-/* ---------- Soft callout style if generated content uses .content-note ---------- */
+/* ---------- Soft callout style for .note and .content-note ---------- */
+article:not(.cover-article) .note,
+article:not(.cover-article) aside.note,
+article:not(.cover-article) div.note,
 article:not(.cover-article) .content-note {
-    margin: 1rem 0;
-    padding: .85rem 1rem;
+    margin: 1.25rem 0;
+    padding: 1.25rem 1.5rem;
     background: #faf6eb;
-    border-left: 3px solid #c9bd98;
-    border-radius: 0 8px 8px 0;
+    border-left: 4px solid #c9bd98;
+    border-radius: 4px;
 }
+
+/* Header inside Note/Callout */
+article:not(.cover-article) .note h2,
+article:not(.cover-article) .note h3,
+article:not(.cover-article) .note h4,
+article:not(.cover-article) .note h5,
+article:not(.cover-article) .note h6,
+article:not(.cover-article) .content-note h2,
+article:not(.cover-article) .content-note h3,
+article:not(.cover-article) .content-note h4,
+article:not(.cover-article) .content-note h5,
+article:not(.cover-article) .content-note h6,
+article:not(.cover-article) .note .note-title,
+article:not(.cover-article) .content-note .note-title {
+    color: var(--navy, #1b3a6b);
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+/* Lists inside Note/Callout */
+article:not(.cover-article) .note ul,
+article:not(.cover-article) .note ol,
+article:not(.cover-article) .content-note ul,
+article:not(.cover-article) .content-note ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+article:not(.cover-article) .note li,
+article:not(.cover-article) .content-note li {
+    position: relative;
+    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    color: var(--ink, #2b2620);
+}
+
+article:not(.cover-article) .note li:last-child,
+article:not(.cover-article) .content-note li:last-child {
+    margin-bottom: 0;
+}
+
+/* Custom list bullet / dash inside Note/Callout */
+article:not(.cover-article) .note li::before,
+article:not(.cover-article) .content-note li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #c9bd98;
+    font-weight: 700;
+}
+
+/* Bold text inside Note/Callout */
+article:not(.cover-article) .note strong,
+article:not(.cover-article) .content-note strong {
+    color: var(--navy, #1b3a6b);
+    font-weight: 700;
+}
+
 
 /* ---------- Keep generated flow diagrams usable ---------- */
 article:not(.cover-article) .flow-diagram {
