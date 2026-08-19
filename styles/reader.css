@@ -1857,3 +1857,202 @@ article .notes-table tbody td,
 article .notes-table tbody th {
     font-size: calc(0.88rem * var(--reader-font-scale, 1)) !important;
 }
+
+/* =========================================================
+   FINAL MOBILE FIX
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* ---------- Article ---------- */
+
+    article:not(.cover-article) {
+        width: calc(100% - 16px);
+        max-width: none;
+        margin: .5rem auto 1.5rem;
+        padding: 1.15rem .9rem 1.5rem;
+        box-sizing: border-box;
+    }
+
+    article:not(.cover-article) main {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
+
+    /* Prevent long content from pushing the page wider */
+    article:not(.cover-article) * {
+        max-width: 100%;
+    }
+
+    article:not(.cover-article) img,
+    article:not(.cover-article) figure {
+        max-width: 100%;
+    }
+
+    /* ---------- Sticky Header ---------- */
+
+    .doc-header {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .doc-header-inner {
+        width: 100%;
+        max-width: 100%;
+        min-height: 50px;
+        padding: .55rem .75rem;
+        gap: .5rem;
+        box-sizing: border-box;
+    }
+
+    .doc-header .title {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+        font-size: .9rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .header-right {
+        flex: 0 0 auto;
+        gap: .45rem;
+        min-width: 0;
+    }
+
+    .header-font-control {
+        gap: .3rem;
+        margin-bottom: 0;
+    }
+
+    .font-btn-sep {
+        width: 30px;
+        height: 25px;
+        flex: 0 0 30px;
+        font-size: .78rem;
+    }
+
+    .header-logo-wrap {
+        flex: 0 0 auto;
+    }
+
+    .header-logo-img {
+        height: 30px;
+        width: auto;
+        max-width: 95px;
+    }
+
+    /* ---------- Text ---------- */
+
+    article:not(.cover-article) p {
+        font-size: inherit;
+        line-height: 1.55;
+        overflow-wrap: break-word;
+    }
+
+    article:not(.cover-article) section h2,
+    article:not(.cover-article) .section-title {
+        font-size: calc(.94rem * var(--reader-font-scale, 1)) !important;
+        line-height: 1.35;
+    }
+
+    article:not(.cover-article) section h3 {
+        font-size: calc(.94rem * var(--reader-font-scale, 1)) !important;
+        line-height: 1.4;
+    }
+
+    article:not(.cover-article) section h4 {
+        font-size: calc(.88rem * var(--reader-font-scale, 1)) !important;
+        line-height: 1.4;
+        overflow-wrap: break-word;
+    }
+
+    /* ---------- Lists ---------- */
+
+    article:not(.cover-article) section>ul>li,
+    article:not(.cover-article) section main>ul>li,
+    article:not(.cover-article) ul.notes-list>li {
+        padding-left: 1.15rem;
+        margin-bottom: .4rem;
+    }
+
+    /* ---------- Tables ---------- */
+
+    article:not(.cover-article) .table-responsive {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /*
+       Keep tables scrollable instead of allowing them
+       to expand the entire page.
+    */
+    article:not(.cover-article) .table-responsive>table {
+        max-width: none;
+    }
+
+    /* ---------- Flow diagrams ---------- */
+
+    article:not(.cover-article) .flow-diagram {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+    }
+}
+
+
+/* =========================================================
+   EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .doc-header-inner {
+        padding: .5rem .6rem;
+    }
+
+    .doc-header .title {
+        font-size: .82rem;
+    }
+
+    .header-right {
+        gap: .3rem;
+    }
+
+    .header-font-control {
+        gap: .2rem;
+    }
+
+    .font-btn-sep {
+        width: 28px;
+        height: 24px;
+        flex-basis: 28px;
+        font-size: .75rem;
+    }
+
+    .header-logo-img {
+        height: 27px;
+        max-width: 85px;
+    }
+
+    article:not(.cover-article) {
+        width: calc(100% - 10px);
+        padding-left: .8rem;
+        padding-right: .8rem;
+    }
+}
