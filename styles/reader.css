@@ -144,7 +144,7 @@ article.cover-article {
     --ink-soft: #4a443c;
     --hairline: #e6ddc9;
     --serif: 'Lora', Georgia, 'Iowan Old Style', 'Apple Garamond', Baskerville, serif;
-    --deepesh:'Literata', 'serif';
+    --deepesh: 'Literata', 'serif';
 }
 
 html {
@@ -1149,7 +1149,7 @@ article:not(.cover-article) section h4 {
     font-size: .94rem;
     font-weight: 750;
     line-height: 1.45;
-    border-bottom: 1px dashed rgba(138, 79, 36, .28); 
+    border-bottom: 1px dashed rgba(138, 79, 36, .28);
 }
 
 /* Avoid making the table's h3 look like an unrelated subsection heading. */
@@ -1420,7 +1420,7 @@ article:not(.cover-article) .extracted-table-block {
 article:not(.cover-article) .extracted-heading {
     color: var(--reader-navy);
     font-family: var(--deepesh);
-    font-size: 1rem; 
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.4;
     margin: 0 0 2rem;
@@ -2197,5 +2197,92 @@ article .notes-table tbody th {
         width: calc(100% - 10px);
         padding-left: .8rem;
         padding-right: .8rem;
+    }
+}
+
+
+/* =========================================================
+   PDF INFO CARD / CALLOUT
+   Clean textbook-style design
+   ========================================================= */
+
+.info-card {
+    width: 94%;
+    max-width: 94%;
+
+    margin: 14px auto;
+    padding: 10px 22px;
+
+    box-sizing: border-box;
+
+    /* Soft warm background */
+    background-color: #fffaf5;
+
+    /* Thin, clean orange border */
+    border: 2px solid #d96b3b;
+    border-radius: 10px;
+
+    /* Very subtle depth */
+    box-shadow: 0 1px 4px rgba(180, 80, 30, 0.08);
+
+    text-align: center;
+
+    /* Keep the card clean when converted to PDF */
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+
+/* Main text */
+
+.info-card p {
+    margin: 0;
+
+    padding: 0;
+
+    font-family: var(--deepesh);
+    font-size: 0.95rem;
+    line-height: 1.45;
+
+    color: #e36c0a;
+
+    text-align: center;
+}
+
+
+/* Bold / highlighted text */
+
+.info-card strong,
+.info-card p strong {
+    color: #e36c0a !important;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   PDF / PRINT
+   ========================================================= */
+
+@media print {
+    .info-card {
+        width: 94%;
+        max-width: 94%;
+
+        margin: 12px auto;
+        padding: 9px 20px;
+
+        background-color: #fffaf5;
+
+        border: 1.5px solid #d96b3b;
+
+        box-shadow: none;
+
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .info-card p {
+        font-size: 0.95rem;
+        line-height: 1.4;
     }
 }
