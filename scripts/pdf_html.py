@@ -489,10 +489,42 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
     content = "\n".join(elements_html)
     return PAGE_TEMPLATE.format(content=content)
 
+def extract_pdf_title(doc: fitz.Document) -> str:
+    if len(doc) == 0:
+        return "Document"
+    page = doc[0]
+    blocks = page.get_text("dict")["blocks"]
+    
+    spans = []
+    for b in blocks:
+        if b["type"] == 0:
+            for l in b["lines"]:
+                spans.extend(l["spans"])
+                
+    if not spans:
+        # Fallback to filename stem
+        return Path(doc.name).stem
+        
+    # Sort spans by font size in descending order
+    spans.sort(key=lambda s: s.get("size", 0), reverse=True)
+    
+    # Find the largest non-generic text
+    for s in spans:
+        text = s.get("text", "").strip()
+        if text and text.lower() not in ["study notes", "studynotes"]:
+            return text
+            
+    return spans[0].get("text", "").strip() if spans else "Document"
+
 def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     doc = fitz.open(pdf_path)
     page_count = doc.page_count
-    start_idx = max(0, (start or 1) - 1)
+    
+    # Auto-extract title from the first page of the PDF
+    pdf_title = extract_pdf_title(doc)
+    
+    # If start page is not specified, default to 2 to skip the cover page
+    start_idx = max(0, (start or 2) - 1)
     end_idx = min(page_count, end or page_count)
     body_size = compute_body_size(doc)
  
@@ -503,7 +535,7 @@ def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
  
     html_path.write_text(
         DOC_TEMPLATE.format(
-            title=html.escape(pdf_path.stem),
+            title=html.escape(pdf_title),
             pages="\n".join(pages_html),
         ),
         encoding="utf-8",
@@ -514,7 +546,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Convert a PDF to a semantic HTML file.")
     parser.add_argument("pdf", type=Path, nargs="?", default=Path(PDF_PATH), help="Path to the input PDF file")
     parser.add_argument("html", type=Path, nargs="?", default=None, help="Path to write the output HTML file")
-    parser.add_argument("--start", type=int, default=1, help="First page to convert (1-based, default 1)")
+    parser.add_argument("--start", type=int, default=2, help="First page to convert (1-based, default 2 to skip cover)")
     parser.add_argument("--end", type=int, default=None, help="Last page to convert (default: last page)")
     args = parser.parse_args()
  
