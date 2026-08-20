@@ -136,11 +136,10 @@ $logoSrc = '../assets/logo.png';
       <img src="<?php echo htmlspecialchars($logoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="ixamBee" class="cover-logo-img"/>
     </div>
     <div class="cover-body">
-      <p class="cover-study-notes">Study Notes</p>
+      <p class="cover-study-notes">STUDY NOTES</p>
       <h1 class="cover-title"><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
     </div>
     <div class="cover-contact">
-      <p>www.ixambee.com | contact@ixambee.com</p>
     </div>
   </div>
 </article>
