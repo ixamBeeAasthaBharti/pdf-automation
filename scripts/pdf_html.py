@@ -253,6 +253,69 @@ def is_bullet_span(span: dict) -> bool:
         return True
     return decode_span_text(span).strip() == "•"
 
+def is_pink_heading_block(bbox, page) -> bool:
+    if page is None:
+        return False
+    bx0, by0, bx1, by1 = bbox
+    cx = (bx0 + bx1) / 2
+    cy = (by0 + by1) / 2
+    for d in page.get_drawings():
+        fill = d.get("fill")
+        if fill and len(fill) == 3:
+            r, g, b = fill
+            if 0.94 <= r <= 0.96 and 0.84 <= g <= 0.88 and 0.84 <= b <= 0.88:
+                rect = d.get("rect")
+                if rect:
+                    if rect.x0 - 5 <= cx <= rect.x1 + 5 and rect.y0 - 5 <= cy <= rect.y1 + 5:
+                        return True
+    return False
+
+def split_block_semantically(block: dict) -> list:
+    lines = block.get("lines", [])
+    if not lines:
+        return []
+        
+    split_blocks = []
+    current_lines = []
+    
+    for line in lines:
+        spans = [s for s in line.get("spans", []) if s.get("text", "").strip()]
+        if not spans:
+            continue
+            
+        is_bullet = is_bullet_span(spans[0])
+        is_all_bold = all("Bold" in s.get("font", "") for s in spans)
+        text_content = "".join(decode_span_text(s) for s in spans).strip()
+        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
+        
+        # If it's a bullet or a heading, it marks the start of a new section.
+        # So we flush the previous section (if any) first.
+        if is_bullet or is_heading:
+            if current_lines:
+                new_block = block.copy()
+                new_block["lines"] = current_lines
+                sx0 = min(l["bbox"][0] for l in current_lines)
+                sy0 = min(l["bbox"][1] for l in current_lines)
+                sx1 = max(l["bbox"][2] for l in current_lines)
+                sy1 = max(l["bbox"][3] for l in current_lines)
+                new_block["bbox"] = (sx0, sy0, sx1, sy1)
+                split_blocks.append(new_block)
+                current_lines = []
+                
+        current_lines.append(line)
+            
+    if current_lines:
+        new_block = block.copy()
+        new_block["lines"] = current_lines
+        sx0 = min(l["bbox"][0] for l in current_lines)
+        sy0 = min(l["bbox"][1] for l in current_lines)
+        sx1 = max(l["bbox"][2] for l in current_lines)
+        sy1 = max(l["bbox"][3] for l in current_lines)
+        new_block["bbox"] = (sx0, sy0, sx1, sy1)
+        split_blocks.append(new_block)
+        
+    return split_blocks
+
 def classify_heading(visible_lines: list, body_size: float):
     """Return 'h2'..'h4' if block reads as a standalone heading."""
     if len(visible_lines) != 1:
@@ -288,7 +351,7 @@ def is_inside_table(bbox, tables) -> bool:
 def render_table(table_data) -> str:
     if not table_data:
         return ""
-    html_lines = ['<div class="table-responsive">', '<table>']
+    html_lines = ['<div class="table-responsive">', '<table class="notes-table">']
     
     if len(table_data) > 0:
         headers = table_data[0]
@@ -324,7 +387,7 @@ def is_color_block(block: dict, target_color: int) -> bool:
                     return True
     return False
 
-def render_text_block_semantic(block: dict, body_size: float) -> str:
+def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = None) -> str:
     # Filter out running headers based on content and small font size
     text_spans = []
     for l in block.get("lines", []):
@@ -391,14 +454,23 @@ def render_text_block_semantic(block: dict, body_size: float) -> str:
         
     visible_lines = merged_lines
         
+    # Check for pink heading
+    is_pink = False
+    bbox = block.get("bbox", (0, 0, 0, 0))
+    if page:
+        is_pink = is_pink_heading_block(bbox, page)
+        
     heading_tag = classify_heading(visible_lines, body_size)
+    if is_pink:
+        heading_tag = "h2"
+        
     if heading_tag:
         line = visible_lines[0]
         spans = line["spans"]
-        # Convert custom colored (#17365d) headers or explicit "introduction" text to h2
+        # Convert custom colored (#17365d) headers or explicit "introduction" text or pink bg headers to h2
         color = spans[0].get("color", 0)
         inner = "".join(render_span_semantic(s) for s in spans)
-        if color == 0x17365d or inner.strip().lower() == "introduction" or inner.strip().lower() == "economy- introduction":
+        if color == 0x17365d or inner.strip().lower() == "introduction" or inner.strip().lower() == "economy- introduction" or is_pink:
             heading_tag = "h2"
             # Strip both strong and em from h2
             inner = inner.replace("<em>", "").replace("</em>", "").replace("<strong>", "").replace("</strong>", "")
@@ -408,7 +480,7 @@ def render_text_block_semantic(block: dict, body_size: float) -> str:
         return f"<{heading_tag}>{inner}</{heading_tag}>"
         
     html_out = []
-    in_list = False
+    active_lists = []  # Stack of bullet x-coordinates
     current_para_spans = []
     
     for line in visible_lines:
@@ -420,30 +492,58 @@ def render_text_block_semantic(block: dict, body_size: float) -> str:
                 html_out.append(f"<p>{para_text}</p>")
                 current_para_spans = []
                 
-            if not in_list:
-                html_out.append("<ul>")
-                in_list = True
+            x_bullet = spans[0]["bbox"][0]
+            
+            if not active_lists:
+                html_out.append('<ul class="notes-list">')
+                active_lists.append(x_bullet)
+            else:
+                if x_bullet > active_lists[-1] + 5:
+                    level = len(active_lists)
+                    cls_name = "notes-sub" if level == 1 else "notes-subsub"
+                    html_out.append(f'<ul class="{cls_name}">')
+                    active_lists.append(x_bullet)
+                elif x_bullet < active_lists[-1] - 5:
+                    while active_lists and x_bullet < active_lists[-1] - 5:
+                        html_out.append("</li></ul>")
+                        active_lists.pop()
+                    if not active_lists:
+                        html_out.append('<ul class="notes-list">')
+                        active_lists.append(x_bullet)
+                    else:
+                        html_out.append("</li>")
+                else:
+                    html_out.append("</li>")
+            
             content_spans = spans[1:]
             if content_spans:
                 inner = "".join(render_span_semantic(s) for s in content_spans)
             else:
                 inner = ""
-            html_out.append(f"<li>{inner}</li>")
+            html_out.append(f"<li>{inner}")
         else:
-            if in_list:
-                html_out.append("</ul>")
-                in_list = False
-            # Append to running paragraph list, keeping word spacing clean
-            if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
-                current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
-            current_para_spans.extend(spans)
+            if active_lists:
+                inner = "".join(render_span_semantic(s) for s in spans)
+                if html_out:
+                    last_item = html_out[-1]
+                    if not last_item.endswith(" ") and not inner.startswith(" "):
+                        html_out[-1] = last_item + " " + inner
+                    else:
+                        html_out[-1] = last_item + inner
+            else:
+                # Append to running paragraph list, keeping word spacing clean
+                if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
+                    current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
+                current_para_spans.extend(spans)
             
     # Flush remaining paragraph or list wraps
     if current_para_spans:
         para_text = "".join(render_span_semantic(s) for s in current_para_spans)
         html_out.append(f"<p>{para_text}</p>")
-    elif in_list:
-        html_out.append("</ul>")
+    
+    while active_lists:
+        html_out.append("</li></ul>")
+        active_lists.pop()
         
     return "\n".join(html_out)
 
@@ -456,40 +556,115 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
     valid_tables = []
     for t in tables:
         tx0, ty0, tx1, ty1 = t.bbox
-        # Skip tables that lie in header/footer margin
         if ty1 < 90 or ty0 > page_height - 75:
             continue
         valid_tables.append(t)
         
-    # 2. Extract elements
+    # 2. Extract and filter text lines
     text_dict = page.get_text("dict")
-    page_elements = []
+    raw_lines = []
     
     for block in text_dict.get("blocks", []):
-        bbox = block.get("bbox", (0, 0, 0, 0))
-        bx0, by0, bx1, by1 = bbox
         block_type = block.get("type", 0)
-        
-        # Text blocks need 60 to keep headings, but image blocks need 90 to skip logo
-        header_limit = 60 if block_type == 0 else 90
-        
-        # Skip header and footer zones
-        if by1 < header_limit or by0 > page_height - 75:
+        if block_type != 0:  # Skip images here, handled below
             continue
             
+        bbox = block.get("bbox", (0, 0, 0, 0))
         # Skip blocks inside tables
         if is_inside_table(bbox, valid_tables):
             continue
             
-        block_type = block.get("type", 0)
-        if block_type == 0:  # Text block
-            page_elements.append({
-                "type": "text",
-                "bbox": bbox,
-                "data": block
-            })
-        elif block_type == 1:  # Image block
-            if page.number == 0:
+        for line in block.get("lines", []):
+            ly0 = line["bbox"][1]
+            ly1 = line["bbox"][3]
+            
+            # Skip header and footer zones (ly1 < 68 skips running headers)
+            if ly1 < 68 or ly0 > page_height - 75:
+                continue
+                
+            raw_lines.append(line)
+            
+    # Sort all lines on the page top-to-bottom
+    raw_lines.sort(key=lambda l: l["bbox"][1])
+    
+    # 3. Group lines semantically from scratch
+    semantic_blocks = []
+    current_lines = []
+    
+    for line in raw_lines:
+        spans = [s for s in line.get("spans", []) if s.get("text", "").strip()]
+        if not spans:
+            continue
+            
+        is_bullet = is_bullet_span(spans[0])
+        is_all_bold = all("Bold" in s.get("font", "") for s in spans)
+        text_content = "".join(decode_span_text(s) for s in spans).strip()
+        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
+        is_pink = is_pink_heading_block(line["bbox"], page)
+        
+        # A new heading or bullet starts a new semantic block
+        if is_bullet or is_heading or is_pink:
+            if current_lines:
+                semantic_blocks.append({
+                    "type": "text",
+                    "bbox": (
+                        min(l["bbox"][0] for l in current_lines),
+                        min(l["bbox"][1] for l in current_lines),
+                        max(l["bbox"][2] for l in current_lines),
+                        max(l["bbox"][3] for l in current_lines)
+                    ),
+                    "lines": current_lines
+                })
+                current_lines = []
+        else:
+            # If the current line is a normal text line, check if it's a continuation
+            if current_lines:
+                prev_line = current_lines[-1]
+                gap = line["bbox"][1] - prev_line["bbox"][3]
+                # If vertical gap is too large, it starts a new paragraph block
+                if gap >= 16:
+                    semantic_blocks.append({
+                        "type": "text",
+                        "bbox": (
+                            min(l["bbox"][0] for l in current_lines),
+                            min(l["bbox"][1] for l in current_lines),
+                            max(l["bbox"][2] for l in current_lines),
+                            max(l["bbox"][3] for l in current_lines)
+                        ),
+                        "lines": current_lines
+                    })
+                    current_lines = []
+                    
+        current_lines.append(line)
+        
+    if current_lines:
+        semantic_blocks.append({
+            "type": "text",
+            "bbox": (
+                min(l["bbox"][0] for l in current_lines),
+                min(l["bbox"][1] for l in current_lines),
+                max(l["bbox"][2] for l in current_lines),
+                max(l["bbox"][3] for l in current_lines)
+            ),
+            "lines": current_lines
+        })
+        
+    # 4. Extract other block types (tables and images)
+    page_elements = []
+    
+    # Add text blocks
+    for sb in semantic_blocks:
+        page_elements.append({
+            "type": "text",
+            "bbox": sb["bbox"],
+            "data": sb
+        })
+        
+    # Add image blocks from the page
+    for block in text_dict.get("blocks", []):
+        if block.get("type") == 1:  # Image block
+            bbox = block.get("bbox", (0, 0, 0, 0))
+            if page.number == 0 or bbox[3] < 90 or bbox[1] > page_height - 75:
                 continue
             page_elements.append({
                 "type": "image",
@@ -497,6 +672,7 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 "data": block
             })
             
+    # Add table blocks
     for t in valid_tables:
         page_elements.append({
             "type": "table",
@@ -504,25 +680,23 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             "data": t.extract()
         })
         
-    # Sort elements by y0 (top coordinate) for natural document flow
+    # Sort all elements on page top-to-bottom
     page_elements.sort(key=lambda e: e["bbox"][1])
     
-    # 3. Merge consecutive text blocks that are part of the same info card (color 0xe36c0a)
+    # 5. Merge info cards (consecutive blocks with color 0xe36c0a)
     merged_elements = []
     i = 0
     while i < len(page_elements):
         el = page_elements[i]
         if el["type"] == "text" and is_color_block(el["data"], 0xe36c0a):
-            merged_block = el["data"].copy()
-            merged_lines = list(merged_block.get("lines", []))
-            
+            merged_lines = list(el["data"]["lines"])
             j = i + 1
             while j < len(page_elements):
                 next_el = page_elements[j]
                 if next_el["type"] == "text" and is_color_block(next_el["data"], 0xe36c0a):
                     gap = next_el["bbox"][1] - el["bbox"][3]
                     if gap < 20:
-                        merged_lines.extend(next_el["data"].get("lines", []))
+                        merged_lines.extend(next_el["data"]["lines"])
                         el["bbox"] = [
                             min(el["bbox"][0], next_el["bbox"][0]),
                             min(el["bbox"][1], next_el["bbox"][1]),
@@ -532,9 +706,7 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                         j += 1
                         continue
                 break
-                
-            merged_block["lines"] = merged_lines
-            el["data"] = merged_block
+            el["data"]["lines"] = merged_lines
             merged_elements.append(el)
             i = j
         else:
@@ -543,6 +715,7 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             
     page_elements = merged_elements
     
+    # 6. Render elements to HTML
     elements_html = []
     for element in page_elements:
         el_type = element["type"]
@@ -562,7 +735,7 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 except Exception as e:
                     print(f"Error extracting image block: {e}", file=sys.stderr)
         elif el_type == "text":
-            text_html = render_text_block_semantic(element["data"], body_size)
+            text_html = render_text_block_semantic(element["data"], body_size, page)
             if text_html:
                 elements_html.append(text_html)
                 
@@ -631,6 +804,16 @@ def main() -> None:
     args = parser.parse_args()
  
     pdf_path = args.pdf
+    
+    # If the input looks like a numeric MySQL ID, try to resolve it from the queue
+    if str(pdf_path).isdigit():
+        mysql_id = int(str(pdf_path))
+        queue_pdf = Path(__file__).parent.parent / "storage" / "queue" / str(mysql_id) / "document.pdf"
+        if queue_pdf.exists():
+            pdf_path = queue_pdf
+            if args.html is None:
+                args.html = Path(__file__).parent.parent / "storage" / "queue" / str(mysql_id) / "document.html"
+
     if not pdf_path.exists():
         print(f"Input PDF not found: {pdf_path}", file=sys.stderr)
         sys.exit(1)
