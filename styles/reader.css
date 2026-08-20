@@ -49,7 +49,7 @@ article.cover-article {
 
 /* "Study Notes" green label — NOT italic */
 .cover-study-notes {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: normal;
@@ -60,7 +60,7 @@ article.cover-article {
 
 /* Extra meta lines on cover (e.g. "Previous Year paper", "Professional Knowledge") */
 .cover-meta-line {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: normal;
@@ -72,7 +72,7 @@ article.cover-article {
 
 /* Subtitle line beneath the main title (exam code / year) */
 .cover-subtitle {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--ink-soft);
     font-size: 1rem;
     font-weight: 600;
@@ -82,8 +82,8 @@ article.cover-article {
 
 .cover-title {
     display: block;
-    font-family: var(--serif);
-    color: var(--navy);
+    font-family: var(--deepesh);
+    color: var(--reader-navy);
     font-size: 2.2rem;
     font-weight: 700;
     line-height: 1.35;
@@ -144,6 +144,7 @@ article.cover-article {
     --ink-soft: #4a443c;
     --hairline: #e6ddc9;
     --serif: 'Lora', Georgia, 'Iowan Old Style', 'Apple Garamond', Baskerville, serif;
+    --deepesh:'Literata', 'serif';
 }
 
 html {
@@ -151,7 +152,7 @@ html {
 }
 
 body {
-    font-family: var(--serif);
+    font-family: var(--deepesh);
     color: var(--ink);
     background: var(--paper);
     font-size: 1rem;
@@ -184,7 +185,7 @@ article>header {
 }
 
 article>header h1 {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--navy);
     font-size: 1.5rem;
     font-weight: 700;
@@ -193,7 +194,7 @@ article>header h1 {
 }
 
 article>header h2 {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green-header);
     font-size: 1.15rem;
     font-weight: 700;
@@ -227,7 +228,7 @@ section>header p.running-header {
 section h2,
 .section-title {
     display: block;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--green-light);
     color: var(--navy);
     font-weight: 700;
@@ -376,7 +377,7 @@ figure img {
 }
 
 figcaption {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     color: var(--ink-soft);
     font-style: italic;
@@ -394,7 +395,7 @@ figcaption {
 
 /* Heading/title text that appears above an extracted table */
 .extracted-heading {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .92rem;
     font-weight: 700;
     color: var(--navy);
@@ -406,7 +407,7 @@ figcaption {
 
 /* Italic subtitle/caption above an extracted table */
 .extracted-subheading {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     font-style: italic;
     color: var(--ink-soft);
@@ -415,7 +416,7 @@ figcaption {
 
 /* Footnote/text below an extracted table */
 .extracted-note {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     color: var(--ink-soft);
     margin: .4rem 0 0;
@@ -456,7 +457,7 @@ section table,
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .92rem;
     border: 1px solid var(--hairline);
     border-radius: 8px;
@@ -591,7 +592,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .brand-name {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 2rem;
     font-weight: 700;
     color: var(--navy);
@@ -602,7 +603,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .tagline {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: italic;
@@ -611,7 +612,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .study-notes {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-size: 1.4rem;
@@ -635,7 +636,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .doc-header {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--page);
     border-bottom: 1px solid var(--hairline);
     box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
@@ -694,7 +695,7 @@ main.content-wrap {
 
 .section-title {
     display: block;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--green-light);
     color: var(--navy);
     font-weight: 700;
@@ -822,7 +823,7 @@ ul.notes-subsub>li::before {
 }
 
 .flow-node {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: #fff;
     font-weight: 700;
     border-radius: 10px;
@@ -847,7 +848,7 @@ ul.notes-subsub>li::before {
     font-size: 1.6rem;
     font-weight: 700;
     color: var(--green);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     user-select: none;
     display: flex;
     align-items: center;
@@ -889,7 +890,7 @@ ul.notes-subsub>li::before {
 }
 
 .flow-arrow-glyph {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     user-select: none;
     display: flex;
     align-items: center;
@@ -903,7 +904,7 @@ ul.notes-subsub>li::before {
    FOOTER
    ===================================================== */
 footer.doc-footer {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: #9a9182;
     font-size: .82rem;
 }
@@ -1010,7 +1011,7 @@ footer.doc-footer {
     --reader-page: #fffdf8;
     --reader-ink: #292621;
     --reader-muted: #655e54;
-    --reader-navy: #183c70;
+    --reader-navy: #043821;
     --reader-brown: #8a4f24;
     --reader-orange: #ef9b63;
     --reader-orange-soft: #fff0e4;
@@ -1121,7 +1122,7 @@ article:not(.cover-article) section h3 {
     margin: 1.45rem 0 .7rem;
     padding: .12rem 0 .12rem 1rem;
     color: var(--reader-brown);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 1.02rem;
     font-weight: 800;
     line-height: 1.4;
@@ -1144,12 +1145,11 @@ article:not(.cover-article) section h4 {
     margin: 1.2rem 0 .55rem;
     padding: .15rem 0 .35rem;
     color: var(--reader-navy);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .94rem;
     font-weight: 750;
     line-height: 1.45;
-    border-bottom: 1px dashed rgba(138, 79, 36, .28);
-    text-wrap: balance;
+    border-bottom: 1px dashed rgba(138, 79, 36, .28); 
 }
 
 /* Avoid making the table's h3 look like an unrelated subsection heading. */
@@ -1176,7 +1176,7 @@ article:not(.cover-article) section h4 {
    in the original study notes. Give it a readable Kindle-style marker effect. */
 article:not(.cover-article) strong {
     color: var(--reader-navy);
-    font-weight: 800;
+    font-weight: 600;
     background: none;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
@@ -1335,7 +1335,7 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) {
     border-collapse: separate;
     border-spacing: 0;
 
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .88rem;
     line-height: 1.35;
 
@@ -1356,7 +1356,7 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th {
     background: var(--reader-table-blue-soft);
     color: var(--reader-navy);
     text-align: center;
-    font-weight: 800;
+    font-weight: 600;
     border: 0;
     border-bottom: 1px solid #b7c7df;
     vertical-align: middle;
@@ -1419,11 +1419,11 @@ article:not(.cover-article) .extracted-table-block {
 
 article:not(.cover-article) .extracted-heading {
     color: var(--reader-navy);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: .93rem;
-    font-weight: 800;
+    font-family: var(--deepesh);
+    font-size: 1rem; 
+    font-weight: 600;
     line-height: 1.4;
-    margin: 0 0 .5rem;
+    margin: 0 0 2rem;
     padding-left: .7rem;
     border-left: 3px solid var(--reader-orange);
 }
@@ -1484,7 +1484,7 @@ article:not(.cover-article) .content-note h6,
 article:not(.cover-article) .note .note-title,
 article:not(.cover-article) .content-note .note-title {
     color: var(--navy, #1b3a6b);
-    font-family: var(--serif);
+    font-family: var(--deepesh);
     font-weight: 700;
     font-size: 1.1rem;
     margin-top: 0;
@@ -1715,7 +1715,7 @@ article:not(.cover-article) a:hover {
     border-bottom: 1px solid var(--reader-line, #e6ddcd);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     overflow: visible;
 }
 
@@ -1740,7 +1740,7 @@ article:not(.cover-article) a:hover {
 }
 
 .doc-header .title {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-weight: 700;
     font-style: italic;
     color: var(--reader-navy, #183c70);
@@ -1775,7 +1775,7 @@ article:not(.cover-article) a:hover {
     padding: 0;
 
     color: #4f943b;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 0.82rem;
     font-weight: 600;
     line-height: 1;
@@ -1862,7 +1862,7 @@ article:not(.cover-article) a:hover {
     overflow-y: auto;
     z-index: 900;
     transition: transform 0.3s ease, opacity 0.3s ease;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
 }
 
 #dynamic-toc.collapsed {
@@ -1934,7 +1934,7 @@ article.cover-article {
 /* Headings & Section titles scaling */
 article section h2,
 article .section-title {
-    font-size: calc(1.08rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.5rem * var(--reader-font-scale, 1)) !important;
 }
 
 article section h3 {
@@ -1942,11 +1942,11 @@ article section h3 {
 }
 
 article section h4 {
-    font-size: calc(0.94rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.1rem * var(--reader-font-scale, 1)) !important;
 }
 
 article .extracted-heading {
-    font-size: calc(0.93rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.1rem * var(--reader-font-scale, 1)) !important;
 }
 
 /* Tables & Table Cells scaling */
@@ -2104,12 +2104,12 @@ article .notes-table tbody th {
 
     article:not(.cover-article) section h2,
     article:not(.cover-article) .section-title {
-        font-size: calc(.94rem * var(--reader-font-scale, 1)) !important;
+        font-size: calc(1.1 rem * var(--reader-font-scale, 1)) !important;
         line-height: 1.35;
     }
 
     article:not(.cover-article) section h3 {
-        font-size: calc(.94rem * var(--reader-font-scale, 1)) !important;
+        font-size: calc(1 rem * var(--reader-font-scale, 1)) !important;
         line-height: 1.4;
     }
 
