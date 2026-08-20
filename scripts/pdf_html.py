@@ -173,6 +173,26 @@ DOC_TEMPLATE = """<!DOCTYPE html>
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   }}
+  .info-card {{
+    border: 2px solid #e36c0a;
+    border-radius: 8px;
+    background-color: #fdfaf6;
+    padding: 15px 20px;
+    margin: 20px auto;
+    max-width: 85%;
+    text-align: center;
+  }}
+  .info-card p {{
+    margin: 0;
+    text-align: center;
+    color: #e36c0a;
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }}
+  .info-card strong {{
+    color: #e36c0a !important;
+    font-weight: 700;
+  }}
 </style>
 </head>
 <body>
@@ -296,6 +316,14 @@ def render_table(table_data) -> str:
     html_lines.append('</div>')
     return "\n".join(html_lines)
 
+def is_color_block(block: dict, target_color: int) -> bool:
+    for line in block.get("lines", []):
+        for span in line.get("spans", []):
+            if span.get("text", "").strip():
+                if span.get("color", 0) == target_color:
+                    return True
+    return False
+
 def render_text_block_semantic(block: dict, body_size: float) -> str:
     # Filter out running headers based on content and small font size
     text_spans = []
@@ -321,6 +349,17 @@ def render_text_block_semantic(block: dict, body_size: float) -> str:
             
     if not visible_lines:
         return ""
+        
+    # Check if this block is an info card (colored 0xe36c0a)
+    if is_color_block(block, 0xe36c0a):
+        para_spans = []
+        for line in visible_lines:
+            spans = line["spans"]
+            if para_spans and not para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
+                para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
+            para_spans.extend(spans)
+        inner = "".join(render_span_semantic(s) for s in para_spans)
+        return f'<div class="info-card"><p>{inner}</p></div>'
         
     # Consolidate lines where a bullet character is split from its text on the same visual row
     merged_lines = []
@@ -467,6 +506,42 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         
     # Sort elements by y0 (top coordinate) for natural document flow
     page_elements.sort(key=lambda e: e["bbox"][1])
+    
+    # 3. Merge consecutive text blocks that are part of the same info card (color 0xe36c0a)
+    merged_elements = []
+    i = 0
+    while i < len(page_elements):
+        el = page_elements[i]
+        if el["type"] == "text" and is_color_block(el["data"], 0xe36c0a):
+            merged_block = el["data"].copy()
+            merged_lines = list(merged_block.get("lines", []))
+            
+            j = i + 1
+            while j < len(page_elements):
+                next_el = page_elements[j]
+                if next_el["type"] == "text" and is_color_block(next_el["data"], 0xe36c0a):
+                    gap = next_el["bbox"][1] - el["bbox"][3]
+                    if gap < 20:
+                        merged_lines.extend(next_el["data"].get("lines", []))
+                        el["bbox"] = [
+                            min(el["bbox"][0], next_el["bbox"][0]),
+                            min(el["bbox"][1], next_el["bbox"][1]),
+                            max(el["bbox"][2], next_el["bbox"][2]),
+                            max(el["bbox"][3], next_el["bbox"][3])
+                        ]
+                        j += 1
+                        continue
+                break
+                
+            merged_block["lines"] = merged_lines
+            el["data"] = merged_block
+            merged_elements.append(el)
+            i = j
+        else:
+            merged_elements.append(el)
+            i += 1
+            
+    page_elements = merged_elements
     
     elements_html = []
     for element in page_elements:

@@ -2241,7 +2241,7 @@ article .notes-table tbody th {
     padding: 0;
 
     font-family: var(--deepesh);
-    font-size: 0.95rem;
+    font-size: calc(0.95rem * var(--reader-font-scale, 1));
     line-height: 1.45;
 
     color: #e36c0a;
