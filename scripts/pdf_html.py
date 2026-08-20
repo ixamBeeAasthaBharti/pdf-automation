@@ -361,6 +361,11 @@ def render_text_block_semantic(block: dict, body_size: float) -> str:
         inner = "".join(render_span_semantic(s) for s in spans)
         if color == 0x17365d or inner.strip().lower() == "introduction" or inner.strip().lower() == "economy- introduction":
             heading_tag = "h2"
+            # Strip both strong and em from h2
+            inner = inner.replace("<em>", "").replace("</em>", "").replace("<strong>", "").replace("</strong>", "")
+        else:
+            # Strip only em from other subheadings (keep strong for navy color)
+            inner = inner.replace("<em>", "").replace("</em>", "")
         return f"<{heading_tag}>{inner}</{heading_tag}>"
         
     html_out = []
