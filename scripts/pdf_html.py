@@ -1231,19 +1231,41 @@ def extract_pdf_title(doc: fitz.Document) -> str:
                 spans.extend(l["spans"])
                 
     if not spans:
-        # Fallback to filename stem
         return Path(doc.name).stem
         
-    # Sort spans by font size in descending order
-    spans.sort(key=lambda s: s.get("size", 0), reverse=True)
-    
-    # Find the largest non-generic text
+    # Find non-generic spans
+    non_generic_spans = []
     for s in spans:
         text = s.get("text", "").strip()
         if text and text.lower() not in ["study notes", "studynotes"]:
-            return text
+            non_generic_spans.append(s)
             
-    return spans[0].get("text", "").strip() if spans else "Document"
+    if not non_generic_spans:
+        return spans[0].get("text", "").strip() if spans else "Document"
+        
+    # Find maximum font size among non-generic spans
+    max_size = max(s.get("size", 0) for s in non_generic_spans)
+    
+    # Collect all non-generic spans with size close to max_size (within 1.0px)
+    title_spans = []
+    for s in non_generic_spans:
+        if abs(s.get("size", 0) - max_size) <= 1.0:
+            title_spans.append(s)
+            
+    # Sort top-to-bottom, then left-to-right
+    title_spans.sort(key=lambda s: (s["bbox"][1], s["bbox"][0]))
+    
+    # Join distinct parts
+    title_parts = []
+    for s in title_spans:
+        t = s.get("text", "").strip()
+        if t and t not in title_parts:
+            title_parts.append(t)
+            
+    if title_parts:
+        return " ".join(title_parts)
+        
+    return "Document"
 
 def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     doc = fitz.open(pdf_path)
