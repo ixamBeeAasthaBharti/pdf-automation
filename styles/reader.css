@@ -2286,3 +2286,9 @@ article .notes-table tbody th {
         line-height: 1.4;
     }
 }
+
+/* Custom premium image scaling */
+figure img {
+    max-width: 80% !important;
+    margin: 1.5rem auto 0.5rem !important;
+}

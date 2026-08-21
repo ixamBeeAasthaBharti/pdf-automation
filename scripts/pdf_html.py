@@ -1149,6 +1149,29 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             
     page_elements = merged_elements
     
+    # 5.5 Detect and merge captions for images/diagrams
+    merged_elements = []
+    i = 0
+    while i < len(page_elements):
+        el = page_elements[i]
+        if el["type"] in ("image", "diagram"):
+            if i + 1 < len(page_elements):
+                next_el = page_elements[i + 1]
+                if next_el["type"] == "text":
+                    lines = next_el["data"].get("lines", [])
+                    if len(lines) == 1:
+                        txt_spans = lines[0].get("spans", [])
+                        txt_content = "".join(decode_span_text(s) for s in txt_spans).strip()
+                        gap = next_el["bbox"][1] - el["bbox"][3]
+                        if 0 <= gap < 45 and len(txt_content) < 120:
+                            el["caption"] = txt_content
+                            merged_elements.append(el)
+                            i += 2
+                            continue
+        merged_elements.append(el)
+        i += 1
+    page_elements = merged_elements
+    
     # 6. Render elements to HTML
     elements_html = []
     for element in page_elements:
@@ -1163,9 +1186,12 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
                     img_bytes = pix.tobytes("png")
                     b64 = base64.b64encode(img_bytes).decode("ascii")
-                    elements_html.append(
-                        f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
-                    )
+                    img_tag = f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
+                    if "caption" in element:
+                        caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
+                        elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
+                    else:
+                        elements_html.append(f'<figure>{img_tag}</figure>')
                 except Exception as e:
                     print(f"Error extracting image block: {e}", file=sys.stderr)
         elif el_type == "diagram":
@@ -1176,9 +1202,12 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
                     img_bytes = pix.tobytes("png")
                     b64 = base64.b64encode(img_bytes).decode("ascii")
-                    elements_html.append(
-                        f'<figure><img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" /></figure>'
-                    )
+                    img_tag = f'<img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" />'
+                    if "caption" in element:
+                        caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
+                        elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
+                    else:
+                        elements_html.append(f'<figure>{img_tag}</figure>')
                 except Exception as e:
                     print(f"Error extracting diagram block: {e}", file=sys.stderr)
         elif el_type == "text":
