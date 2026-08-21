@@ -13,7 +13,10 @@ import argparse
 import base64
 import html
 import sys
+import re
+import os
 from pathlib import Path
+from collections import Counter
 
 import pymupdf as fitz
 
@@ -78,122 +81,7 @@ DOC_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  body {{
-    margin: 0;
-    padding: 40px 20px;
-    background-color: #f7f9fa;
-    font-family: 'Literata', 'Lora', Georgia, serif;
-    color: #1a1a1a;
-    line-height: 1.65;
-  }}
-  .container {{
-    max-width: 800px;
-    margin: 0 auto;
-    background: #ffffff;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }}
-  .pdf-page {{
-    margin-bottom: 40px;
-    border-bottom: 1px dashed #e1e8ed;
-    padding-bottom: 40px;
-  }}
-  .pdf-page:last-child {{
-    margin-bottom: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-  }}
-  h1, h2, h3, h4 {{
-    color: #0b2240;
-    font-family: 'Outfit', sans-serif;
-    font-weight: 700;
-    margin-top: 1.8em;
-    margin-bottom: 0.6em;
-  }}
-  h1 {{
-    font-size: 2.2rem;
-    border-bottom: 2px solid #e1e8ed;
-    padding-bottom: 10px;
-    margin-top: 0;
-  }}
-  h2 {{
-    font-size: 1.8rem;
-    border-bottom: 1px solid #ecf0f1;
-    padding-bottom: 8px;
-  }}
-  h3 {{
-    font-size: 1.4rem;
-  }}
-  h4 {{
-    font-size: 1.15rem;
-  }}
-  p {{
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    text-align: justify;
-  }}
-  ul {{
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    padding-left: 24px;
-  }}
-  li {{
-    margin-bottom: 0.6em;
-  }}
-  table {{
-    width: 100%;
-    border-collapse: collapse;
-    margin: 24px 0;
-    font-size: 0.95rem;
-  }}
-  th, td {{
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #e1e8ed;
-  }}
-  th {{
-    background-color: #f4f6f8;
-    color: #0b2240;
-    font-weight: 600;
-  }}
-  tr:hover {{
-    background-color: #fcfdfe;
-  }}
-  .table-responsive {{
-    overflow-x: auto;
-    margin: 24px 0;
-  }}
-  img {{
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 24px auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  }}
-  .info-card {{
-    border: 2px solid #e36c0a;
-    border-radius: 8px;
-    background-color: #fdfaf6;
-    padding: 15px 20px;
-    margin: 20px auto;
-    max-width: 85%;
-    text-align: center;
-  }}
-  .info-card p {{
-    margin: 0;
-    text-align: center;
-    color: #e36c0a;
-    font-size: 0.95rem;
-    line-height: 1.65;
-  }}
-  .info-card strong {{
-    color: #e36c0a !important;
-    font-weight: 700;
-  }}
-</style>
+{css_link}
 </head>
 <body>
 <article>
@@ -204,6 +92,232 @@ DOC_TEMPLATE = """<!DOCTYPE html>
 </body>
 </html>
 """
+
+# Default inline CSS fallback if no standalone reader.css link is supplied
+DEFAULT_INLINE_CSS = """
+<style>
+  body {
+    margin: 0;
+    padding: 40px 20px;
+    background-color: #f7f9fa;
+    font-family: 'Literata', 'Lora', Georgia, serif;
+    color: #1a1a1a;
+    line-height: 1.65;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .pdf-page {
+    margin-bottom: 40px;
+    border-bottom: 1px dashed #e1e8ed;
+    padding-bottom: 40px;
+  }
+  .pdf-page:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  h1, h2, h3, h4 {
+    color: #0b2240;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    margin-top: 1.8em;
+    margin-bottom: 0.6em;
+  }
+  h1 {
+    font-size: 2.2rem;
+    border-bottom: 2px solid #e1e8ed;
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 1.8rem;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 8px;
+  }
+  h3 {
+    font-size: 1.4rem;
+  }
+  h4 {
+    font-size: 1.15rem;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+    text-align: justify;
+  }
+  ul {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+    padding-left: 24px;
+  }
+  li {
+    margin-bottom: 0.6em;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+  }
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e1e8ed;
+  }
+  th {
+    background-color: #f4f6f8;
+    color: #0b2240;
+    font-weight: 600;
+  }
+  tr:hover {
+    background-color: #fcfdfe;
+  }
+  .table-responsive {
+    overflow-x: auto;
+    margin: 24px 0;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 24px auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .info-card {
+    border: 2px solid #e36c0a;
+    border-radius: 8px;
+    background-color: #fdfaf6;
+    padding: 15px 20px;
+    margin: 20px auto;
+    max-width: 85%;
+    text-align: center;
+  }
+  .info-card p {
+    margin: 0;
+    text-align: center;
+    color: #e36c0a;
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+  .info-card strong {
+    color: #e36c0a !important;
+    font-weight: 700;
+  }
+</style>
+"""
+
+# Global configuration flags
+CSS_HREF = None
+IMAGE_DIR = None
+DEBUG_MODE = False
+
+# Scanned ignore sets for running headers, footers and logos
+IGNORED_HEADERS = set()
+IGNORED_FOOTERS = set()
+IGNORED_LOGOS = set()
+
+def pre_scan_document(doc: fitz.Document, start_idx: int, end_idx: int):
+    """
+    IMPROVEMENT: Pre-scan documents to dynamically identify repeated logos/images
+    and running text headers/footers to skip them safely across pages.
+    """
+    global IGNORED_HEADERS, IGNORED_FOOTERS, IGNORED_LOGOS
+    header_counts = Counter()
+    footer_counts = Counter()
+    logo_counts = Counter()
+    
+    # We scan all normal content pages to build frequency maps
+    for page_idx in range(start_idx, end_idx):
+        if page_idx >= doc.page_count:
+            break
+        page = doc[page_idx]
+        page_h = page.rect.height
+        
+        # 1. Repeated Text Headers/Footers
+        try:
+            blocks = page.get_text("dict").get("blocks", [])
+            for b in blocks:
+                if b.get("type") != 0:
+                    continue
+                for line in b.get("lines", []):
+                    ly0, ly1 = line["bbox"][1], line["bbox"][3]
+                    txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+                    if not txt:
+                        continue
+                    # Normalize text: strip digits, page numbers, trailing spaces
+                    norm = re.sub(r'\d+', '', txt).strip().lower()
+                    if len(norm) < 4:
+                        continue
+                    if ly1 < 80:
+                        header_counts[norm] += 1
+                    elif ly0 > page_h - 80:
+                        footer_counts[norm] += 1
+        except Exception:
+            pass
+            
+        # 2. Repeated Logo Images in Header/Footer Regions
+        try:
+            img_info = page.get_image_info(xrefs=True)
+            for info in img_info:
+                bbox = info.get("bbox")
+                if bbox and len(bbox) == 4:
+                    x0, y0, x1, y1 = bbox
+                    w = round(x1 - x0, 1)
+                    h = round(y1 - y0, 1)
+                    if y1 < 95 or y0 > page_h - 95:
+                        # Index by dimension and horizontal start coordinate
+                        logo_counts[(w, h, round(x0, 0))] += 1
+        except Exception:
+            pass
+            
+    # Compile final sets of assets that repeat on 3 or more pages
+    for text, count in header_counts.items():
+        if count >= 3:
+            IGNORED_HEADERS.add(text)
+    for text, count in footer_counts.items():
+        if count >= 3:
+            IGNORED_FOOTERS.add(text)
+    for sig, count in logo_counts.items():
+        if count >= 3:
+            IGNORED_LOGOS.add(sig)
+
+def looks_like_visual_fragment(text: str) -> bool:
+    """
+    IMPROVEMENT: Identify equations, bonds, isolated operators, chemical structures,
+    and diagram label fragments so they are not misclassified as headings.
+    """
+    text_clean = text.strip()
+    if not text_clean:
+        return False
+        
+    # Standard isolated mathematical characters or operator markers
+    if text_clean in ["||", "==", "|", "/", "\\", "=", "-", "+", "->", "=>"]:
+        return True
+        
+    # Very short strings consisting entirely of symbols, chemical labels or digit variables
+    if len(text_clean) <= 6:
+        if re.match(r'^[A-Z0-9a-z\+\-\=\|\/\\\(\)\[\]\s\*\•\·\→\←\↑\↓\↔\⇒\⇐\⇄\⇆\-\–\—\=\≡\≈\≥\≤\≠\±]+$', text_clean):
+            # Exclude standard short words
+            if not re.search(r'\b(?:and|the|for|is|are|of|in|to|with|or|on|at|by|an|a|be)\b', text_clean, re.IGNORECASE):
+                return True
+                
+    # Chemical structure drawing fragments, e.g. 'R-C-H' or high density of caps/bonds
+    if len(text_clean) < 40:
+        symbols_digits = sum(1 for c in text_clean if c in "+-=|/\\()[]_<>~")
+        caps = sum(1 for c in text_clean if c.isupper())
+        digits = sum(1 for c in text_clean if c.isdigit())
+        total_len = len(text_clean)
+        if total_len > 0 and (symbols_digits + caps + digits) / total_len > 0.8:
+            return True
+            
+    return False
 
 def compute_body_size(doc: fitz.Document) -> float:
     """Most common font size (weighted by character count) across the doc.
@@ -251,7 +365,8 @@ def is_bullet_span(span: dict) -> bool:
     font = span.get("font", "")
     if "Wingdings" in font or "Webdings" in font:
         return True
-    return decode_span_text(span).strip() == "•"
+    decoded = decode_span_text(span).strip()
+    return decoded in ("•", "·", "◆", "▪", "▸", "►", "‣", "–", "—")
 
 def is_pink_heading_block(bbox, page) -> bool:
     if page is None:
@@ -271,6 +386,10 @@ def is_pink_heading_block(bbox, page) -> bool:
     return False
 
 def split_block_semantically(block: dict) -> list:
+    """
+    Splits fitz block dictionaries semantically.
+    IMPROVEMENT: Integrated the heading scoring model and visual fragment skips.
+    """
     lines = block.get("lines", [])
     if not lines:
         return []
@@ -284,12 +403,10 @@ def split_block_semantically(block: dict) -> list:
             continue
             
         is_bullet = is_bullet_span(spans[0])
-        is_all_bold = all("Bold" in s.get("font", "") for s in spans)
-        text_content = "".join(decode_span_text(s) for s in spans).strip()
-        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
         
-        # If it's a bullet or a heading, it marks the start of a new section.
-        # So we flush the previous section (if any) first.
+        # Heading checks using the unified classification function
+        is_heading = classify_heading([line], 12.0) is not None
+        
         if is_bullet or is_heading:
             if current_lines:
                 new_block = block.copy()
@@ -316,27 +433,89 @@ def split_block_semantically(block: dict) -> list:
         
     return split_blocks
 
-def classify_heading(visible_lines: list, body_size: float):
-    """Return 'h2'..'h4' if block reads as a standalone heading."""
-    if len(visible_lines) != 1:
+def classify_heading(visible_lines: list, body_size: float, page_context: dict = None) -> str | None:
+    """
+    IMPROVEMENT: Scoring Model for Heading Classification (Requirement 14).
+    Uses font-size, bold weight, spacing context, length, and formula negative weights.
+    """
+    if not visible_lines:
         return None
-    spans = [s for s in visible_lines[0].get("spans", []) if s.get("text", "").strip()]
-    if not spans:
+        
+    # Standalone headings typically span 1 or occasionally 2 lines
+    if len(visible_lines) > 2:
         return None
-    if is_bullet_span(spans[0]):
+        
+    spans_all = [s for line in visible_lines for s in line.get("spans", []) if s.get("text", "").strip()]
+    if not spans_all:
         return None
-    if not all("Bold" in s.get("font", "") for s in spans):
+        
+    text_content = "".join(decode_span_text(s) for s in spans_all).strip()
+    if len(text_content) < 3 or text_content.isdigit():
         return None
-    text = "".join(decode_span_text(s) for s in spans).strip()
-    if len(text) <= 2 or text.isdigit():
+        
+    # Exclude list bullets
+    if is_bullet_span(spans_all[0]):
         return None
-    max_size = max(s.get("size", 12) for s in spans)
-    ratio = max_size / body_size if body_size else 1
+        
+    # Exclude visual/equation fragments
+    if looks_like_visual_fragment(text_content):
+        return None
+        
+    score = 0
+    max_size = max(s.get("size", 12) for s in spans_all)
+    ratio = max_size / body_size if body_size else 1.0
+    
+    # 1. Font size ratio weightings
     if ratio >= 1.6:
-        return "h2"
-    if ratio >= 1.3:
-        return "h3"
-    return "h4"
+        score += 5
+    elif ratio >= 1.25:
+        score += 3
+    elif ratio >= 1.0:
+        score += 1
+    elif ratio < 0.95:
+        score -= 3
+        
+    # 2. Bold weight signals
+    is_all_bold = all("Bold" in s.get("font", "") for s in spans_all)
+    is_any_bold = any("Bold" in s.get("font", "") for s in spans_all)
+    if is_all_bold:
+        score += 3
+    elif is_any_bold:
+        score += 1
+    else:
+        score -= 2
+        
+    # 3. Punctuation checks (Sentence structures)
+    if text_content.endswith(".") and len(text_content) > 30:
+        score -= 4
+        
+    # 4. Heading formatting structure / Case
+    if text_content.isupper():
+        score += 2
+    elif text_content[0].isupper():
+        score += 1
+        
+    # 5. Length penalty
+    if len(text_content) > 80:
+        score -= 3
+        
+    # 6. Context Look-ahead: Heading followed by nested lists
+    if page_context and page_context.get("is_followed_by_list"):
+        score += 3
+        
+    # 7. Common decimal or numbering conventions
+    if re.match(r'^(?:[A-Z0-9]+\.|\d+\.\d+|\b(?:Chapter|Section|Unit|Part|Figure|Table)\b)', text_content, re.IGNORECASE):
+        score += 2
+        
+    if score >= 5:
+        if ratio >= 1.5:
+            return "h2"
+        elif ratio >= 1.2:
+            return "h3"
+        else:
+            return "h4"
+            
+    return None
 
 def is_inside_table(bbox, tables) -> bool:
     bx0, by0, bx1, by1 = bbox
@@ -349,24 +528,60 @@ def is_inside_table(bbox, tables) -> bool:
     return False
 
 def render_table(table_data) -> str:
+    """
+    IMPROVEMENT: Enhanced table extraction (Requirement 9).
+    Filters empty/None columns, handles multi-line/colspan items, and detects headers dynamically.
+    """
     if not table_data:
         return ""
+        
+    # Remove entirely empty or None columns
+    num_cols = len(table_data[0]) if table_data else 0
+    non_empty_cols = []
+    for col_idx in range(num_cols):
+        has_content = False
+        for row in table_data:
+            if row[col_idx] is not None and str(row[col_idx]).strip() != "":
+                has_content = True
+                break
+        if has_content:
+            non_empty_cols.append(col_idx)
+            
+    if not non_empty_cols:
+        return ""
+        
+    filtered_table = []
+    for row in table_data:
+        filtered_row = [row[idx] for idx in non_empty_cols]
+        filtered_table.append(filtered_row)
+        
     html_lines = ['<div class="table-responsive">', '<table class="notes-table">']
     
-    if len(table_data) > 0:
-        headers = table_data[0]
+    # <thead> detection using cell contents
+    use_first_as_header = False
+    if len(filtered_table) > 1:
+        first_row = filtered_table[0]
+        non_empty = all(c is not None and str(c).strip() != "" for c in first_row)
+        if non_empty:
+            use_first_as_header = True
+            
+    if use_first_as_header:
         html_lines.append('<thead>')
         html_lines.append('<tr>')
-        for h in headers:
+        for h in filtered_table[0]:
             val = html.escape(str(h or "").strip())
             html_lines.append(f'<th>{val}</th>')
         html_lines.append('</tr>')
         html_lines.append('</thead>')
+        body_rows = filtered_table[1:]
+    else:
+        body_rows = filtered_table
         
-    if len(table_data) > 1:
+    if body_rows:
         html_lines.append('<tbody>')
-        for row in table_data[1:]:
-            if not any(row):
+        for row in body_rows:
+            # Skip empty rows
+            if not any(c is not None and str(c).strip() != "" for c in row):
                 continue
             html_lines.append('<tr>')
             for cell in row:
@@ -387,7 +602,7 @@ def is_color_block(block: dict, target_color: int) -> bool:
                     return True
     return False
 
-def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = None) -> str:
+def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = None, page_context: dict = None, median_gap: float = 12.0) -> str:
     # Filter out running headers based on content and small font size
     text_spans = []
     for l in block.get("lines", []):
@@ -460,7 +675,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     if page:
         is_pink = is_pink_heading_block(bbox, page)
         
-    heading_tag = classify_heading(visible_lines, body_size)
+    heading_tag = classify_heading(visible_lines, body_size, page_context)
     if is_pink:
         heading_tag = "h2"
         
@@ -482,10 +697,24 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     html_out = []
     active_lists = []  # Stack of bullet x-coordinates
     current_para_spans = []
+    li_content_x = None # Track text start position of active list item for wrapped lines
+    prev_line_y3 = None
     
+    def close_all_lists():
+        nonlocal li_content_x
+        while active_lists:
+            html_out.append("</li></ul>")
+            active_lists.pop()
+        li_content_x = None
+        
     for line in visible_lines:
         spans = line["spans"]
-        if is_bullet_span(spans[0]):
+        
+        # Check if line looks like visual formula fragment (Requirement 3)
+        line_text = "".join(decode_span_text(s) for s in spans).strip()
+        is_visual = looks_like_visual_fragment(line_text)
+        
+        if is_bullet_span(spans[0]) and not is_visual:
             # Flush existing paragraph content
             if current_para_spans:
                 para_text = "".join(render_span_semantic(s) for s in current_para_spans)
@@ -517,37 +746,47 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
             
             content_spans = spans[1:]
             if content_spans:
+                li_content_x = content_spans[0]["bbox"][0]
                 inner = "".join(render_span_semantic(s) for s in content_spans)
             else:
+                li_content_x = spans[0]["bbox"][2] + 4
                 inner = ""
             html_out.append(f"<li>{inner}")
         else:
-            if active_lists:
+            # Check if this line is a continuation of the current bullet item (Requirement 5)
+            is_continuation = False
+            if active_lists and li_content_x is not None:
+                line_x = spans[0]["bbox"][0]
+                line_gap = (line["bbox"][1] - prev_line_y3) if prev_line_y3 is not None else 999
+                # If x matches the bullet content and vertical distance is small
+                if abs(line_x - li_content_x) < 20 and line_gap < (median_gap * 1.5):
+                    is_continuation = True
+                    
+            if is_continuation:
                 inner = "".join(render_span_semantic(s) for s in spans)
                 if html_out:
                     last_item = html_out[-1]
-                    if not last_item.endswith(" ") and not inner.startswith(" "):
-                        html_out[-1] = last_item + " " + inner
-                    else:
-                        html_out[-1] = last_item + inner
+                    gap_char = "" if last_item.endswith(" ") or inner.startswith(" ") else " "
+                    html_out[-1] = last_item + gap_char + inner
             else:
+                # Close lists and treat as standard paragraph
+                close_all_lists()
                 # Append to running paragraph list, keeping word spacing clean
                 if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
                     current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
                 current_para_spans.extend(spans)
+                
+        prev_line_y3 = line["bbox"][3]
             
     # Flush remaining paragraph or list wraps
     if current_para_spans:
         para_text = "".join(render_span_semantic(s) for s in current_para_spans)
         html_out.append(f"<p>{para_text}</p>")
     
-    while active_lists:
-        html_out.append("</li></ul>")
-        active_lists.pop()
-        
+    close_all_lists()
     return "\n".join(html_out)
 
-def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
+def render_page(doc: fitz.Document, page: fitz.Page, body_size: float, html_path: Path) -> str:
     rect = page.rect
     page_height = rect.height
     
@@ -578,28 +817,62 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             ly0 = line["bbox"][1]
             ly1 = line["bbox"][3]
             
-            # Skip header and footer zones (ly1 < 68 skips running headers)
-            if ly1 < 68 or ly0 > page_height - 75:
-                continue
+            # Skip running headers and footers matching ignoring lists
+            txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+            norm_txt = re.sub(r'\d+', '', txt).strip().lower()
+            
+            # IMPROVEMENT: Dynamic running header/footer checks
+            if page.number > 0: # Do not filter headers/footers on first cover page
+                if ly1 < 80 and norm_txt in IGNORED_HEADERS:
+                    continue
+                if ly0 > page_height - 80 and norm_txt in IGNORED_FOOTERS:
+                    continue
+                # Fallback for extremely close margins
+                if ly1 < 45 or ly0 > page_height - 45:
+                    continue
                 
             raw_lines.append(line)
             
     # Sort all lines on the page top-to-bottom
     raw_lines.sort(key=lambda l: l["bbox"][1])
     
+    # IMPROVEMENT: Compute dynamic leading gaps on the page (Requirement 6)
+    gaps = []
+    for idx in range(len(raw_lines) - 1):
+        prev_l = raw_lines[idx]
+        curr_l = raw_lines[idx+1]
+        gap = curr_l["bbox"][1] - prev_l["bbox"][3]
+        if 0 < gap < 40:
+            gaps.append(gap)
+    median_gap = sorted(gaps)[len(gaps) // 2] if gaps else 12.0
+    paragraph_split_threshold = max(1.4 * median_gap, 10.0)
+    
     # 3. Group lines semantically from scratch
     semantic_blocks = []
     current_lines = []
     
-    for line in raw_lines:
+    # Pre-build look-ahead mapping for context checks (Requirement 15)
+    line_is_followed_by_list = {}
+    for idx in range(len(raw_lines)):
+        followed_by_list = False
+        # Look ahead at the next few lines
+        for j in range(idx + 1, min(idx + 4, len(raw_lines))):
+            next_spans = [s for s in raw_lines[j].get("spans", []) if s.get("text", "").strip()]
+            if next_spans:
+                if is_bullet_span(next_spans[0]):
+                    followed_by_list = True
+                break
+        line_is_followed_by_list[idx] = followed_by_list
+    
+    for idx, line in enumerate(raw_lines):
         spans = [s for s in line.get("spans", []) if s.get("text", "").strip()]
         if not spans:
             continue
             
+        page_context = {"is_followed_by_list": line_is_followed_by_list.get(idx, False)}
+        
         is_bullet = is_bullet_span(spans[0])
-        is_all_bold = all("Bold" in s.get("font", "") for s in spans)
-        text_content = "".join(decode_span_text(s) for s in spans).strip()
-        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
+        is_heading = classify_heading([line], body_size, page_context) is not None
         is_pink = is_pink_heading_block(line["bbox"], page)
         
         # A new heading or bullet starts a new semantic block
@@ -621,8 +894,8 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             if current_lines:
                 prev_line = current_lines[-1]
                 gap = line["bbox"][1] - prev_line["bbox"][3]
-                # If vertical gap is too large, it starts a new paragraph block
-                if gap >= 16:
+                # Dynamic paragraph separation gap
+                if gap >= paragraph_split_threshold:
                     semantic_blocks.append({
                         "type": "text",
                         "bbox": (
@@ -661,16 +934,28 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         })
         
     # Add image blocks from the page
+    img_idx = 1
     for block in text_dict.get("blocks", []):
         if block.get("type") == 1:  # Image block
             bbox = block.get("bbox", (0, 0, 0, 0))
-            if page.number == 0 or bbox[3] < 90 or bbox[1] > page_height - 75:
+            x0, y0, x1, y1 = bbox
+            w = round(x1 - x0, 1)
+            h = round(y1 - y0, 1)
+            
+            # Skip page headers/footers logo filtering (Requirement 7)
+            if (w, h, round(x0, 0)) in IGNORED_LOGOS:
                 continue
+                
+            if page.number > 0 and (y1 < 90 or y0 > page_height - 90) and (w, h, round(x0, 0)) in IGNORED_LOGOS:
+                continue
+                
             page_elements.append({
                 "type": "image",
                 "bbox": bbox,
-                "data": block
+                "data": block,
+                "img_idx": img_idx
             })
+            img_idx += 1
             
     # Add table blocks
     for t in valid_tables:
@@ -720,6 +1005,8 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
     for element in page_elements:
         el_type = element["type"]
         if el_type == "table":
+            if DEBUG_MODE:
+                print(f"PAGE {page.number+1}: [TABLE] {len(element['data'])}x{len(element['data'][0]) if element['data'] else 0}", file=sys.stderr)
             elements_html.append(render_table(element["data"]))
         elif el_type == "image":
             bbox = element["bbox"]
@@ -728,14 +1015,47 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 try:
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
                     img_bytes = pix.tobytes("png")
-                    b64 = base64.b64encode(img_bytes).decode("ascii")
+                    
+                    # IMPROVEMENT: Image Output Directory (Requirement 18)
+                    if IMAGE_DIR:
+                        img_filename = f"page_{page.number + 1}_img_{element['img_idx']}.png"
+                        img_dest = IMAGE_DIR / img_filename
+                        img_dest.parent.mkdir(parents=True, exist_ok=True)
+                        img_dest.write_bytes(img_bytes)
+                        # Relative src reference in HTML
+                        try:
+                            src_ref = os.path.relpath(img_dest, html_path.parent).replace("\\", "/")
+                        except Exception:
+                            src_ref = f"images/{img_filename}"
+                    else:
+                        b64 = base64.b64encode(img_bytes).decode("ascii")
+                        src_ref = f"data:image/png;base64,{b64}"
+                        
+                    if DEBUG_MODE:
+                        print(f"PAGE {page.number+1}: [IMAGE] {src_ref}", file=sys.stderr)
+                        
                     elements_html.append(
-                        f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
+                        f'<figure><img src="{src_ref}" alt="Extracted Graphic" /></figure>'
                     )
                 except Exception as e:
                     print(f"Error extracting image block: {e}", file=sys.stderr)
         elif el_type == "text":
-            text_html = render_text_block_semantic(element["data"], body_size, page)
+            # For look-ahead context, find if next text block starts with list
+            idx_in_raw = raw_lines.index(element["data"]["lines"][0]) if element["data"]["lines"] else 0
+            page_context = {"is_followed_by_list": line_is_followed_by_list.get(idx_in_raw, False)}
+            
+            if DEBUG_MODE:
+                tag = classify_heading(element["data"]["lines"], body_size, page_context)
+                if tag:
+                    print(f"PAGE {page.number+1}: [{tag.upper()}] {''.join(s.get('text','') for l in element['data']['lines'] for s in l.get('spans',[]))[:60]}", file=sys.stderr)
+                else:
+                    spans = [s for l in element["data"]["lines"] for s in l.get("spans", [])]
+                    if spans and is_bullet_span(spans[0]):
+                        print(f"PAGE {page.number+1}: [UL] {''.join(s.get('text','') for s in spans)[:60]}", file=sys.stderr)
+                    else:
+                        print(f"PAGE {page.number+1}: [P] {''.join(s.get('text','') for s in spans)[:60]}", file=sys.stderr)
+                        
+            text_html = render_text_block_semantic(element["data"], body_size, page, page_context, median_gap)
             if text_html:
                 elements_html.append(text_html)
                 
@@ -780,15 +1100,26 @@ def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     start_idx = max(0, (start or 2) - 1)
     end_idx = min(page_count, end or page_count)
     body_size = compute_body_size(doc)
+    
+    # Pre-scan for Ignored Assets (Headers, Footers, Logos)
+    pre_scan_document(doc, start_idx, end_idx)
  
     pages_html = []
     for page_index in range(start_idx, end_idx):
         page = doc[page_index]
-        pages_html.append(render_page(doc, page, body_size))
+        pages_html.append(render_page(doc, page, body_size, html_path))
+ 
+    # CSS selection
+    if CSS_HREF:
+        # Standalone CSS link (Requirement 17)
+        css_tag = f'<link rel="stylesheet" href="{CSS_HREF}">'
+    else:
+        css_tag = DEFAULT_INLINE_CSS
  
     html_path.write_text(
         DOC_TEMPLATE.format(
             title=html.escape(pdf_title),
+            css_link=css_tag,
             pages="\n".join(pages_html),
         ),
         encoding="utf-8",
@@ -796,14 +1127,26 @@ def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     doc.close()
 
 def main() -> None:
+    global CSS_HREF, IMAGE_DIR, DEBUG_MODE
+    
     parser = argparse.ArgumentParser(description="Convert a PDF to a semantic HTML file.")
     parser.add_argument("pdf", type=Path, nargs="?", default=Path(PDF_PATH), help="Path to the input PDF file")
     parser.add_argument("html", type=Path, nargs="?", default=None, help="Path to write the output HTML file")
     parser.add_argument("--start", type=int, default=2, help="First page to convert (1-based, default 2 to skip cover)")
     parser.add_argument("--end", type=int, default=None, help="Last page to convert (default: last page)")
+    parser.add_argument("--css", type=str, default=None, help="Link to an external reader CSS file (disables inline fallback)")
+    parser.add_argument("--image-dir", type=Path, default=None, help="Directory to save extracted images (disables base64 inline fallback)")
+    parser.add_argument("--debug", action="store_true", help="Print debug/classification trace output to stderr")
     args = parser.parse_args()
  
     pdf_path = args.pdf
+    
+    # Setup global flags
+    if args.css:
+        CSS_HREF = args.css
+    if args.image_dir:
+        IMAGE_DIR = args.image_dir
+    DEBUG_MODE = args.debug
     
     # If the input looks like a numeric MySQL ID, try to resolve it from the queue
     if str(pdf_path).isdigit():
