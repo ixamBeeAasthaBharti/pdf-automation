@@ -7,119 +7,259 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --navy:        #1b3a6b;
+    --green:       #6ABE52;
+    --green-light: #eef8ea;
+    --orange:      #f2871d;
+    --row-alt:     #fdeee0;
+    --paper:       #f6f1e7;
+    --page:        #fffdf8;
+    --ink:         #2b2620;
+    --ink-soft:    #4a443c;
+    --hairline:    #e6ddc9;
+    --brown:       #8a4f24;
+    --orange-soft: #ef9b63;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
     padding: 40px 20px;
-    background-color: #f7f9fa;
-    font-family: 'Literata', 'Lora', Georgia, serif;
-    color: #1a1a1a;
-    line-height: 1.65;
+    background-color: var(--paper);
+    font-family: 'Literata', Georgia, serif;
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
   }
-  .container {
-    max-width: 800px;
+  article {
+    max-width: 820px;
     margin: 0 auto;
-    background: #ffffff;
-    padding: 40px;
+    background: var(--page);
+    padding: 2rem 2.5rem;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--hairline);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+  main {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
   }
   .pdf-page {
-    margin-bottom: 40px;
-    border-bottom: 1px dashed #e1e8ed;
-    padding-bottom: 40px;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px dashed var(--hairline);
+    padding-bottom: 2.5rem;
   }
   .pdf-page:last-child {
     margin-bottom: 0;
     border-bottom: none;
     padding-bottom: 0;
   }
-  h1, h2, h3, h4 {
-    color: #0b2240;
+  h2 {
+    display: block;
+    background: var(--green-light);
+    color: var(--navy);
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
-    margin-top: 1.8em;
-    margin-bottom: 0.6em;
-  }
-  h1 {
-    font-size: 2.2rem;
-    border-bottom: 2px solid #e1e8ed;
-    padding-bottom: 10px;
-    margin-top: 0;
-  }
-  h2 {
-    font-size: 1.8rem;
-    border-bottom: 1px solid #ecf0f1;
-    padding-bottom: 8px;
+    font-size: .95rem;
+    letter-spacing: .04em;
+    padding: .45rem .8rem;
+    border-left: 4px solid var(--green);
+    border-radius: 2px;
+    margin: 1.75rem 0 .85rem;
+    line-height: 1.4;
   }
   h3 {
-    font-size: 1.4rem;
+    font-family: 'Literata', Georgia, serif;
+    color: var(--brown);
+    font-size: 1.02rem;
+    font-weight: 800;
+    margin: 1.35rem 0 .55rem;
+    padding-left: 1rem;
+    border-left: 3px solid var(--orange-soft);
+    line-height: 1.4;
   }
   h4 {
-    font-size: 1.15rem;
+    font-family: 'Literata', Georgia, serif;
+    color: var(--navy);
+    font-size: .94rem;
+    font-weight: 700;
+    margin: 1.1rem 0 .45rem;
+    padding-bottom: .3rem;
+    border-bottom: 1px dashed rgba(138, 79, 36, .28);
+    line-height: 1.45;
   }
   p {
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    text-align: justify;
-  }
-  ul {
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    padding-left: 24px;
-  }
-  li {
-    margin-bottom: 0.6em;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 24px 0;
-    font-size: 0.95rem;
-  }
-  th, td {
-    padding: 12px 15px;
+    margin: .7rem 0 1rem;
+    color: var(--ink);
+    line-height: 1.65;
     text-align: left;
-    border-bottom: 1px solid #e1e8ed;
   }
-  th {
-    background-color: #f4f6f8;
-    color: #0b2240;
-    font-weight: 600;
+  strong { color: var(--navy); font-weight: 700; }
+  em     { font-style: italic; }
+  ul.notes-list {
+    list-style: none;
+    padding-left: 0;
+    margin: .5rem 0 1rem;
   }
-  tr:hover {
-    background-color: #fcfdfe;
+  ul.notes-list > li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: .65rem;
+    line-height: 1.7;
+  }
+  ul.notes-list > li::before {
+    content: "•";
+    position: absolute;
+    left: .1rem;
+    top: -.02rem;
+    color: var(--navy);
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  ul.notes-sub {
+    list-style: none;
+    padding-left: 1.3rem;
+    margin: .4rem 0 .5rem;
+  }
+  ul.notes-sub > li {
+    position: relative;
+    padding-left: 1.3rem;
+    margin-bottom: .5rem;
+    line-height: 1.65;
+  }
+  ul.notes-sub > li::before {
+    content: "◦";
+    position: absolute;
+    left: .05rem;
+    top: -.02rem;
+    color: var(--green);
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+  ul.notes-subsub {
+    list-style: none;
+    padding-left: 1.2rem;
+    margin: .3rem 0 .4rem;
+  }
+  ul.notes-subsub > li {
+    position: relative;
+    padding-left: 1.25rem;
+    margin-bottom: .4rem;
+    line-height: 1.6;
+  }
+  ul.notes-subsub > li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--brown);
+    font-weight: 800;
+    font-size: .9rem;
   }
   .table-responsive {
+    width: 100%;
     overflow-x: auto;
-    margin: 24px 0;
+    margin: 1rem 0 1.5rem;
+    -webkit-overflow-scrolling: touch;
   }
-  img {
+  table.notes-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Literata', Georgia, serif;
+    font-size: .9rem;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+    background: var(--page);
+    margin: 0;
+  }
+  table.notes-table thead th {
+    background: var(--orange);
+    color: #fff;
+    text-align: left;
+    padding: .7rem 1rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    vertical-align: middle;
+  }
+  table.notes-table thead th:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, .2);
+  }
+  table.notes-table td,
+  table.notes-table tbody th {
+    padding: .6rem 1rem;
+    border-top: 1px solid var(--hairline);
+    vertical-align: top;
+    line-height: 1.55;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  table.notes-table tbody td:not(:last-child),
+  table.notes-table tbody th:not(:last-child) {
+    border-right: 1px solid var(--hairline);
+  }
+  table.notes-table tbody tr:nth-child(odd) {
+    background: var(--row-alt);
+  }
+  figure {
+    margin: 1rem auto 1.25rem;
+    text-align: center;
+  }
+  figure img {
     max-width: 100%;
     height: auto;
-    display: block;
-    margin: 24px auto;
+    display: inline-block;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
   }
   .info-card {
     border: 2px solid #e36c0a;
     border-radius: 8px;
     background-color: #fdfaf6;
-    padding: 15px 20px;
-    margin: 20px auto;
-    max-width: 85%;
-    text-align: center;
+    padding: 12px 18px;
+    margin: 1.2rem auto;
+    max-width: 90%;
   }
   .info-card p {
     margin: 0;
-    text-align: center;
     color: #e36c0a;
-    font-size: 0.95rem;
+    font-size: .93rem;
     line-height: 1.65;
+    text-align: center;
   }
   .info-card strong {
     color: #e36c0a !important;
     font-weight: 700;
+  }
+  h4.extracted-heading {
+    color: var(--navy);
+    font-family: 'Literata', Georgia, serif;
+    font-size: .93rem;
+    font-weight: 700;
+    margin: 0 0 .5rem;
+    padding-left: .6rem;
+    border-left: 3px solid var(--orange-soft);
+    border-bottom: none;
+  }
+  p.extracted-subheading {
+    font-size: .85rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 .4rem;
+  }
+  p.extracted-note {
+    font-size: .85rem;
+    color: var(--ink-soft);
+    margin: .4rem 0 0;
+  }
+  @media (max-width: 600px) {
+    article { padding: 1.25rem 1rem; }
+    body    { padding: 12px 8px; }
+    h2      { font-size: .88rem; }
   }
 </style>
 </head>
@@ -127,15 +267,11 @@
 <article>
 <main>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
-<h4><strong>Introduction </strong></h4>
-<p>A <strong>Federation</strong> is a form of Government in which the political power is vested between the Central and State Governments so that each Government can function independent of each other. To initiate a smooth functioning of the Government, the practice of Federal Finance is essential.  </p>
-<p><strong>Federal finance</strong> refers to the system of assigning the source of revenue to the Central as well as the State Governments for the efficient discharge of their respective functions. </p>
+<p><strong>Introduction </strong>A <strong>Federation</strong> is a form of Government in which the political power is vested between the Central and State Governments so that each Government can function independent of each other. To initiate a smooth functioning of the Government, the practice of Federal Finance is essential.  <strong>Federal finance</strong> refers to the system of assigning the source of revenue to the Central as well as the State Governments for the efficient discharge of their respective functions. </p>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
-<th>Federal Finance System: Principles
+<table class="notes-table">
+<thead><tr>
+<th colspan="9">Federal Finance System: Principles
 There are few principles that the Federal Government needs to follow for its efficient functioning:
 Each govt. should have
 autonomy in fiscal matters i.e. Equitable distribution of resources among
@@ -168,43 +304,16 @@ Government enjoy financial autonomy. Each
 Government should be accountable to its own Acountability
 legislature for its financial decisions; i.e. Centre
 to the Parliament and State to the Assembly.</th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-</tr>
-</thead>
+</tr></thead>
 <tbody>
 <tr>
-<td></td>
-<td></td>
-<td>Federal Finance System: Principles</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">Federal Finance System: Principles</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td>There are few principles that the Federal Government needs to follow for its efficient functioning:</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">There are few principles that the Federal Government needs to follow for its efficient functioning:</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td>ach govt. should have
+<td colspan="7">ach govt. should have
 utonomy in fiscal matters i.e. Equitable distribution of resources amo
 ach Govt. should have separate Independenc the different states so that each st
 Equity
@@ -235,106 +344,47 @@ Government enjoy financial autonomy. Each
 Government should be accountable to its own Acountability
 legislature for its financial decisions; i.e. Centre
 to the Parliament and State to the Assembly.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 </tr>
 <tr>
-<td>E
+<td colspan="2">E
 a
 e
 s
 le
 m</td>
-<td></td>
-<td>ach govt. should have
+<td colspan="7">ach govt. should have
 utonomy in fiscal matters i.e.
 ach Govt. should have separate
 ources of revenue, authority to
 vy taxes, to borrow money and
 eet the expenditure.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 </tr>
 <tr>
-<td></td>
 <td>E</td>
-<td>ach govt. should have</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">ach govt. should have</td>
 </tr>
 <tr>
-<td></td>
 <td>a</td>
-<td>utonomy in fiscal matters i.e.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">utonomy in fiscal matters i.e.</td>
 </tr>
 <tr>
-<td></td>
 <td>e</td>
-<td>ach Govt. should have separate</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">ach Govt. should have separate</td>
 </tr>
 <tr>
-<td></td>
 <td>s</td>
-<td>ources of revenue, authority to</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">ources of revenue, authority to</td>
 </tr>
 <tr>
-<td></td>
 <td>le</td>
-<td>vy taxes, to borrow money and</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">vy taxes, to borrow money and</td>
 </tr>
 <tr>
-<td></td>
 <td>m</td>
-<td>eet the expenditure.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">eet the expenditure.</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="5"></td>
 <td>The resources of each
 (Central and State) should
 adequate to carry out their fun
@@ -343,8 +393,7 @@ optimum resources to ad
 uncertain incidents like war
 floods.</td>
 <td>The resources of each</td>
-<td>Govt.,</td>
-<td></td>
+<td colspan="2">Govt.,</td>
 </tr>
 <tr>
 <td>E
@@ -353,160 +402,84 @@ c
 e
 b</td>
 <td>E</td>
-<td>ach state should pay equal tax payments</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">ach state should pay equal tax payments</td>
 <td>(Central and State) should</td>
-<td>be</td>
-<td></td>
+<td colspan="2">be</td>
 </tr>
 <tr>
-<td></td>
 <td>f</td>
-<td>or federal finance. Since the taxable</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">or federal finance. Since the taxable</td>
 <td>adequate to carry out their fun</td>
-<td>ctions</td>
-<td></td>
+<td colspan="2">ctions</td>
 </tr>
 <tr>
-<td></td>
 <td>c</td>
-<td>apacity of each unit is not the same,</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">apacity of each unit is not the same,</td>
 <td>effectively. There should</td>
-<td>be</td>
-<td></td>
+<td colspan="2">be</td>
 </tr>
 <tr>
-<td></td>
 <td>e</td>
-<td>quality of contribution imposes heavy</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">quality of contribution imposes heavy</td>
 <td>optimum resources to ad</td>
-<td>dress</td>
-<td></td>
+<td colspan="2">dress</td>
 </tr>
 <tr>
-<td></td>
 <td>b</td>
-<td>urden on the backward states.</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">urden on the backward states.</td>
 <td>uncertain incidents like war</td>
-<td>and</td>
-<td></td>
+<td colspan="2">and</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 <td>floods.</td>
-<td></td>
-<td></td>
+<td colspan="2"></td>
 </tr>
 <tr>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>Financial system should be well integ</td>
-<td></td>
-<td></td>
+<td colspan="3">Financial system should be well integ</td>
 <td>rated</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>for the smooth functioning of a feder</td>
-<td></td>
-<td></td>
-<td>ation.</td>
-<td></td>
+<td colspan="3">for the smooth functioning of a feder</td>
+<td colspan="2">ation.</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>Perfect coordination amongst the diff</td>
-<td></td>
-<td></td>
-<td>erent</td>
-<td></td>
+<td colspan="3">Perfect coordination amongst the diff</td>
+<td colspan="2">erent</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>layers will promote overall econ</td>
-<td></td>
-<td></td>
-<td>omic</td>
-<td></td>
+<td colspan="3">layers will promote overall econ</td>
+<td colspan="2">omic</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>development of the country.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="3">development of the country.</td>
+<td colspan="2"></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>e at
+<td colspan="2">e at
 the
 able
 ent</td>
-<td></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
+<table class="notes-table">
+<thead><tr>
 <th>Equitable distribution of resources amo
 the different states so that each st
 receives a fair share of revenue.</th>
 <th>Equitable distribution of resources amo</th>
 <th>ng</th>
-</tr>
-</thead>
+</tr></thead>
 <tbody>
 <tr>
-<td></td>
 <td>the different states so that each st</td>
 <td>ate</td>
 </tr>
 <tr>
-<td></td>
 <td>receives a fair share of revenue.</td>
 <td></td>
 </tr>
@@ -514,22 +487,19 @@ receives a fair share of revenue.</th>
 </table>
 </div>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
+<table class="notes-table">
+<thead><tr>
 <th></th>
 <th>The Government should be
 able to increase their resources
 with their increasing
 responsibilities.</th>
-</tr>
-</thead>
+</tr></thead>
 </table>
 </div>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
+<table class="notes-table">
+<thead><tr>
 <th>The cost of collection should b
 the least and a major portion of
 revenue should be made avail
@@ -539,21 +509,17 @@ expenditure.</th>
 the
 able
 ent</th>
-</tr>
-</thead>
+</tr></thead>
 </table>
 </div>
 <h4><strong>Figure 1. Principles of Federal Finance </strong></h4>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
-<h4><strong>Federal Finance System: Challenges and Solutions </strong></h4>
-<p>The existence of a Federal Government has both its pros and cons. It is very ambiguous to decide which level of government will perform the specific functions as per community preference. Hence, some of the loopholes and their corresponding solutions are tabulated below: </p>
+<p><strong>Federal Finance System: Challenges and Solutions </strong>The existence of a Federal Government has both its pros and cons. It is very ambiguous to decide which level of government will perform the specific functions as per community preference. Hence, some of the loopholes and their corresponding solutions are tabulated below: </p>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
-<th>Challenges
+<table class="notes-table">
+<thead><tr>
+<th colspan="2">Challenges
  Imbalance between Revenue &amp; Expenditure -
 considerable divergence between the sources of
 revenue and functional expenditure obligations
@@ -593,8 +559,7 @@ between different units of government at the same
 level of government in a federation, it is a case of
 horizontal fiscal imbalance.</th>
 <th></th>
-<th></th>
-<th>Solutions
+<th colspan="2">Solutions
  Allocation of revenue sources to finance
 expenditure functions, to be done in a specified
 manner amongst various levels of government
@@ -632,140 +597,103 @@ to correct the vertical imbalance
 equalization of fiscal residue. The gap in fiscal
 residue is nullified by interstate transfer of
 resources.</th>
-<th></th>
-</tr>
-</thead>
+</tr></thead>
 <tbody>
 <tr>
-<td></td>
 <td>programmes.</td>
 <td></td>
-<td>by the lower level governmental unit</td>
-<td></td>
+<td colspan="2">by the lower level governmental unit</td>
 </tr>
 <tr>
 <td></td>
 <td></td>
-<td></td>
-<td>o Tax supplement: To maintain uniformi</td>
-<td></td>
+<td colspan="2">o Tax supplement: To maintain uniformi</td>
 </tr>
 <tr>
-<td></td>
 <td>In a situation of greater expansion of financial</td>
 <td></td>
-<td>taxes, the higher level government coll</td>
-<td></td>
+<td colspan="2">taxes, the higher level government coll</td>
 </tr>
 <tr>
-<td></td>
 <td>resources of central government, and shrinking of</td>
 <td></td>
-<td>the tax with an additional duty impose</td>
-<td></td>
+<td colspan="2">the tax with an additional duty impose</td>
 </tr>
 <tr>
-<td></td>
 <td>resources of state and local governments due to</td>
 <td></td>
-<td>the lower level government.</td>
-<td></td>
+<td colspan="2">the lower level government.</td>
 </tr>
 <tr>
-<td></td>
 <td>increasing expenditure on welfare activities, the</td>
 <td></td>
-<td>o General, matching &amp; selective grant</td>
-<td></td>
+<td colspan="2">o General, matching &amp; selective grant</td>
 </tr>
 <tr>
-<td></td>
 <td>resource gap vertically between the Centre and the</td>
 <td></td>
-<td>aid: Three types of grant-in-aid are le</td>
-<td></td>
+<td colspan="2">aid: Three types of grant-in-aid are le</td>
 </tr>
 <tr>
-<td></td>
 <td>states is called vertical fiscal imbalance.</td>
 <td></td>
-<td>to correct the vertical imbalance</td>
-<td></td>
+<td colspan="2">to correct the vertical imbalance</td>
 </tr>
 <tr>
-<td></td>
 <td> Horizontal Fiscal Imbalance - Horizontal</td>
 <td></td>
-<td> Horizontal fiscal imbalance is corrected thro</td>
-<td></td>
+<td colspan="2"> Horizontal fiscal imbalance is corrected thro</td>
 </tr>
 <tr>
-<td></td>
 <td>imbalance occurs between units at the same level</td>
 <td></td>
-<td>equalization of fiscal residue. The gap in f</td>
-<td></td>
+<td colspan="2">equalization of fiscal residue. The gap in f</td>
 </tr>
 <tr>
-<td></td>
 <td>of sovereignty. When fiscal imbalance occurs
 between different units of government at the same</td>
 <td></td>
-<td>residue is nullified by interstate transfe</td>
-<td></td>
+<td colspan="2">residue is nullified by interstate transfe</td>
 </tr>
 <tr>
-<td></td>
 <td>level of government in a federation, it is a case of</td>
 <td></td>
-<td>resources.</td>
-<td></td>
+<td colspan="2">resources.</td>
 </tr>
 <tr>
-<td></td>
 <td>horizontal fiscal imbalance.</td>
 <td></td>
-<td></td>
-<td></td>
+<td colspan="2"></td>
 </tr>
 </tbody>
 </table>
 </div>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
-<h4><strong>Finance Commission: Introduction </strong></h4>
-<p>The Finance Commission is a <strong>constitutional body</strong> that determines the process for <strong>distributing </strong><strong>the tax proceeds between the Centre and states</strong>, and among the states as per the constitutional arrangement and present requirement. The Finance Commission was <strong>established in 1951 by Dr B.R. Ambedkar</strong>, the then incumbent law minister, to address vertical and horizontal fiscal imbalances. </p>
-<p>•Several provisions to bridge the fiscal gap between the Centre and the States were already enshrined in the Constitution of India, including Article 268, 269, 270, 275, 282 and 293. •The scope of the Finance Commission is <strong>defined in Article 280 </strong></p>
-<p>Provisions of </p>
-<p>Constitution </p>
-<p>•The President formed a finance commission within two years from the commencement of the Constitution and thereafter at the end of <strong>every fifth year</strong>•The Commission shall include a <strong>chairman and four other members</strong>•Parliament by law determines the requisite qualifications for appointment and the procedure of selection.</p>
-<ul>
-<li><strong>qualification include</strong> qulaified to be  High Court Judge, knowledge of public </li>
-</ul>
-<p>affairs/finance/administration/economics </p>
-<p>Composition </p>
-<p>•It make recommendations to the President about the distribution of the net proceeds of taxes between the Union and States.•It aims to reduce the vertical and horizontal federal fiscal balances</p>
-<p>Objectives of </p>
-<p>the commission </p>
-<p>•Responsible for distribution of net proceeds of taxes between Center and the States •Determines the factors governing grants made to the states in the form of aids •Decides the amount to be given in the form of aid by the center to the states •Make recommendations to the President for the measures that are needed to augment the Fund of a State to supplement the resources of the Panchayats and Municipalities </p>
-<p>Significance of </p>
-<p>the commisision </p>
-<p>•Distribution between the state government and Municipalities of the net proceeds of the taxes, duties, tolls and fee leviable by the state. •Allocation of share of such proceeds between the Municipalities at all levels in a state. •Determination of taxes, duties, tolls, and fees to be assigned or appropriated by the Municipalities. •Grant-in-aid to Municipalities from the consolidated fund of the state. •Measures needed to improve the financial position of the Municipalities </p>
-<p>What more </p>
-<p>does a FC Recommend? </p>
+<p><strong>Finance Commission: Introduction </strong>The Finance Commission is a <strong>constitutional body</strong> that determines the process for <strong>distributing </strong><strong>the tax proceeds between the Centre and states</strong>, and among the states as per the constitutional arrangement and present requirement. The Finance Commission was <strong>established in 1951 by Dr B.R. Ambedkar</strong>, the then incumbent law minister, to address vertical and horizontal fiscal imbalances. </p>
+<p>•Several provisions to bridge the fiscal gap between the Centre and the States were already enshrined in the Constitution of India, including Article 268, 269, 270, 275, 282 and 293. Provisions of •The scope of the Finance Commission is <strong>defined in Article 280 </strong>Constitution </p>
+<p>•The President formed a finance commission within two years from the commencement of the Constitution and thereafter at the end of <strong>every fifth year</strong> •The Commission shall include a <strong>chairman and four other members</strong> •Parliament by law determines the requisite qualifications for appointment and the procedure of selection. Composition </p>
+<ul class="notes-list">
+<li><strong>qualification include</strong> qulaified to be  High Court Judge, knowledge of public affairs/finance/administration/economics 
+</li></ul>
+<p>•It make recommendations to the President about the distribution of the net proceeds of taxes between the Union and States. Objectives of •It aims to reduce the vertical and horizontal federal fiscal balances the commission </p>
+<p>•Responsible for distribution of net proceeds of taxes between Center and the States •Determines the factors governing grants made to the states in the form of aids •Decides the amount to be given in the form of aid by the center to the states Significance of •Make recommendations to the President for the measures that are needed to the augment the Fund of a State to supplement the resources of the Panchayats and Municipalities commisision </p>
+<p>•Distribution between the state government and Municipalities of the net proceeds of the taxes, duties, tolls and fee leviable by the state. What more •Allocation of share of such proceeds between the Municipalities at all levels in a state. does a FC •Determination of taxes, duties, tolls, and fees to be assigned or appropriated by the Municipalities. Recommend? •Grant-in-aid to Municipalities from the consolidated fund of the state. •Measures needed to improve the financial position of the Municipalities </p>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
-<h4><strong>Summary of Finance Commissions till date </strong></h4>
-<p><strong>Finance </strong><strong>Commission</strong></p>
-<p><strong>Year of </strong><strong>establishment</strong><strong>Chairman</strong><strong>Operational </strong></p>
-<p><strong>Share of States in Income Tax </strong><strong>proceeds</strong><strong>First</strong>1951 K.C.Neogi 1952–57 55% <strong>Second</strong>1956 K. Santhanam1957–62 60% </p>
+<h2>Summary of Finance Commissions till date </h2>
+<h4><strong>Finance </strong></h4>
+<h4><strong>Year of </strong></h4>
+<h4><strong>Operational </strong></h4>
+<h4><strong>Share of States in Income Tax </strong></h4>
+<h4><strong>Chairman</strong></h4>
+<h4><strong>Commission</strong></h4>
+<h4><strong>establishment</strong></h4>
 <h4><strong>duration</strong></h4>
+<h4><strong>proceeds</strong></h4>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
+<table class="notes-table">
+<thead><tr>
 <th></th>
 <th>First</th>
 <th></th>
@@ -781,31 +709,22 @@ between different units of government at the same</td>
 <th></th>
 <th>55%</th>
 <th></th>
-</tr>
-</thead>
+</tr></thead>
 </table>
 </div>
+<p><strong>First</strong> 1951 K.C.Neogi 1952–57 55% </p>
+<p><strong>Second</strong> 1956 K. Santhanam 1957–62 60% </p>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
+<table class="notes-table">
+<thead><tr>
+<th colspan="3"></th>
+<th colspan="3"></th>
+<th colspan="3"></th>
+<th colspan="3"></th>
 <th></th>
 <th>65% (corporation tax removed from</th>
 <th></th>
-</tr>
-</thead>
+</tr></thead>
 <tbody>
 <tr>
 <td></td>
@@ -819,573 +738,170 @@ between different units of government at the same</td>
 <td></td>
 <td></td>
 <td>1962–66</td>
-<td></td>
-<td></td>
-<td>ambit of Income tax and not shared</td>
-<td></td>
+<td colspan="2"></td>
+<td colspan="2">ambit of Income tax and not shared</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>with states)</td>
-<td></td>
+<td colspan="3"></td>
+<td colspan="3"></td>
+<td colspan="3"></td>
+<td colspan="4"></td>
+<td colspan="2">with states)</td>
 </tr>
 </tbody>
 </table>
 </div>
-<p><strong>Fourth</strong>1964 P. V. Rajamannar1966–69 75% </p>
+<p>P. V. </p>
+<p><strong>Fourth</strong> 1964 1966–69 75% Rajamannar</p>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
-<th>Rajamannar</th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-</tr>
-</thead>
+<table class="notes-table">
+<thead><tr>
+<th colspan="31">Rajamannar</th>
+</tr></thead>
 <tbody>
 <tr>
 <td></td>
-<td>Fifth</td>
+<td colspan="2">Fifth</td>
 <td></td>
 <td></td>
-<td></td>
-<td>1968</td>
-<td></td>
+<td colspan="4">1968</td>
 <td></td>
 <td></td>
+<td colspan="4">Mahaveer Tyagi</td>
 <td></td>
 <td></td>
-<td>Mahaveer Tyagi</td>
+<td colspan="4">1969–74</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>1969–74</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>75%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">75%</td>
 <td></td>
 </tr>
 <tr>
-<td>K.
+<td colspan="31">K.
 Sixth 1972 Brahmananda 1974–79 80%
 Reddy</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 </tr>
 <tr>
 <td></td>
-<td>Seventh</td>
+<td colspan="2">Seventh</td>
 <td></td>
 <td></td>
-<td></td>
-<td>1977</td>
-<td></td>
+<td colspan="4">1977</td>
 <td></td>
 <td></td>
+<td colspan="4">J. M. Shelat</td>
 <td></td>
 <td></td>
-<td>J. M. Shelat</td>
+<td colspan="4">1979–84</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>1979–84</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>85%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">85%</td>
 <td></td>
 </tr>
 <tr>
-<td>Eighth 1983 Y. B. Chavan 1984–89 85%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="31">Eighth 1983 Y. B. Chavan 1984–89 85%</td>
 </tr>
 <tr>
 <td></td>
-<td>Ninth</td>
+<td colspan="2">Ninth</td>
 <td></td>
 <td></td>
-<td></td>
-<td>1987</td>
-<td></td>
+<td colspan="4">1987</td>
 <td></td>
 <td></td>
+<td colspan="4">N. K. P. Salve</td>
 <td></td>
 <td></td>
-<td>N. K. P. Salve</td>
+<td colspan="4">1989–95</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>1989–95</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>85%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">85%</td>
 <td></td>
 </tr>
 <tr>
-<td>77.5% (penalties and interest
+<td colspan="31">77.5% (penalties and interest
 Tenth 1992 K. C. Pant 1995–0 receipts included in divisible pool
 with States)</td>
+</tr>
+<tr>
+<td colspan="4"></td>
+<td colspan="6"></td>
+<td colspan="6"></td>
+<td colspan="6"></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">29.5% (of net proceeds from all</td>
 <td></td>
 </tr>
 <tr>
 <td></td>
+<td colspan="2">Eleventh</td>
 <td></td>
 <td></td>
+<td colspan="4">1998</td>
 <td></td>
 <td></td>
+<td colspan="4">A. M. Khusro</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>29.5% (of net proceeds from all</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">2000–05</td>
+<td colspan="10"></td>
 </tr>
 <tr>
-<td></td>
-<td>Eleventh</td>
-<td></td>
-<td></td>
-<td></td>
-<td>1998</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>A. M. Khusro</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>2000–05</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="8">shareable central taxes and duties)</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>shareable central taxes and duties)</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>30.5% (share of states at 29.5% if
+<td colspan="31">30.5% (share of states at 29.5% if
 Twelfth 2002 C. Rangarajan 2005–10 the states levy sales tax on sugar,
 textiles and tobacco)</td>
+</tr>
+<tr>
+<td colspan="4"></td>
+<td colspan="6"></td>
 <td></td>
+<td colspan="4">Dr. Vijay L.</td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="6"></td>
+<td colspan="9"></td>
 </tr>
 <tr>
 <td></td>
+<td colspan="2">Thirteenth</td>
 <td></td>
 <td></td>
+<td colspan="4">2007</td>
+<td colspan="7"></td>
+<td></td>
+<td colspan="4">2010–15</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>Dr. Vijay L.</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">32%</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td>Thirteenth</td>
-<td></td>
-<td></td>
-<td></td>
-<td>2007</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>2010–15</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>32%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="20">Kelkar</td>
+</tr>
+<tr>
+<td colspan="31">Fourteenth 2013 Dr. Y. V Reddy 2015–20 42%</td>
 </tr>
 <tr>
 <td></td>
+<td colspan="2">Fifteenth</td>
 <td></td>
 <td></td>
+<td colspan="4">2017</td>
 <td></td>
 <td></td>
+<td colspan="4">N. K. Singh</td>
 <td></td>
 <td></td>
+<td colspan="4">2020–25</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td>Kelkar</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="7">41%</td>
 <td></td>
 </tr>
 <tr>
-<td>Fourteenth 2013 Dr. Y. V Reddy 2015–20 42%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>Fifteenth</td>
-<td></td>
-<td></td>
-<td></td>
-<td>2017</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>N. K. Singh</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>2020–25</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>41%</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>Criteria and weights for the horizontal distribution of the tax
+<td colspan="31">Criteria and weights for the horizontal distribution of the tax
 Before the 10th FC, the distribution between various states was based on two major criteria –Population
 (80–90% and contribution (20–10%). The criteria 10th FC onwards are summarised below in Table 1.
 Table 1. Criteria and weights for horizontal distribution of the tax 10th FC onwards (in %)
@@ -1414,78 +930,19 @@ Ecology
 Demographic
 - - - - - 12.5
 Performance</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 </tr>
 <tr>
 <td></td>
+<td colspan="4">Finance</td>
 <td></td>
-<td>Finance</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="3"></td>
+<td colspan="3"></td>
+<td colspan="6"></td>
+<td colspan="6"></td>
+<td colspan="3"></td>
+<td colspan="3"></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
 <td></td>
 <td>10th</td>
 <td></td>
@@ -1493,16 +950,10 @@ Performance</td>
 <td>11th</td>
 <td></td>
 <td></td>
-<td>12th</td>
+<td colspan="4">12th</td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>13th</td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="4">13th</td>
 <td></td>
 <td></td>
 <td>14th</td>
@@ -1512,390 +963,118 @@ Performance</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td>Commission</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td colspan="29">Commission</td>
 </tr>
 <tr>
-<td></td>
-<td>Income Distance</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>60</td>
-<td></td>
-<td></td>
-<td>62.5</td>
-<td></td>
-<td></td>
-<td>50</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>50</td>
-<td></td>
-<td></td>
-<td>45</td>
-<td></td>
-<td></td>
+<td colspan="6">Income Distance</td>
+<td colspan="3">60</td>
+<td colspan="3">62.5</td>
+<td colspan="6">50</td>
+<td colspan="6">-</td>
+<td colspan="3">50</td>
+<td colspan="3">45</td>
 </tr>
 <tr>
-<td></td>
-<td>Population</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>20 (Census
+<td colspan="6">Population</td>
+<td colspan="3">20 (Census
 1971)</td>
-<td></td>
-<td></td>
-<td>10 (Census
+<td colspan="3">10 (Census
 1971)</td>
-<td></td>
-<td></td>
-<td>25 (Census
+<td colspan="6">25 (Census
 1971)</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>25 (Census
+<td colspan="6">25 (Census
 1971)</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>17.5 (Census
+<td colspan="3">17.5 (Census
 1971) + 10
 (Census 2011)</td>
-<td></td>
-<td></td>
-<td>15 (Census
+<td colspan="3">15 (Census
 2011)</td>
-<td></td>
-<td></td>
 </tr>
 <tr>
-<td></td>
-<td>Infrastructure
+<td colspan="6">Infrastructure
 Index</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>5</td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
+<td colspan="3">5</td>
+<td colspan="3">7.5</td>
+<td colspan="6">-</td>
+<td colspan="6">-</td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
 </tr>
 <tr>
-<td></td>
-<td>Fiscal Discipline</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>17.5</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
+<td colspan="6">Fiscal Discipline</td>
+<td colspan="3">-</td>
+<td colspan="3">7.5</td>
+<td colspan="6">7.5</td>
+<td colspan="6">17.5</td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
 </tr>
 <tr>
-<td></td>
-<td>Tax effort</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>10</td>
-<td></td>
-<td></td>
-<td>5.0</td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>2.5</td>
-<td></td>
-<td></td>
+<td colspan="6">Tax effort</td>
+<td colspan="3">10</td>
+<td colspan="3">5.0</td>
+<td colspan="6">7.5</td>
+<td colspan="6">-</td>
+<td colspan="3">-</td>
+<td colspan="3">2.5</td>
 </tr>
 <tr>
-<td></td>
-<td>Fiscal Capacity
+<td colspan="6">Fiscal Capacity
 discipline</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>47.5</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
+<td colspan="6">-</td>
+<td colspan="6">47.5</td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
 </tr>
 <tr>
-<td></td>
-<td>Area</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>5</td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td>10</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>10</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>15</td>
-<td></td>
-<td></td>
-<td>15</td>
-<td></td>
-<td></td>
+<td colspan="6">Area</td>
+<td colspan="3">5</td>
+<td colspan="3">7.5</td>
+<td colspan="6">10</td>
+<td colspan="6">10</td>
+<td colspan="3">15</td>
+<td colspan="3">15</td>
 </tr>
 <tr>
-<td></td>
-<td>Forest Cover</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>7.5</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
+<td colspan="6">Forest Cover</td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
+<td colspan="6">-</td>
+<td colspan="6">-</td>
+<td colspan="3">7.5</td>
+<td colspan="3">-</td>
 </tr>
 <tr>
-<td></td>
-<td>Forest and
+<td colspan="6">Forest and
 Ecology</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>10</td>
-<td></td>
-<td></td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
+<td colspan="6">-</td>
+<td colspan="6">-</td>
+<td colspan="3">-</td>
+<td colspan="3">10</td>
 </tr>
 <tr>
-<td></td>
-<td>Demographic
+<td colspan="6">Demographic
 Performance</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>-</td>
-<td></td>
-<td></td>
-<td>12.5</td>
-<td></td>
-<td></td>
+<td colspan="3">-</td>
+<td colspan="3">-</td>
+<td colspan="6">-</td>
+<td colspan="6">-</td>
+<td colspan="3">-</td>
+<td colspan="3">12.5</td>
 </tr>
 </tbody>
 </table>
 </div>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
-<th>Box 1: Understanding the criteria used in horizontal distribution
+<table class="notes-table">
+<thead><tr>
+<th colspan="2">Box 1: Understanding the criteria used in horizontal distribution
  Income distance is the distance of the state’s income from the state with the highest income.
 Goa has the highest per capita GSDP followed by Sikkim. But, they are very so, to avoid
 distortions, the State with the third highest per capita GSDP – Haryana, has been taken as the
@@ -1920,9 +1099,7 @@ population. Computed by using the reciprocal of the total fertility ratio of eac
 the ratio of the average per capita own tax revenue and the average per capita state GDP
 during the three-year period between 2014-15 and 2016-17.
 Salient features of the 14th Commission</th>
-<th></th>
-</tr>
-</thead>
+</tr></thead>
 <tbody>
 <tr>
 <td>Chairman</td>
@@ -1954,12 +1131,10 @@ water are the national priorities of the 14th Commission.</td>
 <p><strong>water</strong> are the <strong>national priorities of the 14th</strong> Commission. </p>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
 <h4><strong>Salient features of the 15</strong><strong>th</strong><strong> Commission: The Way Forward</strong></h4>
 <div class="table-responsive">
-<table>
-<thead>
-<tr>
+<table class="notes-table">
+<thead><tr>
 <th>Chairman N.K. Singh
 Members 1. Ajay Narayan Jha (replaced Shaktikanta Das)
 2. Anoop Singh
@@ -1974,17 +1149,11 @@ proceeds of taxes between the Union and States and also for
 the allocation amongst the States themselves.
 Unique point to First finance commission after rollout of GST
 note it may suggest devolution formula based on GST experience</th>
-<th>Chairman</th>
-<th></th>
-<th></th>
-<th>N.K. Singh</th>
-<th></th>
-<th></th>
-</tr>
-</thead>
+<th colspan="3">Chairman</th>
+<th colspan="3">N.K. Singh</th>
+</tr></thead>
 <tbody>
 <tr>
-<td></td>
 <td></td>
 <td>Members</td>
 <td></td>
@@ -1993,43 +1162,20 @@ note it may suggest devolution formula based on GST experience</th>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>2. Anoop Singh</td>
-<td></td>
+<td colspan="4"></td>
+<td colspan="2">2. Anoop Singh</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>3. Ramesh Chand (Part time)</td>
-<td></td>
+<td colspan="2">3. Ramesh Chand (Part time)</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>4. Ashok Lahiri</td>
-<td></td>
+<td colspan="2">4. Ashok Lahiri</td>
 </tr>
 <tr>
-<td></td>
-<td>Secretary</td>
-<td></td>
-<td></td>
-<td>Arvind Mehta</td>
-<td></td>
-<td></td>
+<td colspan="3">Secretary</td>
+<td colspan="3">Arvind Mehta</td>
 </tr>
 <tr>
-<td></td>
 <td></td>
 <td>Constituted in</td>
 <td></td>
@@ -2038,18 +1184,12 @@ note it may suggest devolution formula based on GST experience</th>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td>Recommendation
+<td colspan="3">Recommendation
 Period</td>
-<td></td>
-<td></td>
-<td>April 01, 2020 to March 31, 2025
+<td colspan="3">April 01, 2020 to March 31, 2025
 (5 fiscal years)</td>
-<td></td>
-<td></td>
 </tr>
 <tr>
-<td></td>
 <td></td>
 <td>Purpose</td>
 <td></td>
@@ -2058,70 +1198,48 @@ Period</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>proceeds of taxes between the Union and States and also for</td>
-<td></td>
+<td colspan="4"></td>
+<td colspan="2">proceeds of taxes between the Union and States and also for</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>the allocation amongst the States themselves.</td>
-<td></td>
+<td colspan="2">the allocation amongst the States themselves.</td>
 </tr>
 <tr>
-<td></td>
-<td>Unique point to
+<td colspan="3">Unique point to
 note</td>
-<td></td>
-<td></td>
-<td>First finance commission after rollout of GST
+<td colspan="3">First finance commission after rollout of GST
 it may suggest devolution formula based on GST experience</td>
-<td></td>
-<td></td>
 </tr>
 </tbody>
 </table>
 </div>
 </section>
 <section class="pdf-page">
-<h4><strong>Federal Finance System and Finance Commission </strong></h4>
 <h4><strong>Box 2: Report of 15</strong><strong>th</strong><strong> Finance Commission </strong></h4>
-<ul>
-<li><strong>15</strong><strong>th</strong><strong> Fc is required to submit two reports </strong></li>
-</ul>
-<p>o<strong>The first report, consisting of recommendations for the financial year 2020-21 </strong>o<strong>The final report with recommendations for the 2021-26 period </strong><strong>Recommendations of First Report </strong></p>
-<ul>
-<li>In 2020-21, the following grants will be provided to states </li>
-</ul>
-<p>o<strong>Revenue deficit grants:</strong> To 14 states to meet their revenue deficit. o<strong>Special Grants:</strong> To Karnataka, Mizoram and Telangana as their revenue deficit has been declined (Total grant Rs 6,764 crore). o<strong>Grants to local bodies</strong>: The total grants to local bodies for 2020-21 has been fixed at Rs 90,000 crore, of which Rs 60,750 crore is recommended for rural local bodies (67.5%) and Rs 29,250 crore for urban local bodies (32.5%). o<strong>Disaster management grants</strong>: The National Disaster Risk Management Funds has been allocated Rs 12,390 crore and the State Disaster Risk Management Funds have been allocated Rs 28,983 crore. o<strong>Sector-specific grants</strong>: Recommended a grant of Rs 7,375 crore for nutrition in 2020-21. Sector-specific grants for (i) nutrition, (ii) health, (iii) pre-primary education, (iv) judiciary, (v) rural connectivity, (, (vi) railways, (vii) police training and (viii) housing sectors will be provided in the final report. o<strong>Performance-based grants: </strong>Guidelines for performance-based grants include: (i) implementation of agricultural reforms, (ii) development of aspirational districts and blocks, (iii) power sector reforms, (iv) enhancing trade including exports, (v) incentives for education, and (vi) promotion of domestic international tourism and the grant amount will be provided in the final report</p>
+<p><strong>15</strong><strong>th</strong><strong> Fc is required to submit two reports </strong></p>
+<ul class="notes-list">
+<li>
+</li></ul>
+<p>o</p>
+<p><strong>The first report, consisting of recommendations for the financial year 2020-21 </strong>o</p>
+<h4><strong>The final report with recommendations for the 2021-26 period </strong></h4>
+<p><strong>Recommendations of First Report </strong></p>
+<ul class="notes-list">
+<li>In 2020-21, the following grants will be provided to states o
+</li></ul>
+<p><strong>Revenue deficit grants:</strong> To 14 states to meet their revenue deficit. o <strong>Special Grants:</strong> To Karnataka, Mizoram and Telangana as their revenue deficit has been declined (Total grant Rs 6,764 crore). o <strong>Grants to local bodies</strong>: The total grants to local bodies for 2020-21 has been fixed at Rs 90,000 crore, of which Rs 60,750 crore is recommended for rural local bodies (67.5%) and Rs 29,250 crore for urban local bodies (32.5%). o <strong>Disaster management grants</strong>: The National Disaster Risk Management Funds has been allocated Rs 12,390 crore and the State Disaster Risk Management Funds have been allocated Rs 28,983 crore. o <strong>Sector-specific grants</strong>: Recommended a grant of Rs 7,375 crore for nutrition in 2020- 21. Sector-specific grants for (i) nutrition, (ii) health, (iii) pre-primary education, (iv) judiciary, (v) rural connectivity, (, (vi) railways, (vii) police training and (viii) housing sectors will be provided in the final report. o <strong>Performance-based grants: </strong>Guidelines for performance-based grants include: (i) implementation of agricultural reforms, (ii) development of aspirational districts and blocks, (iii) power sector reforms, (iv) enhancing trade including exports, (v) incentives for education, and (vi) promotion of domestic international tourism and the grant amount will be provided in the final report</p>
 <p><strong>Recommendations on Fiscal Roadmap </strong></p>
-<ul>
-<li><strong>Fiscal Deficit and Debt level:  </strong>Both central and state governments should focus on debt </li>
-</ul>
-<p>consolidation and comply with the fiscal deficit and debt levels as per their respective Fiscal Responsibility and Budget Management (FRBM) Acts. </p>
-<ul>
-<li><strong>Off-budget borrowings:</strong> Both the central and state governments should make full disclosure of </li>
-</ul>
-<p>extra budgetary borrowings. The outstanding extra-budgetary liabilities should be clearly identified and eliminated in a time-bound manner </p>
-<ul>
-<li><strong>Tax capacity:</strong> (i) broadening the tax base, (ii) streamlining tax rates, (iii) and increasing </li>
-</ul>
-<p>capacity and expertise of tax administration in all tiers of the government. </p>
-<ul>
-<li><strong>Statutory framework for public financial management:</strong> Forming an expert group to draft </li>
-</ul>
-<p>legislation to provide for a statutory framework for sound public financial management system </p>
-<ul>
-<li><strong>GST implementation:</strong> Considering the challenges in implementation of GST and continuing </li>
-</ul>
-<p>dependence of states on centre to make up for shortfall in revenue, the structural implications of GST for low consumption states need to be considered. </p>
+<ul class="notes-list">
+<li><strong>Fiscal Deficit and Debt level:  </strong>Both central and state governments should focus on debt consolidation and comply with the fiscal deficit and debt levels as per their respective Fiscal Responsibility and Budget Management (FRBM) Acts. 
+</li>
+<li><strong>Off-budget borrowings:</strong> Both the central and state governments should make full disclosure of extra budgetary borrowings. The outstanding extra-budgetary liabilities should be clearly identified and eliminated in a time-bound manner 
+</li>
+<li><strong>Tax capacity:</strong> (i) broadening the tax base, (ii) streamlining tax rates, (iii) and increasing capacity and expertise of tax administration in all tiers of the government. 
+</li>
+<li><strong>Statutory framework for public financial management:</strong> Forming an expert group to draft legislation to provide for a statutory framework for sound public financial management system 
+</li>
+<li><strong>GST implementation:</strong> Considering the challenges in implementation of GST and continuing dependence of states on centre to make up for shortfall in revenue, the structural implications of GST for low consumption states need to be considered. 
+</li></ul>
 </section>
 </main>
 </article>

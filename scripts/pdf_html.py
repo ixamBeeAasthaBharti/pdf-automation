@@ -1,4 +1,3 @@
-
 """
 Convert a PDF to clean, semantic, flowable HTML using PyMuPDF.
 
