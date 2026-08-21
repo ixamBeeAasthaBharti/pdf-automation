@@ -820,6 +820,99 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
     # 1. Find and VALIDATE tables before excluding any text from the page.
     # Never use raw page.find_tables() results here.
     valid_tables = find_valid_tables(page)
+    
+    # 1.5 Detect vector diagrams/flowcharts/chemical structures conservatively
+    page_w, page_h = rect.width, rect.height
+    draw_rects = []
+    for d in page.get_drawings():
+        r = d["rect"]
+        # Skip rule lines (headers/footers) and page borders
+        if r.width > page_w * 0.9 and r.height < 5:
+            continue
+        if r.height > page_h * 0.9 and r.width < 5:
+            continue
+        if r.width > page_w * 0.95 and r.height > page_h * 0.95:
+            continue
+        if r.width == 0 and r.height == 0:
+            continue
+        # Skip drawings in header/footer zones
+        if r.y1 < 80 or r.y0 > page_h - 75:
+            continue
+        # Skip light gray watermark fills
+        fill = d.get("fill")
+        if fill and len(fill) == 3:
+            r_val, g_val, b_val = fill
+            if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
+                continue
+        draw_rects.append(r)
+
+    # Cluster drawings
+    diagram_clusters = []
+    for r in draw_rects:
+        merged = False
+        for idx_c, c in enumerate(diagram_clusters):
+            dx = max(0, c.x0 - r.x1, r.x0 - c.x1)
+            dy = max(0, c.y0 - r.y1, r.y0 - c.y1)
+            if dx < 40 and dy < 40:
+                diagram_clusters[idx_c] = fitz.Rect(
+                    min(r.x0, c.x0), min(r.y0, c.y0),
+                    max(r.x1, c.x1), max(r.y1, c.y1)
+                )
+                merged = True
+                break
+        if not merged:
+            diagram_clusters.append(fitz.Rect(r))
+
+    # Re-merge clusters
+    changed = True
+    while changed:
+        changed = False
+        for i_c in range(len(diagram_clusters)):
+            for j_c in range(i_c + 1, len(diagram_clusters)):
+                c1, c2 = diagram_clusters[i_c], diagram_clusters[j_c]
+                dx = max(0, c2.x0 - c1.x1, c1.x0 - c2.x1)
+                dy = max(0, c2.y0 - c1.y1, c1.y0 - c2.y1)
+                if dx < 40 and dy < 40:
+                    diagram_clusters[i_c] = fitz.Rect(
+                        min(c1.x0, c2.x0), min(c1.y0, c2.y0),
+                        max(c1.x1, c2.x1), max(c1.y1, c2.y1)
+                      )
+                    diagram_clusters.pop(j_c)
+                    changed = True
+                    break
+            if changed:
+                break
+
+    # Keep clusters containing at least 5 drawings
+    valid_diagram_rects = []
+    for c in diagram_clusters:
+        if c.width < 50 or c.height < 50:
+            continue
+            
+        # Ignore diagram if it overlaps with any valid table
+        overlaps_table = False
+        for t in valid_tables:
+            tb = fitz.Rect(t.bbox)
+            intersect = c & tb
+            if not intersect.is_empty:
+                if (intersect.width * intersect.height) / (c.width * c.height) > 0.2:
+                    overlaps_table = True
+                    break
+        if overlaps_table:
+            continue
+            
+        contains_count = 0
+        for d in page.get_drawings():
+            r = d["rect"]
+            fill = d.get("fill")
+            if fill and len(fill) == 3:
+                r_val, g_val, b_val = fill
+                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
+                    continue
+            if c.x0 - 5 <= r.x0 and r.x1 <= c.x1 + 5 and c.y0 - 5 <= r.y0 and r.y1 <= c.y1 + 5:
+                contains_count += 1
+        if contains_count >= 5:
+            valid_diagram_rects.append(c)
         
     # 2. Extract and filter text lines
     text_dict = page.get_text("dict")
@@ -833,6 +926,18 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         bbox = block.get("bbox", (0, 0, 0, 0))
         # Skip blocks inside tables
         if is_inside_table(bbox, valid_tables):
+            continue
+            
+        # Skip blocks inside diagrams
+        bx0, by0, bx1, by1 = bbox
+        bcx = (bx0 + bx1) / 2
+        bcy = (by0 + by1) / 2
+        inside_diagram = False
+        for dr in valid_diagram_rects:
+            if dr.x0 - 5 <= bcx <= dr.x1 + 5 and dr.y0 - 5 <= bcy <= dr.y1 + 5:
+                inside_diagram = True
+                break
+        if inside_diagram:
             continue
             
         for line in block.get("lines", []):
@@ -1001,6 +1106,14 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
             "data": t
         })
         
+    # Add detected vector diagrams/flowcharts to render in-place
+    for dr in valid_diagram_rects:
+        page_elements.append({
+            "type": "diagram",
+            "bbox": (dr.x0, dr.y0, dr.x1, dr.y1),
+            "data": dr
+        })
+        
     # Sort all elements on page top-to-bottom
     page_elements.sort(key=lambda e: e["bbox"][1])
     
@@ -1055,6 +1168,19 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                     )
                 except Exception as e:
                     print(f"Error extracting image block: {e}", file=sys.stderr)
+        elif el_type == "diagram":
+            bbox = element["bbox"]
+            clip_rect = fitz.Rect(bbox)
+            if clip_rect.width > 0 and clip_rect.height > 0:
+                try:
+                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
+                    img_bytes = pix.tobytes("png")
+                    b64 = base64.b64encode(img_bytes).decode("ascii")
+                    elements_html.append(
+                        f'<figure><img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" /></figure>'
+                    )
+                except Exception as e:
+                    print(f"Error extracting diagram block: {e}", file=sys.stderr)
         elif el_type == "text":
             text_html = render_text_block_semantic(element["data"], body_size, page)
             if text_html:
