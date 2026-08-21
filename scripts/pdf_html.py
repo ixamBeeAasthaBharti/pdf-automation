@@ -15,6 +15,7 @@ import html
 import sys
 from pathlib import Path
 
+import re
 import pymupdf as fitz
 
 # ====== EDIT THESE TWO LINES ======
@@ -349,9 +350,9 @@ def classify_heading(visible_lines: list, body_size: float):
         return None
     max_size = max(s.get("size", 12) for s in spans)
     ratio = max_size / body_size if body_size else 1
-    if ratio >= 1.6:
+    if ratio >= 1.2:
         return "h2"
-    if ratio >= 1.3:
+    if ratio >= 1.05:
         return "h3"
     return "h4"
 
@@ -517,9 +518,12 @@ def find_valid_tables(page):
 
         for table in candidates:
             tx0, ty0, tx1, ty1 = table.bbox
+            table_height = ty1 - ty0
 
-            # Ignore footer/page-number regions.
+            # Ignore footer/page-number regions and false-positive footer rules.
             if ty1 < 90 or ty0 > page_height - 75:
+                continue
+            if ty1 > page_height - 130 and table_height < 60:
                 continue
 
             quality = _table_quality_score(table, page)
@@ -733,6 +737,9 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
             heading_tag = "h2"
             # Strip both strong and em from h2
             inner = inner.replace("<em>", "").replace("</em>", "").replace("<strong>", "").replace("</strong>", "")
+        elif color == 0x843c0b:
+            heading_tag = "h3"
+            inner = inner.replace("<em>", "").replace("</em>", "")
         else:
             # Strip only em from other subheadings (keep strong for navy color)
             inner = inner.replace("<em>", "").replace("</em>", "")
@@ -993,6 +1000,14 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         is_all_bold = all("Bold" in s.get("font", "") for s in spans)
         text_content = "".join(decode_span_text(s) for s in spans).strip()
         is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
+        if is_heading and current_lines:
+            prev_line = current_lines[-1]
+            prev_spans = [s for s in prev_line.get("spans", []) if s.get("text", "").strip()]
+            if prev_spans:
+                prev_text = "".join(decode_span_text(s) for s in prev_spans).strip()
+                gap = line["bbox"][1] - prev_line["bbox"][3]
+                if gap < 16 and prev_text and not prev_text[-1] in (".", "?", "!", ":", ";"):
+                    is_heading = False
         is_pink = is_pink_heading_block(line["bbox"], page)
         
         # Flush if: heading, pink block, or transitioning between bullet list and normal paragraph
@@ -1024,8 +1039,19 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                     if not is_continuation:
                         should_flush = True
             else:
-                # Current block is normal text. Flush if new line is a bullet.
-                if is_bullet:
+                # Current block is normal text. Flush if it contains a heading.
+                is_current_heading = False
+                if len(current_lines) == 1:
+                    prev_line = current_lines[0]
+                    prev_spans = [s for s in prev_line.get("spans", []) if s.get("text", "").strip()]
+                    if prev_spans:
+                        prev_bold = all("Bold" in s.get("font", "") for s in prev_spans)
+                        prev_text = "".join(decode_span_text(s) for s in prev_spans).strip()
+                        if prev_bold and len(prev_text) < 80 and not prev_text.endswith("."):
+                            is_current_heading = True
+                if is_current_heading:
+                    should_flush = True
+                elif is_bullet:
                     should_flush = True
                     
         if should_flush:
@@ -1163,7 +1189,13 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                         txt_spans = lines[0].get("spans", [])
                         txt_content = "".join(decode_span_text(s) for s in txt_spans).strip()
                         gap = next_el["bbox"][1] - el["bbox"][3]
-                        if 0 <= gap < 45 and len(txt_content) < 120:
+                        is_next_heading = False
+                        if all("Bold" in s.get("font", "") for s in txt_spans):
+                            is_next_heading = True
+                        elif re.match(r"^\d+[\.\s]", txt_content):
+                            is_next_heading = True
+
+                        if 0 <= gap < 45 and len(txt_content) < 120 and not is_next_heading:
                             el["caption"] = txt_content
                             merged_elements.append(el)
                             i += 2
