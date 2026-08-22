@@ -634,19 +634,15 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     if heading_tag:
         line = visible_lines[0]
         spans = line["spans"]
-        # Convert custom colored (#17365d) headers or explicit "introduction" text or pink bg headers to h2
-        color = spans[0].get("color", 0)
         inner = "".join(render_span_semantic(s) for s in spans)
-        if color == 0x17365d or inner.strip().lower() == "introduction" or inner.strip().lower() == "economy- introduction" or is_pink:
+        if is_pink:
             heading_tag = "h2"
             # Strip both strong and em from h2
             inner = inner.replace("<em>", "").replace("</em>", "").replace("<strong>", "").replace("</strong>", "")
-        elif color == 0x843c0b:
-            heading_tag = "h3"
-            inner = inner.replace("<em>", "").replace("</em>", "")
         else:
-            # Strip only em from other subheadings (keep strong for navy color)
-            inner = inner.replace("<em>", "").replace("</em>", "")
+            heading_tag = "h3"
+            # Strip both strong and em from h3
+            inner = inner.replace("<em>", "").replace("</em>", "").replace("<strong>", "").replace("</strong>", "")
         res = f"<{heading_tag}>{inner}</{heading_tag}>"
     else:
         html_out = []
