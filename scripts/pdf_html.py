@@ -81,129 +81,6 @@ DOC_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  body {{
-    margin: 0;
-    padding: 40px 20px;
-    background-color: #f7f9fa;
-    font-family: 'Literata', 'Lora', Georgia, serif;
-    color: #1a1a1a;
-    line-height: 1.65;
-  }}
-  .container {{
-    max-width: 800px;
-    margin: 0 auto;
-    background: #ffffff;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }}
-  .pdf-page {{
-    margin-bottom: 40px;
-    border-bottom: 1px dashed #e1e8ed;
-    padding-bottom: 40px;
-  }}
-  .pdf-page:last-child {{
-    margin-bottom: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-  }}
-  h1, h2, h3, h4 {{
-    color: #0b2240;
-    font-family: 'Outfit', sans-serif;
-    font-weight: 700;
-    margin-top: 1.8em;
-    margin-bottom: 0.6em;
-  }}
-  h1 {{
-    font-size: 2.2rem;
-    border-bottom: 2px solid #e1e8ed;
-    padding-bottom: 10px;
-    margin-top: 0;
-  }}
-  h2 {{
-    font-size: 1.8rem;
-    border-bottom: 1px solid #ecf0f1;
-    padding-bottom: 8px;
-  }}
-  h3 {{
-    font-size: 1.4rem;
-  }}
-  h4 {{
-    font-size: 1.15rem;
-  }}
-  p {{
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    text-align: justify;
-  }}
-  ul {{
-    margin-top: 0;
-    margin-bottom: 1.2em;
-    padding-left: 24px;
-  }}
-  li {{
-    margin-bottom: 0.6em;
-  }}
-  table {{
-    width: 100%;
-    border-collapse: collapse;
-    margin: 24px 0;
-    font-size: 0.95rem;
-  }}
-  th, td {{
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #e1e8ed;
-    vertical-align: top;
-  }}
-  .table-cell-line {{
-    margin: 0 0 4px;
-  }}
-  .table-cell-line:last-child {{
-    margin-bottom: 0;
-  }}
-  th {{
-    background-color: #f4f6f8;
-    color: #0b2240;
-    font-weight: 600;
-  }}
-  tr:hover {{
-    background-color: #fcfdfe;
-  }}
-  .table-responsive {{
-    overflow-x: auto;
-    margin: 24px 0;
-  }}
-  img {{
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 24px auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  }}
-  .info-card {{
-    border: 2px solid #e36c0a;
-    border-radius: 8px;
-    background-color: #fdfaf6;
-    padding: 15px 20px;
-    margin: 20px auto;
-    max-width: 85%;
-    text-align: center;
-  }}
-  .info-card p {{
-    margin: 0;
-    text-align: center;
-    color: #e36c0a;
-    font-size: 0.95rem;
-    line-height: 1.65;
-  }}
-  .info-card strong {{
-    color: #e36c0a !important;
-    font-weight: 700;
-  }}
-</style>
 </head>
 <body>
 <article>
@@ -667,8 +544,12 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     for l in block.get("lines", []):
         text_spans.extend(l.get("spans", []))
     
+    is_note_block = False
+    is_figure_caption = False
     if text_spans:
         text_content = "".join(s.get("text", "") for s in text_spans).strip()
+        is_note_block = bool(re.match(r'^(note\s*[:-]|नोट\s*[:-]|note\b)', text_content, re.IGNORECASE))
+        is_figure_caption = bool(re.match(r'^figure\b', text_content, re.IGNORECASE))
         normalized_text = text_content.lower().replace(" ", "").replace("-", "")
         if normalized_text in ["economyintroduction", "studynotes"]:
             max_size = max(s.get("size", 12) for s in text_spans)
@@ -686,6 +567,17 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
             
     if not visible_lines:
         return ""
+        
+    if is_figure_caption:
+        para_spans = []
+        for line in visible_lines:
+            spans = line["spans"]
+            if para_spans and not para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
+                para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
+            para_spans.extend(spans)
+        inner = "".join(render_span_semantic(s) for s in para_spans)
+        inner = inner.replace("<strong>", "").replace("</strong>", "").replace("<em>", "").replace("</em>", "")
+        return f"<figcaption>{inner}</figcaption>"
         
     # Check if this block is an info card (colored 0xe36c0a)
     if is_color_block(block, 0xe36c0a):
@@ -738,6 +630,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     if is_pink:
         heading_tag = "h2"
         
+    res = ""
     if heading_tag:
         line = visible_lines[0]
         spans = line["spans"]
@@ -754,93 +647,107 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
         else:
             # Strip only em from other subheadings (keep strong for navy color)
             inner = inner.replace("<em>", "").replace("</em>", "")
-        return f"<{heading_tag}>{inner}</{heading_tag}>"
+        res = f"<{heading_tag}>{inner}</{heading_tag}>"
+    else:
+        html_out = []
+        active_lists = []  # Stack of bullet x-coordinates
+        current_para_spans = []
         
-    html_out = []
-    active_lists = []  # Stack of bullet x-coordinates
-    current_para_spans = []
-    
-    for line in visible_lines:
-        spans = line["spans"]
-        if is_bullet_span(spans[0]):
-            # Flush existing paragraph content
-            if current_para_spans:
-                para_text = "".join(render_span_semantic(s) for s in current_para_spans)
-                html_out.append(f"<p>{para_text}</p>")
-                current_para_spans = []
+        for line in visible_lines:
+            spans = line["spans"]
+            if is_bullet_span(spans[0]):
+                # Flush existing paragraph content
+                if current_para_spans:
+                    para_text = "".join(render_span_semantic(s) for s in current_para_spans)
+                    html_out.append(f"<p>{para_text}</p>")
+                    current_para_spans = []
+                x_bullet = spans[0]["bbox"][0]
+                bullet_char = decode_span_text(spans[0]).strip()
+                is_alphanumeric = bool(re.match(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$', bullet_char))
+                cls_extra = " list-alphanumeric" if is_alphanumeric else ""
                 
-            x_bullet = spans[0]["bbox"][0]
-            bullet_char = decode_span_text(spans[0]).strip()
-            import re
-            is_alphanumeric = bool(re.match(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$', bullet_char))
-            cls_extra = " list-alphanumeric" if is_alphanumeric else ""
-            
-            if not active_lists:
-                is_checkmark = bullet_char in ("✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc")
-                if is_checkmark:
-                    html_out.append(f'<ul class="notes-sub{cls_extra}">')
-                    active_lists.append(x_bullet - 20)  # Dummy parent level
-                    active_lists.append(x_bullet)
-                else:
-                    html_out.append(f'<ul class="notes-list{cls_extra}">')
-                    active_lists.append(x_bullet)
-            else:
-                if x_bullet > active_lists[-1] + 5:
-                    level = len(active_lists)
-                    cls_name = "notes-sub" if level == 1 else "notes-subsub"
-                    html_out.append(f'<ul class="{cls_name}{cls_extra}">')
-                    active_lists.append(x_bullet)
-                elif x_bullet < active_lists[-1] - 5:
-                    while active_lists and x_bullet < active_lists[-1] - 5:
-                        html_out.append("</li></ul>")
-                        active_lists.pop()
-                    if not active_lists:
-                        html_out.append(f'<ul class="notes-list{cls_extra}">')
+                if not active_lists:
+                    is_checkmark = bullet_char in ("✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc")
+                    if is_checkmark:
+                        html_out.append(f'<ul class="notes-sub{cls_extra}">')
+                        active_lists.append(x_bullet - 20)  # Dummy parent level
                         active_lists.append(x_bullet)
                     else:
-                        html_out.append("</li>")
+                        html_out.append(f'<ul class="notes-list{cls_extra}">')
+                        active_lists.append(x_bullet)
                 else:
-                    html_out.append("</li>")
-            
-            if is_alphanumeric:
-                prefix_html = render_span_semantic(spans[0])
-                rest_html = "".join(render_span_semantic(s) for s in spans[1:])
-                if not prefix_html.endswith(" ") and not rest_html.startswith(" "):
-                    inner = prefix_html + " " + rest_html
-                else:
-                    inner = prefix_html + rest_html
-            else:
-                content_spans = spans[1:]
-                if content_spans:
-                    inner = "".join(render_span_semantic(s) for s in content_spans)
-                else:
-                    inner = ""
-            html_out.append(f"<li>{inner}")
-        else:
-            if active_lists:
-                inner = "".join(render_span_semantic(s) for s in spans)
-                if html_out:
-                    last_item = html_out[-1]
-                    if not last_item.endswith(" ") and not inner.startswith(" "):
-                        html_out[-1] = last_item + " " + inner
+                    if x_bullet > active_lists[-1] + 5:
+                        level = len(active_lists)
+                        cls_name = "notes-sub" if level == 1 else "notes-subsub"
+                        html_out.append(f'<ul class="{cls_name}{cls_extra}">')
+                        active_lists.append(x_bullet)
+                    elif x_bullet < active_lists[-1] - 5:
+                        while active_lists and x_bullet < active_lists[-1] - 5:
+                            html_out.append("</li></ul>")
+                            active_lists.pop()
+                        if not active_lists:
+                            html_out.append(f'<ul class="notes-list{cls_extra}">')
+                            active_lists.append(x_bullet)
+                        else:
+                            html_out.append("</li>")
                     else:
-                        html_out[-1] = last_item + inner
+                        html_out.append("</li>")
+                
+                if is_alphanumeric:
+                    prefix_html = render_span_semantic(spans[0])
+                    rest_html = "".join(render_span_semantic(s) for s in spans[1:])
+                    if not prefix_html.endswith(" ") and not rest_html.startswith(" "):
+                        inner = prefix_html + " " + rest_html
+                    else:
+                        inner = prefix_html + rest_html
+                else:
+                    content_spans = spans[1:]
+                    if content_spans:
+                        inner = "".join(render_span_semantic(s) for s in content_spans)
+                    else:
+                        inner = ""
+                html_out.append(f"<li>{inner}")
             else:
-                # Append to running paragraph list, keeping word spacing clean
-                if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
-                    current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
-                current_para_spans.extend(spans)
-            
-    # Flush remaining paragraph or list wraps
-    if current_para_spans:
-        para_text = "".join(render_span_semantic(s) for s in current_para_spans)
-        html_out.append(f"<p>{para_text}</p>")
-    
-    while active_lists:
-        html_out.append("</li></ul>")
-        active_lists.pop()
+                if active_lists:
+                    inner = "".join(render_span_semantic(s) for s in spans)
+                    if html_out:
+                        last_item = html_out[-1]
+                        if not last_item.endswith(" ") and not inner.startswith(" "):
+                            html_out[-1] = last_item + " " + inner
+                        else:
+                            html_out[-1] = last_item + inner
+                else:
+                    # Append to running paragraph list, keeping word spacing clean
+                    if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
+                        current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
+                    current_para_spans.extend(spans)
+                
+        # Flush remaining paragraph or list wraps
+        if current_para_spans:
+            para_text = "".join(render_span_semantic(s) for s in current_para_spans)
+            html_out.append(f"<p>{para_text}</p>")
         
-    return "\n".join(html_out)
+        while active_lists:
+            html_out.append("</li></ul>")
+            active_lists.pop()
+            
+        res = "\n".join(html_out)
+
+    if is_note_block:
+        pattern = re.compile(
+            r'^((?:<[a-z0-9]+>)*(?:<strong>|<em>)*)(note\s*[:-]|नोट\s*[:-]|note\b)((?:</strong>|</em>)*)(\s*)',
+            re.IGNORECASE
+        )
+        match = pattern.match(res)
+        if match:
+            before = match.group(1)
+            prefix = match.group(2)
+            after = match.group(3)
+            spacing = match.group(4)
+            wrapped = f'<span class="note-title">{prefix}</span>'
+            res = before + wrapped + after + spacing + res[match.end():]
+        return f'<div class="content-note">\n{res}\n</div>'
+    return res
 
 def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float) -> list:
     rect = page.rect
