@@ -269,7 +269,18 @@ def is_bullet_span(span: dict) -> bool:
     if "Wingdings" in font or "Webdings" in font:
         return True
     decoded = decode_span_text(span).strip()
-    return decoded in ("•", "·", "◆", "▪", "▸", "►", "‣", "–", "—", "✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc")
+    if decoded in ("•", "·", "◆", "▪", "▸", "►", "‣", "–", "—", "✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc"):
+        return True
+    if "Courier" in font and decoded == "o":
+        return True
+    
+    # Check for standalone numbered/lettered list prefixes (e.g. "1.", "a.", "(i)", "b)")
+    import re
+    pattern = r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$'
+    if re.match(pattern, decoded):
+        return True
+        
+    return False
 
 def is_pink_heading_block(bbox, page) -> bool:
     if page is None:
@@ -759,40 +770,51 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                 current_para_spans = []
                 
             x_bullet = spans[0]["bbox"][0]
+            bullet_char = decode_span_text(spans[0]).strip()
+            import re
+            is_alphanumeric = bool(re.match(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$', bullet_char))
+            cls_extra = " list-alphanumeric" if is_alphanumeric else ""
             
             if not active_lists:
-                bullet_char = decode_span_text(spans[0]).strip()
                 is_checkmark = bullet_char in ("✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc")
                 if is_checkmark:
-                    html_out.append('<ul class="notes-sub">')
+                    html_out.append(f'<ul class="notes-sub{cls_extra}">')
                     active_lists.append(x_bullet - 20)  # Dummy parent level
                     active_lists.append(x_bullet)
                 else:
-                    html_out.append('<ul class="notes-list">')
+                    html_out.append(f'<ul class="notes-list{cls_extra}">')
                     active_lists.append(x_bullet)
             else:
                 if x_bullet > active_lists[-1] + 5:
                     level = len(active_lists)
                     cls_name = "notes-sub" if level == 1 else "notes-subsub"
-                    html_out.append(f'<ul class="{cls_name}">')
+                    html_out.append(f'<ul class="{cls_name}{cls_extra}">')
                     active_lists.append(x_bullet)
                 elif x_bullet < active_lists[-1] - 5:
                     while active_lists and x_bullet < active_lists[-1] - 5:
                         html_out.append("</li></ul>")
                         active_lists.pop()
                     if not active_lists:
-                        html_out.append('<ul class="notes-list">')
+                        html_out.append(f'<ul class="notes-list{cls_extra}">')
                         active_lists.append(x_bullet)
                     else:
                         html_out.append("</li>")
                 else:
                     html_out.append("</li>")
             
-            content_spans = spans[1:]
-            if content_spans:
-                inner = "".join(render_span_semantic(s) for s in content_spans)
+            if is_alphanumeric:
+                prefix_html = render_span_semantic(spans[0])
+                rest_html = "".join(render_span_semantic(s) for s in spans[1:])
+                if not prefix_html.endswith(" ") and not rest_html.startswith(" "):
+                    inner = prefix_html + " " + rest_html
+                else:
+                    inner = prefix_html + rest_html
             else:
-                inner = ""
+                content_spans = spans[1:]
+                if content_spans:
+                    inner = "".join(render_span_semantic(s) for s in content_spans)
+                else:
+                    inner = ""
             html_out.append(f"<li>{inner}")
         else:
             if active_lists:
@@ -820,7 +842,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
         
     return "\n".join(html_out)
 
-def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
+def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float) -> list:
     rect = page.rect
     page_height = rect.height
     
@@ -923,6 +945,28 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         
     # 2. Extract and filter text lines
     text_dict = page.get_text("dict")
+    
+    # Pre-process spans to split merged list prefixes (e.g. "a. text" -> "a." and " text")
+    import re
+    prefix_pattern = re.compile(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])(\s+)')
+    for block in text_dict.get("blocks", []):
+        if block.get("type", 0) == 0:
+            for line in block.get("lines", []):
+                spans = line.get("spans", [])
+                if spans:
+                    first_span = spans[0]
+                    text_val = first_span.get("text", "")
+                    match = prefix_pattern.match(text_val)
+                    if match:
+                        prefix = match.group(1)
+                        spacing = match.group(4)
+                        rest = text_val[match.end():]
+                        if rest.strip():
+                            prefix_span = first_span.copy()
+                            prefix_span["text"] = prefix
+                            first_span["text"] = spacing + rest
+                            line["spans"] = [prefix_span] + spans
+                            
     raw_lines = []
     
     for block in text_dict.get("blocks", []):
@@ -1203,9 +1247,17 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
         merged_elements.append(el)
         i += 1
     page_elements = merged_elements
-    
+    return page_elements
+
+def render_page_elements(page: fitz.Page, page_elements: list, body_size: float, html_path: Path = None) -> str:
     # 6. Render elements to HTML
+    images_dir = None
+    if html_path:
+        images_dir = html_path.parent / "images"
+        images_dir.mkdir(parents=True, exist_ok=True)
+
     elements_html = []
+    image_counter = 0
     for element in page_elements:
         el_type = element["type"]
         if el_type == "table":
@@ -1217,8 +1269,14 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 try:
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
                     img_bytes = pix.tobytes("png")
-                    b64 = base64.b64encode(img_bytes).decode("ascii")
-                    img_tag = f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
+                    if images_dir:
+                        img_filename = f"page_{page.number + 1}_img_{image_counter}.png"
+                        (images_dir / img_filename).write_bytes(img_bytes)
+                        image_counter += 1
+                        img_tag = f'<img src="images/{img_filename}" alt="Extracted Graphic" />'
+                    else:
+                        b64 = base64.b64encode(img_bytes).decode("ascii")
+                        img_tag = f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
                     if "caption" in element:
                         caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
                         elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
@@ -1233,8 +1291,14 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 try:
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
                     img_bytes = pix.tobytes("png")
-                    b64 = base64.b64encode(img_bytes).decode("ascii")
-                    img_tag = f'<img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" />'
+                    if images_dir:
+                        img_filename = f"page_{page.number + 1}_diag_{image_counter}.png"
+                        (images_dir / img_filename).write_bytes(img_bytes)
+                        image_counter += 1
+                        img_tag = f'<img src="images/{img_filename}" alt="Diagram/Flowchart" />'
+                    else:
+                        b64 = base64.b64encode(img_bytes).decode("ascii")
+                        img_tag = f'<img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" />'
                     if "caption" in element:
                         caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
                         elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
@@ -1249,6 +1313,10 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float) -> str:
                 
     content = "\n".join(elements_html)
     return PAGE_TEMPLATE.format(content=content)
+
+def render_page(doc: fitz.Document, page: fitz.Page, body_size: float, html_path: Path = None) -> str:
+    elements = extract_page_elements(doc, page, body_size)
+    return render_page_elements(page, elements, body_size, html_path)
 
 def extract_pdf_title(doc: fitz.Document) -> str:
     if len(doc) == 0:
@@ -1299,6 +1367,52 @@ def extract_pdf_title(doc: fitz.Document) -> str:
         
     return "Document"
 
+def merge_split_pages(all_pages_elements: list) -> None:
+    for idx in range(len(all_pages_elements) - 1):
+        prev_elements = all_pages_elements[idx]
+        next_elements = all_pages_elements[idx + 1]
+        if not prev_elements or not next_elements:
+            continue
+            
+        el_prev = prev_elements[-1]
+        el_next = next_elements[0]
+        
+        if el_prev["type"] == "text" and el_next["type"] == "text":
+            lines_prev = el_prev["data"].get("lines", [])
+            lines_next = el_next["data"].get("lines", [])
+            if not lines_prev or not lines_next:
+                continue
+                
+            # Get last line text of prev element
+            last_line = lines_prev[-1]
+            last_spans = [s for s in last_line.get("spans", []) if s.get("text", "").strip()]
+            if not last_spans:
+                continue
+            last_text = "".join(decode_span_text(s) for s in last_spans).strip()
+            
+            # If last text does not end with sentence-ending punctuation
+            if last_text and not last_text[-1] in (".", "?", "!", ":", ";", "”", '"'):
+                # Check if first line of next element is a bullet
+                first_line = lines_next[0]
+                first_spans = [s for s in first_line.get("spans", []) if s.get("text", "").strip()]
+                if not first_spans:
+                    continue
+                is_first_bullet = is_bullet_span(first_spans[0])
+                
+                if not is_first_bullet:
+                    # Merge el_next's lines into el_prev
+                    lines_prev.extend(lines_next)
+                    el_prev["data"]["lines"] = lines_prev
+                    # Update bbox of el_prev (extend vertically)
+                    el_prev["bbox"] = [
+                        min(el_prev["bbox"][0], el_next["bbox"][0]),
+                        min(el_prev["bbox"][1], el_next["bbox"][1]),
+                        max(el_prev["bbox"][2], el_next["bbox"][2]),
+                        max(el_prev["bbox"][3], el_next["bbox"][3])
+                    ]
+                    # Remove the first element from next page
+                    next_elements.pop(0)
+
 def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     doc = fitz.open(pdf_path)
     page_count = doc.page_count
@@ -1311,10 +1425,17 @@ def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
     end_idx = min(page_count, end or page_count)
     body_size = compute_body_size(doc)
  
-    pages_html = []
+    all_pages_elements = []
     for page_index in range(start_idx, end_idx):
         page = doc[page_index]
-        pages_html.append(render_page(doc, page, body_size))
+        all_pages_elements.append(extract_page_elements(doc, page, body_size))
+        
+    merge_split_pages(all_pages_elements)
+    
+    pages_html = []
+    for i, page_index in enumerate(range(start_idx, end_idx)):
+        page = doc[page_index]
+        pages_html.append(render_page_elements(page, all_pages_elements[i], body_size, html_path))
  
     html_path.write_text(
         DOC_TEMPLATE.format(

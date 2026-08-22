@@ -1445,6 +1445,14 @@ article:not(.cover-article) figure img {
     display: inline-block;
 }
 
+article:not(.cover-article) figcaption,
+figcaption {
+    text-align: center !important;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--reader-ink);
+}
+
 /* ---------- Better separation between sections ---------- */
 article:not(.cover-article) section {
     scroll-margin-top: 1rem;
@@ -2289,6 +2297,35 @@ article .notes-table tbody th {
 
 /* Custom premium image scaling */
 figure img {
-    max-width: 80% !important;
+    max-width: min(500px, 100%) !important;
     margin: 1.5rem auto 0.5rem !important;
+}
+
+/* Custom table headings styling */
+.table-headings, .table-heading {
+    position: relative;
+    color: var(--reader-navy);
+    font-family: var(--deepesh);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.4;
+    margin: 1.5rem 0 1rem;
+    padding: 0.2rem 0 0.5rem 0.7rem;
+    border-left: 3px solid var(--reader-orange);
+    border-bottom: 1px dashed #e1e8ed;
+}
+
+/* Style overrides for lists containing alphanumeric items to prevent double bullets */
+article:not(.cover-article) ul.list-alphanumeric,
+ul.list-alphanumeric {
+    list-style: none !important;
+}
+article:not(.cover-article) ul.list-alphanumeric>li,
+ul.list-alphanumeric>li {
+    padding-left: 0 !important;
+}
+article:not(.cover-article) ul.list-alphanumeric>li::before,
+ul.list-alphanumeric>li::before {
+    content: "" !important;
 }

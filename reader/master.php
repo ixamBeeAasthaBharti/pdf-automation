@@ -57,7 +57,10 @@ if (empty($doc['html_content'])) {
 }
 
 /* ── Rewrite image paths ── */
-$imgBase = '/storage/outputs/' . $mysqlId . '/images/';
+$imgBase = '/storage/archive/' . $mysqlId . '/images/';
+if (!is_dir(__DIR__ . '/..' . $imgBase)) {
+    $imgBase = '/storage/outputs/' . $mysqlId . '/images/';
+}
 $rawHtml = $doc['html_content'];
 $rawHtml = str_replace('src="images/',    'src="' . $imgBase, $rawHtml);
 $rawHtml = str_replace("src='images/",    "src='" . $imgBase, $rawHtml);
