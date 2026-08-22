@@ -23,21 +23,22 @@ import os
 import sys
 import time
 import shutil
+import base64
+import anthropic
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
 
 # =====================================================
 # LOAD ENVIRONMENT
 # =====================================================
 load_dotenv()
 
-API_KEY = os.getenv("GEMINI_API_KEY")
+API_KEY = os.getenv("ANTHROPIC_API_KEY_1", os.getenv("ANTHROPIC_API_KEY", ""))
 if not API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in .env")
-
-client = genai.Client(api_key=API_KEY)
+    print("[Claude Table Extractor] Warning: ANTHROPIC_API_KEY not found in .env")
+    client = None
+else:
+    client = anthropic.Anthropic(api_key=API_KEY)
 
 # =====================================================
 # PATHS
@@ -121,17 +122,39 @@ def restore_from_backup(chunk_file: Path):
         print(f"  No backup found for {chunk_file.name} — skipping restore.")
 
 
-def call_gemini(image_bytes: bytes) -> str:
-    """Call Gemini with the table prompt + image. Returns the stripped response text."""
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=[
-            TABLE_PROMPT,
-            types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-        ],
-        config=types.GenerateContentConfig(temperature=0),
+def call_claude(image_bytes: bytes) -> str:
+    """Call Claude with the table prompt + image. Returns the stripped response text."""
+    if client is None:
+        raise RuntimeError("Claude client is not initialized. Setup ANTHROPIC_API_KEY in .env.")
+        
+    base64_image = base64.b64encode(image_bytes).decode("utf-8")
+    
+    response = client.messages.create(
+        model="claude-3-5-sonnet-latest",
+        max_tokens=4096,
+        temperature=0,
+        system=TABLE_PROMPT,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": base64_image,
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "Please analyze this image according to the system instructions."
+                    }
+                ]
+            }
+        ]
     )
-    result = response.text.strip()
+    result = response.content[0].text.strip()
 
     # Strip markdown fences if the model wrapped its output
     if result.startswith("```html"):
@@ -204,7 +227,7 @@ def extract_tables_from_chunk(chunk_file: Path):
 
         for attempt in range(4):
             try:
-                result = call_gemini(image_bytes)
+                result = call_claude(image_bytes)
 
                 if result.upper() == "SKIP":
                     print("           -> Not a table.")

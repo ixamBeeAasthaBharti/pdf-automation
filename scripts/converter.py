@@ -2,7 +2,7 @@ from pathlib import Path
 
 from preprocessor import clean_html
 from chunker import chunk_html, MAX_CHARS
-from gemini_runner import run_gemini
+from claude_runner import run_claude
 from merger import merge_chunks
 import shutil
 from pymupdf_image_extractor import extract_images
@@ -99,10 +99,10 @@ def main():
     )
 
     print("=" * 60)
-    print("Step 6/7 : Gemini Processing")
+    print("Step 6/7 : Claude Processing")
     print("=" * 60)
 
-    run_gemini()
+    run_claude()
 
     print("=" * 60)
     print("Step 7/7 : Merge")

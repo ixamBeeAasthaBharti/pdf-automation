@@ -24,7 +24,7 @@ from pymupdf_image_extractor import extract_images
 from html_reconstructor import reconstruct_html
 from preprocessor import clean_html
 from chunker import chunk_html, MAX_CHARS
-from gemini_runner import run_gemini
+from claude_runner import run_claude
 from merger import merge_chunks
 
 ROOT = Path(__file__).parent.parent
@@ -122,9 +122,9 @@ def process_document(doc_id: str, pdf_path: Path, html_path: Path):
         max_chars=MAX_CHARS
     )
 
-    # Step 5: Process through Gemini
-    print("\n--- Step 5: Processing Chunks with Gemini ---")
-    run_gemini(
+    # Step 5: Process through Claude
+    print("\n--- Step 5: Processing Chunks with Claude ---")
+    run_claude(
         chunk_dir=chunk_dir,
         processed_dir=processed_dir,
         image_dir=image_dir,
