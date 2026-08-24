@@ -41,9 +41,70 @@ ARCHIVE_DIR = ROOT / "storage" / "archive"
 
 BASE_PDF_URL = "https://static.ixambee.com/public/miscellaneous-pdf/"
 
-EXAM_ID    = 39
-PACKAGE_ID = 841
-CHAPTER_ID = 310
+# Hardcoded default queries to use if queries.sql is missing
+DEFAULT_PENDING_QUERY = """
+    SELECT id, content FROM tbl_studymaterial_lang_map
+    WHERE content_id IN (
+        SELECT content_id FROM tbl_studymaterial_mapping_with_esc
+        WHERE esc_id IN (
+            SELECT id FROM tbl_studymaterial_esc_s
+            WHERE exam_id = 39 AND package_id = 841 AND chapter_id = 310 AND status = 1
+        )
+    )
+    AND type_order = 2 AND status = 1 AND htmltopdfstatus = 0
+    ORDER BY id ASC
+"""
+
+DEFAULT_STATUS_QUERY = """
+    SELECT SUM(htmltopdfstatus=0) AS pending, SUM(htmltopdfstatus=1) AS done,
+           SUM(htmltopdfstatus=2) AS failed, COUNT(*) AS total
+    FROM tbl_studymaterial_lang_map
+    WHERE content_id IN (
+        SELECT content_id FROM tbl_studymaterial_mapping_with_esc
+        WHERE esc_id IN (
+            SELECT id FROM tbl_studymaterial_esc_s
+            WHERE exam_id = 39 AND package_id = 841 AND chapter_id = 310 AND status = 1
+        )
+    ) AND type_order = 2 AND status = 1
+"""
+
+def load_queries_from_file():
+    """
+    Loads PENDING_QUERY and STATUS_QUERY from queries.sql in the root directory.
+    Falls back to defaults if the file is missing or not parseable.
+    """
+    sql_path = Path(__file__).parent.parent / "queries.sql"
+    if not sql_path.exists():
+        return DEFAULT_PENDING_QUERY, DEFAULT_STATUS_QUERY
+
+    try:
+        content = sql_path.read_text(encoding="utf-8")
+        queries = {}
+        current_key = None
+        current_lines = []
+        
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("-- [") and stripped.endswith("]"):
+                if current_key and current_lines:
+                    queries[current_key] = "\n".join(current_lines).strip()
+                current_key = stripped[4:-1].strip()
+                current_lines = []
+            elif current_key:
+                current_lines.append(line)
+                
+        if current_key and current_lines:
+            queries[current_key] = "\n".join(current_lines).strip()
+            
+        pending = queries.get("PENDING_QUERY", DEFAULT_PENDING_QUERY)
+        status = queries.get("STATUS_QUERY", DEFAULT_STATUS_QUERY)
+        return pending, status
+    except Exception as e:
+        print(f"Warning: Failed to parse queries.sql: {e}. Using defaults.", file=sys.stderr)
+        return DEFAULT_PENDING_QUERY, DEFAULT_STATUS_QUERY
+
+# Dynamically loaded queries
+PENDING_QUERY, STATUS_QUERY = load_queries_from_file()
 
 
 def fetch_pending_ids(count=None, target_id=None):
@@ -55,20 +116,10 @@ def fetch_pending_ids(count=None, target_id=None):
             WHERE id = %s AND type_order = 2 AND status = 1
         """, (target_id,))
     else:
-        limit_clause = f"LIMIT {int(count)}" if count else ""
-        cursor.execute(f"""
-            SELECT id, content FROM tbl_studymaterial_lang_map
-            WHERE content_id IN (
-                SELECT content_id FROM tbl_studymaterial_mapping_with_esc
-                WHERE esc_id IN (
-                    SELECT id FROM tbl_studymaterial_esc_s
-                    WHERE exam_id={EXAM_ID} AND package_id={PACKAGE_ID}
-                      AND chapter_id={CHAPTER_ID} AND status=1
-                )
-            )
-            AND type_order=2 AND status=1 AND htmltopdfstatus=0
-            ORDER BY id ASC {limit_clause}
-        """)
+        query = PENDING_QUERY
+        if count:
+            query += f" LIMIT {int(count)}"
+        cursor.execute(query)
     rows = cursor.fetchall()
     cursor.close(); conn.close()
     return rows
@@ -181,19 +232,7 @@ def process_one(mysql_id, content):
 
 def show_status():
     conn = get_connection(); cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"""
-        SELECT SUM(htmltopdfstatus=0) AS pending, SUM(htmltopdfstatus=1) AS done,
-               SUM(htmltopdfstatus=2) AS failed, COUNT(*) AS total
-        FROM tbl_studymaterial_lang_map
-        WHERE content_id IN (
-            SELECT content_id FROM tbl_studymaterial_mapping_with_esc
-            WHERE esc_id IN (
-                SELECT id FROM tbl_studymaterial_esc_s
-                WHERE exam_id={EXAM_ID} AND package_id={PACKAGE_ID}
-                  AND chapter_id={CHAPTER_ID} AND status=1
-            )
-        ) AND type_order=2 AND status=1
-    """)
+    cursor.execute(STATUS_QUERY)
     counts = cursor.fetchone()
     cursor.execute("""
         SELECT mysql_id, status, created_on, updated_on,
@@ -206,7 +245,7 @@ def show_status():
     icons = {"COMPLETED": "[OK]", "FAILED": "[!!]", "PROCESSING": "[..]"}
     sep = "=" * 70
     print(f"\n{sep}")
-    print(f"  PDF Pipeline Status  |  exam={EXAM_ID} package={PACKAGE_ID} chapter={CHAPTER_ID}")
+    print("  PDF Pipeline Status")
     print(f"  Total: {counts['total']}  |  Pending: {counts['pending']}  |  Done: {counts['done']}  |  Failed: {counts['failed']}")
     print(sep)
     if rows:
@@ -231,16 +270,16 @@ Examples:
   python scripts/run.py --status        Show status summary
         """
     )
-    parser.add_argument("--count",  type=int,            help="Max PDFs to process in this run")
-    parser.add_argument("--id",     type=int,            help="Process a specific MySQL ID")
-    parser.add_argument("--status", action="store_true", help="Show status summary and exit")
+    parser.add_argument("--count",   type=int,            help="Max PDFs to process in this run")
+    parser.add_argument("--id",      type=int,            help="Process a specific MySQL ID")
+    parser.add_argument("--status",  action="store_true", help="Show status summary and exit")
     args = parser.parse_args()
 
     if args.status:
         show_status()
         sys.exit(0)
 
-    rows = fetch_pending_ids(target_id=args.id) if args.id else fetch_pending_ids(count=args.count)
+    rows = fetch_pending_ids(count=args.count, target_id=args.id)
     if not rows:
         print("\n[Pipeline] No pending PDFs found. All done!")
         sys.exit(0)
