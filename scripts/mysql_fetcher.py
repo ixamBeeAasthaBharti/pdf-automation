@@ -54,9 +54,9 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
         cursor.execute("""
             SELECT id, content
             FROM   tbl_studymaterial_lang_map
-            WHERE  type_order      = 2
-              AND  status          = 1
-              AND  htmltopdfstatus = 0
+            WHERE  type_order  = 2
+              AND  status      = 1
+              AND  html_status = 0
               AND  (expiry_date IS NULL OR expiry_date > NOW())
             ORDER  BY id ASC
             LIMIT  %s
@@ -66,7 +66,7 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
 
     if not rows:
         print("[Fetcher] No pending PDFs found matching all filters.")
-        print("          Filters: type_order=2, status=1, htmltopdfstatus=0, expiry_date>NOW()")
+        print("          Filters: type_order=2, status=1, html_status=0, expiry_date>NOW()")
         cursor.close()
         conn.close()
         return []
@@ -129,10 +129,10 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
         )
 
         # ------------------------------------------------------------------ #
-        # Log to MySQL htmltopdfautomation                                     #
+        # Log to MySQL tbl_html_to_pdf                                         #
         # ------------------------------------------------------------------ #
         cursor.execute("""
-            INSERT INTO htmltopdfautomation
+            INSERT INTO tbl_html_to_pdf
                 (mysql_id, original_pdf, status, created_by)
             VALUES (%s, %s, 'DOWNLOADED', 'system')
             ON DUPLICATE KEY UPDATE
@@ -142,6 +142,7 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
                 updated_by   = 'system'
         """, (mysql_id, pdf_url))
         conn.commit()
+
 
         fetched_ids.append(mysql_id)
 
