@@ -40,6 +40,8 @@ from preprocessor            import clean_html
 from chunker                 import chunk_html, MAX_CHARS
 from gemini_runner           import run_gemini
 from merger                  import merge_chunks
+from aspose_converter        import convert_pdf_to_html
+from aspose_html_normalizer   import normalize_aspose_html
 
 ROOT        = Path(__file__).parent.parent
 QUEUE_DIR   = ROOT / "storage" / "queue"
@@ -65,8 +67,8 @@ def do_fetch(count: int = 1, target_ids: list[int] = None):
     if not fetched_ids:
         print("\n[Pipeline] Nothing to fetch. All eligible PDFs are processed.")
     else:
-        print(f"\n[Pipeline] {len(fetched_ids)} PDF(s) ready for PDF24 conversion.")
-        print(f"[Pipeline] After converting, run: python scripts/pipeline.py --process")
+        print(f"\n[Pipeline] {len(fetched_ids)} PDF(s) downloaded.")
+        print(f"[Pipeline] Run: python scripts/pipeline.py --process (or --auto)")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -74,7 +76,7 @@ def do_fetch(count: int = 1, target_ids: list[int] = None):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def do_process():
-    """Process all queue folders that have both document.pdf + document.html."""
+    """Process all queue folders that have document.pdf using Aspose + Gemini pipeline."""
     print("\n" + "=" * 65)
     print(" PIPELINE - PROCESS MODE")
     print("=" * 65)
@@ -94,28 +96,15 @@ def do_process():
 
         doc_id    = subfolder.name
         pdf_path  = subfolder / "document.pdf"
-        html_path = subfolder / "document.html"
 
         if not pdf_path.exists():
             continue                          # not a valid queue entry
 
-        if not html_path.exists():
-            print(f"\n[Pipeline] ⏳ {doc_id} — document.html missing.")
-            print(f"           Convert the PDF with PDF24 and save to:")
-            print(f"           {html_path}")
-            continue
-
-        # This folder has both files — process it
         print(f"\n{'=' * 65}")
         print(f" Processing: {doc_id}")
         print(f"{'=' * 65}")
 
         mysql_id = int(doc_id) if doc_id.isdigit() else None
-
-        # Update status: HTML is ready
-        if mysql_id:
-            log_html_ready(mysql_id, str(html_path))
-            update_pdf_job_status(mysql_id, "HTML_READY")
 
         # Update status: pipeline starting
         if mysql_id:
@@ -123,7 +112,7 @@ def do_process():
             update_pdf_job_status(mysql_id, "PROCESSING")
 
         try:
-            output_file = _run_pipeline(doc_id, pdf_path, html_path)
+            output_file = _run_pipeline(doc_id, pdf_path)
 
             # Read the full output HTML content
             html_content = output_file.read_text(encoding="utf-8")
@@ -153,53 +142,62 @@ def do_process():
 
     if not processed_any:
         print("\n[Pipeline] No documents ready to process.")
-        print("[Pipeline] Run --fetch first, then add document.html files.")
 
 
-def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
-    """Run the complete 6-step conversion pipeline for one isolated document."""
+def _run_pipeline(doc_id: str, pdf_path: Path) -> Path:
+    """Run the complete 7-step conversion pipeline for one isolated document using Aspose."""
     doc_out_dir   = OUTPUTS_DIR / doc_id
     image_dir     = doc_out_dir / "images"
     temp_dir      = doc_out_dir / "temp"
+    aspose_dir    = temp_dir / "aspose"
     chunk_dir     = doc_out_dir / "chunks"
     processed_dir = doc_out_dir / "processed"
 
-    for d in [image_dir, temp_dir, chunk_dir, processed_dir]:
+    for d in [image_dir, temp_dir, aspose_dir, chunk_dir, processed_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
     image_map_file        = temp_dir / "image_map.json"
-    reconstructed_html    = temp_dir / "preprocessed.html"
+    normalized_html       = temp_dir / "normalized.html"
     cleaned_html          = temp_dir / "cleaned.html"
     final_output_file     = doc_out_dir / "output.html"
 
-    print(f"\n--- Step 1/6 : Extract Images from PDF ---")
+    # Step 1: Aspose PDF -> HTML
+    print(f"\n--- Step 1/7 : Convert PDF with Aspose Cloud ---")
+    raw_aspose_html = convert_pdf_to_html(pdf_path, aspose_dir)
+
+    # Step 2: Extract Images from PDF via PyMuPDF
+    print(f"\n--- Step 2/7 : Extract Images from PDF ---")
     extract_images(
         pdf_file=pdf_path,
         image_dir=image_dir,
         image_map_path=image_map_file,
     )
 
-    print(f"\n--- Step 2/6 : Reconstruct HTML Structure ---")
-    reconstruct_html(
-        input_html=html_path,
+    # Step 3: Normalize Aspose HTML
+    print(f"\n--- Step 3/7 : Normalize Aspose HTML ---")
+    normalize_aspose_html(
+        input_html_path=raw_aspose_html,
+        output_html_path=normalized_html,
         image_map_path=image_map_file,
-        output_html=reconstructed_html,
     )
 
-    print(f"\n--- Step 3/6 : Clean HTML Markup ---")
+    # Step 4: Clean HTML Markup
+    print(f"\n--- Step 4/7 : Clean HTML Markup ---")
     clean_html(
-        input_file=reconstructed_html,
+        input_file=normalized_html,
         output_file=cleaned_html,
     )
 
-    print(f"\n--- Step 4/6 : Chunk HTML ---")
+    # Step 5: Chunk HTML
+    print(f"\n--- Step 5/7 : Chunk HTML ---")
     chunk_html(
         input_file=cleaned_html,
         output_dir=chunk_dir,
         max_chars=MAX_CHARS,
     )
 
-    print(f"\n--- Step 5/6 : Process Chunks with Gemini ---")
+    # Step 6: Process Chunks with Gemini
+    print(f"\n--- Step 6/7 : Process Chunks with Gemini ---")
     run_gemini(
         chunk_dir=chunk_dir,
         processed_dir=processed_dir,
@@ -207,7 +205,8 @@ def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
         figure_dir=None,
     )
 
-    print(f"\n--- Step 6/6 : Merge & Finalise ---")
+    # Step 7: Merge & Finalise
+    print(f"\n--- Step 7/7 : Merge & Finalise ---")
     merge_chunks(
         processed_dir=processed_dir,
         output_file=final_output_file,
@@ -284,6 +283,12 @@ def do_status():
     print(f"{'='*80}\n")
 
 
+def do_auto(count: int = 1, target_ids: list[int] = None):
+    """Fetch next PDF(s) from MySQL, auto-convert PDF->HTML with Aspose Cloud, and process end-to-end."""
+    do_fetch(count=count, target_ids=target_ids)
+    do_process()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
@@ -294,22 +299,27 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python scripts/pipeline.py --auto       # Fetch, auto-convert PDF->HTML via Aspose, and process
   python scripts/pipeline.py --fetch      # Download next PDF from MySQL
-  python scripts/pipeline.py --process    # Convert all HTML-ready queue items
+  python scripts/pipeline.py --process    # Auto-convert missing HTMLs & process queue items
   python scripts/pipeline.py --status     # Show job status table
         """,
     )
+    parser.add_argument("--auto",    action="store_true", help="Fetch, auto-convert PDF->HTML via Aspose, and process end-to-end")
     parser.add_argument("--fetch",   action="store_true", help="Fetch next PDF(s) from MySQL")
-    parser.add_argument("--count",   type=int, default=1,  help="Number of PDFs to fetch (use with --fetch, default: 1)")
+    parser.add_argument("--count",   type=int, default=1,  help="Number of PDFs to fetch/process (default: 1)")
     parser.add_argument("--ids",     type=str, help="Comma-separated specific MySQL IDs to fetch (e.g. 1474,7908)")
-    parser.add_argument("--process", action="store_true", help="Process HTML-ready queue items")
+    parser.add_argument("--process", action="store_true", help="Process queue items (auto-converts PDF to HTML if missing)")
     parser.add_argument("--status",  action="store_true", help="Show current job statuses")
     args = parser.parse_args()
 
-    if args.fetch:
-        target_ids = None
-        if args.ids:
-            target_ids = [int(x.strip()) for x in args.ids.split(",") if x.strip().isdigit()]
+    target_ids = None
+    if args.ids:
+        target_ids = [int(x.strip()) for x in args.ids.split(",") if x.strip().isdigit()]
+
+    if args.auto:
+        do_auto(count=args.count, target_ids=target_ids)
+    elif args.fetch:
         do_fetch(count=args.count, target_ids=target_ids)
     elif args.process:
         do_process()
@@ -317,3 +327,4 @@ Examples:
         do_status()
     else:
         parser.print_help()
+

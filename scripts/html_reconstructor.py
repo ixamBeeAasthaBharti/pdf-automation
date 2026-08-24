@@ -1,17 +1,10 @@
 from pathlib import Path
-import json
-import re
-
-from bs4 import BeautifulSoup
-
-# =====================================================
-# PATHS  (legacy defaults — used when called standalone)
-# =====================================================
+from aspose_html_normalizer import normalize_aspose_html
 
 ROOT = Path(__file__).parent.parent
 
-_DEFAULT_INPUT_DIR  = ROOT / "input"
-_DEFAULT_IMAGE_MAP  = ROOT / "image_map.json"
+_DEFAULT_INPUT_DIR = ROOT / "input"
+_DEFAULT_IMAGE_MAP = ROOT / "image_map.json"
 _DEFAULT_OUTPUT_HTML = ROOT / "temp" / "preprocessed.html"
 
 
@@ -21,17 +14,9 @@ def reconstruct_html(
     output_html: Path = None,
 ):
     """
-    Reconstruct the PDF24 HTML by inserting extracted image tags at the
-    correct positions, based on image_map.json.
-
-    Parameters (all optional — falls back to legacy global paths):
-        input_html     : Path to the PDF24-converted HTML file
-        image_map_path : Path to image_map.json produced by pymupdf_image_extractor
-        output_html    : Path where the reconstructed HTML will be written
+    Normalizes Aspose HTML by delegating to aspose_html_normalizer.
+    Maintains backwards compatibility for function signature.
     """
-    # ------------------------------------------------------------------ #
-    # Resolve paths                                                         #
-    # ------------------------------------------------------------------ #
     if input_html is None:
         html_files = list(_DEFAULT_INPUT_DIR.glob("*.html"))
         if len(html_files) != 1:
@@ -47,107 +32,12 @@ def reconstruct_html(
     if output_html is None:
         output_html = _DEFAULT_OUTPUT_HTML
 
-    input_html     = Path(input_html)
-    image_map_path = Path(image_map_path)
-    output_html    = Path(output_html)
-
-    # ------------------------------------------------------------------ #
-    # Read inputs                                                           #
-    # ------------------------------------------------------------------ #
-    html = input_html.read_text(encoding="utf-8")
-    soup = BeautifulSoup(html, "lxml")
-
-    image_map = json.loads(image_map_path.read_text(encoding="utf-8")) if image_map_path.exists() else []
-
-    pages = soup.find_all(
-        "div",
-        id=lambda x: x and x.startswith("page_")
+    metrics = normalize_aspose_html(
+        input_html_path=Path(input_html),
+        output_html_path=Path(output_html),
+        image_map_path=Path(image_map_path),
     )
-
-    for page in pages:
-        screenshot = page.find("div", class_="pdf24_03")
-        if screenshot:
-            screenshot.decompose()
-
-    # =====================================================
-    # Insert extracted figures
-    # =====================================================
-
-    for image in image_map:
-
-        page_number = image["page"] - 1
-
-        if page_number >= len(pages):
-            continue
-
-        page = pages[page_number]
-
-        first_text_div = page.find(lambda tag: tag.name == "div" and tag.get("style") and "top:" in tag.get("style"))
-        if first_text_div:
-            parent_container = first_text_div.parent
-        else:
-            parent_container = page.find("div", class_="pdf24_view")
-
-        if parent_container is None:
-            continue
-
-        x0, y0, x1, y1 = image["bbox"]
-
-        left_em   = x0 / 12
-        top       = y0 / 12
-        width_em  = (x1 - x0) / 12
-        height_em = (y1 - y0) / 12
-
-        PT_TO_PX  = 96 / 72
-        width_px  = round((x1 - x0) * PT_TO_PX)
-        height_px = round((y1 - y0) * PT_TO_PX)
-
-        img = soup.new_tag("img")
-        img["src"]     = f"../images/{image['filename']}"
-        img["data-id"] = image["id"]
-        img["class"]   = "pdf24_figure"
-        img["width"]   = width_px
-        img["height"]  = height_px
-        img["style"]   = (
-            f"position:absolute;"
-            f"left:{left_em:.4f}em;"
-            f"top:{top:.4f}em;"
-            f"width:{width_em:.4f}em;"
-            f"height:{height_em:.4f}em;"
-        )
-
-        parent_container.append(img)
-
-    # Sort all absolute-positioned elements by row (top coordinate rounded) and column (left coordinate)
-    def get_style_coord(elem, name):
-        if elem.name is None:
-            return 0.0
-        style = elem.get("style", "")
-        match = re.search(rf"{name}:\s*([\d.]+)\s*em", style)
-        return float(match.group(1)) if match else 0.0
-
-    for page in pages:
-        first_text_div = page.find(lambda tag: tag.name == "div" and tag.get("style") and "top:" in tag.get("style"))
-        if first_text_div:
-            parent_container = first_text_div.parent
-        else:
-            parent_container = page.find("div", class_="pdf24_view")
-
-        if parent_container:
-            children = [c for c in parent_container.children if c.name is not None]
-            children.sort(key=lambda c: (round(get_style_coord(c, "top"), 1), get_style_coord(c, "left")))
-            parent_container.clear()
-            for child in children:
-                parent_container.append(child)
-
-
-    print(f"Pages found : {len(soup.find_all(id=lambda x: x and x.startswith('page_')))}")
-    print(f"Images found: {len(image_map)}")
-
-    output_html.parent.mkdir(parents=True, exist_ok=True)
-    output_html.write_text(soup.prettify(), encoding="utf-8")
-
-    print(f"\nSaved to:\n{output_html}")
+    return metrics
 
 
 if __name__ == "__main__":

@@ -10,28 +10,19 @@ OUTPUT_JSON = ROOT / "protected_images.json"
 
 
 def protect_images():
-
     html = INPUT_HTML.read_text(encoding="utf-8")
-
     soup = BeautifulSoup(html, "lxml")
 
     protected = {}
 
-    images = soup.find_all(
-        "img",
-        class_="pdf24_figure",
-    )
+    images = soup.find_all("img")
 
-    for img in images:
-
-        image_id = img["data-id"]
-
+    for idx, img in enumerate(images, 1):
+        image_id = img.get("data-id", f"img_{idx}")
         protected[image_id] = {
             "html": str(img)
         }
-
         placeholder = soup.new_string(f"[[{image_id}]]")
-
         img.replace_with(placeholder)
 
     OUTPUT_JSON.write_text(

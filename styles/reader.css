@@ -371,16 +371,30 @@ figcaption {
     margin: 1rem 0 1.5rem;
 }
 
-/* Heading/title text that appears above an extracted table */
-.extracted-heading {
+/* H4 Headings (table headings, image headings, sub-topic headings) */
+h4,
+.extracted-heading,
+h4.extracted-heading {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: .92rem;
+    font-size: .95rem;
     font-weight: 700;
     color: var(--navy);
-    margin: 0 0 .5rem;
+    margin: .85rem 0 .4rem;
     padding: 0;
-    border: none;
-    background: none;
+    border: none !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Remove yellow highlight / background inline styles */
+mark,
+.highlight,
+span.highlight {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit;
+    border: none !important;
 }
 
 /* Italic subtitle/caption above an extracted table */
@@ -391,6 +405,7 @@ figcaption {
     color: var(--ink-soft);
     margin: 0 0 .4rem;
 }
+
 
 /* Footnote/text below an extracted table */
 .extracted-note {
@@ -466,11 +481,36 @@ section table tbody th,
 .notes-table tbody th {
     padding: 1.1rem 1.25rem;
     border-top: 1px solid var(--hairline);
-    vertical-align: top;
+    vertical-align: top !important;
+    text-align: left !important;
     line-height: 1.65;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
+
+section table td ul,
+section table td ol,
+.notes-table td ul,
+.notes-table td ol,
+.extracted-table-block table td ul,
+.extracted-table-block table td ol {
+    text-align: left !important;
+    padding-left: 1.1rem !important;
+    margin: .3rem 0 !important;
+    list-style-position: outside !important;
+}
+
+section table td ul li,
+section table td ol li,
+.notes-table td ul li,
+.notes-table td ol li,
+.extracted-table-block table td ul li,
+.extracted-table-block table td ol li {
+    text-align: left !important;
+    margin-bottom: .35rem !important;
+    line-height: 1.5 !important;
+}
+
 
 section table tbody td:not(:last-child),
 section table tbody th:not(:last-child),

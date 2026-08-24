@@ -1,15 +1,44 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
 
+# Environments & Environment Variables
+.env
 .venv/
 venv/
+ENV/
 env/
-.env
+
+# IDE / Editor configuration
 .vscode/
+.idea/
 
+# Testing & Cache
+.pytest_cache/
+.cache/
+
+# PDF & Generated Output Files
+*.pdf
+test pdfs/
 *.log
+protected_images.json
+image_map.json
 
+# Working & Output Directories
+output/
+chunks/
+processed/
+figures/
 temp/
-
 images/
+
+# Storage Queue, Outputs, and Archive (keep directory structure if needed, ignore contents)
+storage/queue/*
+!storage/queue/.gitkeep
+storage/outputs/*
+!storage/outputs/.gitkeep
+storage/archive/*
+!storage/archive/.gitkeep
+storage/*.db
+data/*.db

@@ -249,7 +249,7 @@ Do NOT rewrite.
 
 Do NOT omit anything.
 
-Ignore PDF24 presentation markup.
+Ignore converter-specific presentation markup.
 
 Transform the EXISTING HTML into semantic HTML5 while preserving every existing element.
 
@@ -289,39 +289,41 @@ def process_chunk(chunk_file: Path, processed_dir: Path = None, image_dir: Path 
     for img in soup.find_all("img"):
 
         src = img.get("src", "")
-
-        # Accept both 'images/...' and '../images/...' (chunks use the latter)
-        if "images/" not in src:
+        if not src:
             continue
 
-        # Normalise: strip any leading '../' so ROOT / 'images/...' resolves correctly
-        clean_src = src.lstrip("./").lstrip("..").lstrip("/")
-        if not clean_src.startswith("images/"):
-            # fallback: just take the part from 'images/' onward
-            clean_src = "images/" + src.split("images/", 1)[1]
+        filename = Path(src).name
+        # Skip vector SVG backgrounds from multimodal vision prompt (they stay in HTML intact)
+        if filename.lower().endswith(".svg"):
+            continue
 
-        # Resolve image path: prefer the per-doc image_dir, then fall back to ROOT
-        candidate = image_dir / Path(clean_src).name
-        page_image = candidate if candidate.exists() else ROOT / clean_src
+        # Resolve image file location across per-doc image_dir, chunk relative paths, and ROOT
+        candidates = [
+            image_dir / filename,
+            (chunk_file.parent / src).resolve(),
+            (chunk_file.parent.parent / src).resolve(),
+            (ROOT / src).resolve(),
+        ]
+        
+        resolved_path = None
+        for c in candidates:
+            if c.exists() and c.is_file():
+                resolved_path = c
+                break
+                
+        if not resolved_path:
+            continue
 
-        page_number = int(page_image.stem.split("_")[1])
+        mime_type = "image/jpeg" if filename.lower().endswith((".jpg", ".jpeg")) else "image/png"
+        images.append({
+            "path": resolved_path,
+            "src": src,
+            "bytes": resolved_path.read_bytes(),
+            "mime_type": mime_type,
+        })
 
-        figure_image = get_figure(page_number)
+    print(f"Images found for analysis: {len(images)}")
 
-        if figure_image:
-            images.append({
-                "path": page_image,
-                "bytes": figure_image.read_bytes(),
-                "using_figure": True,
-            })
-        else:
-            images.append({
-                "path": page_image,
-                "bytes": page_image.read_bytes(),
-                "using_figure": False,
-            })
-
-    print(f"Images found : {len(images)}")
 
     image_parts = []
 
@@ -418,9 +420,10 @@ END VISUAL
                     contents.append(
                         types.Part.from_bytes(
                             data=image["bytes"],
-                            mime_type="image/png",
+                            mime_type=image.get("mime_type", "image/png"),
                         )
                     )
+
 
                 print(f"Sending {len(images)} visual references to Gemini")
 

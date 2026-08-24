@@ -1,7 +1,9 @@
-﻿beautifulsoup4
-lxml
-python-dotenv
+asposepdfcloud
+beautifulsoup4
 google-genai
+lxml
 mysql-connector-python
+Pillow
 PyMuPDF
+python-dotenv
 requests

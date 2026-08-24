@@ -61,24 +61,27 @@ def log_processing(mysql_id: int):
 def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     """
     Mark job as COMPLETED:
-      - Writes output_html path and full html_content (LONGTEXT)
-      - Stamps processing_completed_at (use with processing_started_at for duration)
+      - Writes output_html path and full html_content (LONGTEXT) into htmltopdfautomation
+      - Stamps processing_completed_at
       - Sets tbl_studymaterial_lang_map.htmltopdfstatus = 1
     """
     conn   = get_connection()
     cursor = conn.cursor()
 
-    # 1. Update the automation log table
+    # 1. Upsert into automation log table to guarantee html_content is stored
     cursor.execute("""
-        UPDATE htmltopdfautomation
-        SET    output_html             = %s,
-               html_content            = %s,
-               status                  = 'COMPLETED',
-               processing_completed_at = NOW(),
-               updated_on              = NOW(),
-               updated_by              = 'system'
-        WHERE  mysql_id = %s
-    """, (output_html_path, html_content, mysql_id))
+        INSERT INTO htmltopdfautomation
+            (mysql_id, output_html, html_content, status, processing_completed_at, created_by, updated_by)
+        VALUES
+            (%s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
+        ON DUPLICATE KEY UPDATE
+            output_html             = VALUES(output_html),
+            html_content            = VALUES(html_content),
+            status                  = 'COMPLETED',
+            processing_completed_at = NOW(),
+            updated_on              = NOW(),
+            updated_by              = 'system'
+    """, (mysql_id, output_html_path, html_content))
 
     # 2. Write back htmltopdfstatus = 1 to the source table
     cursor.execute("""
@@ -90,7 +93,8 @@ def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | htmltopdfstatus=1")
+    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | html_content saved in DB | htmltopdfstatus=1")
+
 
 
 def log_failed(mysql_id: int, error: str):
