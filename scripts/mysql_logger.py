@@ -61,24 +61,26 @@ def log_processing(mysql_id: int):
 def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     """
     Mark job as COMPLETED:
-      - Writes output_html path and full html_content (LONGTEXT)
+      - Writes output_html path, gemini_html, and copies it to html_content (LONGTEXT)
       - Stamps processing_completed_at (use with processing_started_at for duration)
       - Sets tbl_studymaterial_lang_map.htmltopdfstatus = 1
     """
     conn   = get_connection()
     cursor = conn.cursor()
 
-    # 1. Update the automation log table
+    # 1. Update the automation log table (stores in both gemini_html and html_content)
+    # Uses IF check to protect existing html_content from being overwritten
     cursor.execute("""
         UPDATE htmltopdfautomation
         SET    output_html             = %s,
-               html_content            = %s,
+               gemini_html             = %s,
+               html_content            = IF(html_content IS NULL OR html_content = '', %s, html_content),
                status                  = 'COMPLETED',
                processing_completed_at = NOW(),
                updated_on              = NOW(),
                updated_by              = 'system'
         WHERE  mysql_id = %s
-    """, (output_html_path, html_content, mysql_id))
+    """, (output_html_path, html_content, html_content, mysql_id))
 
     # 2. Write back htmltopdfstatus = 1 to the source table
     cursor.execute("""
@@ -91,6 +93,43 @@ def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     cursor.close()
     conn.close()
     print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | htmltopdfstatus=1")
+
+
+def log_completed_script(mysql_id: int, output_html_path: str, html_content: str):
+    """
+    Mark script job as COMPLETED:
+      - Writes output_html path, script_html, and copies it to html_content (LONGTEXT)
+      - Stamps processing_completed_at
+      - Sets tbl_studymaterial_lang_map.htmltopdfstatus = 1
+    """
+    conn   = get_connection()
+    cursor = conn.cursor()
+
+    # 1. Update the automation log table (stores in both script_html and html_content)
+    # Uses IF check to protect existing html_content from being overwritten
+    cursor.execute("""
+        UPDATE htmltopdfautomation
+        SET    output_html             = %s,
+               script_html             = %s,
+               html_content            = IF(html_content IS NULL OR html_content = '', %s, html_content),
+               status                  = 'COMPLETED',
+               processing_completed_at = NOW(),
+               updated_on              = NOW(),
+               updated_by              = 'system'
+        WHERE  mysql_id = %s
+    """, (output_html_path, html_content, html_content, mysql_id))
+
+    # 2. Write back htmltopdfstatus = 1 to the source table
+    cursor.execute("""
+        UPDATE tbl_studymaterial_lang_map
+        SET    htmltopdfstatus = 1
+        WHERE  id = %s
+    """, (mysql_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print(f"[Logger] Script MySQL ID {mysql_id} -> COMPLETED | htmltopdfstatus=1")
 
 
 def log_failed(mysql_id: int, error: str):
