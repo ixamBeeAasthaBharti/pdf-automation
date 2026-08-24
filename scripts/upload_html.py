@@ -8,12 +8,19 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from mysql_client import get_connection
 
 def upload_edited_html(mysql_id):
-    html_path = ROOT / "storage" / "archive" / str(mysql_id) / "document.html"
-    if not html_path.exists():
-        print(f"Error: Archive HTML not found for ID {mysql_id} at {html_path}")
+    path_outputs = ROOT / "storage" / "outputs" / str(mysql_id) / "output.html"
+    path_archive = ROOT / "storage" / "archive" / str(mysql_id) / "document.html"
+
+    if path_outputs.exists():
+        html_path = path_outputs
+    elif path_archive.exists():
+        html_path = path_archive
+    else:
+        print(f"Error: HTML file not found for ID {mysql_id} in outputs or archive.")
         sys.exit(1)
-        
+
     html_content = html_path.read_text(encoding="utf-8")
+
     
     conn = get_connection()
     cursor = conn.cursor()
