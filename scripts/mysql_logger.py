@@ -133,13 +133,14 @@ def log_completed_script(mysql_id: int, output_html_path: str, html_content: str
 
 
 def log_failed(mysql_id: int, error: str):
-    """Mark job as FAILED in htmltopdfautomation (source table status unchanged)."""
+    """Mark job as FAILED in htmltopdfautomation and set htmltopdfstatus = 2 in source table."""
     conn   = get_connection()
     cursor = conn.cursor()
 
     # Truncate error to fit VARCHAR if needed (use first 500 chars as a note)
     short_error = error[:500] if error else "Unknown error"
 
+    # 1. Update tracking table
     cursor.execute("""
         UPDATE htmltopdfautomation
         SET    status     = 'FAILED',
@@ -147,10 +148,18 @@ def log_failed(mysql_id: int, error: str):
                updated_by = 'system'
         WHERE  mysql_id = %s
     """, (mysql_id,))
+
+    # 2. Update source table
+    cursor.execute("""
+        UPDATE tbl_studymaterial_lang_map
+        SET    htmltopdfstatus = 2
+        WHERE  id = %s
+    """, (mysql_id,))
+
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} → FAILED  ({short_error[:80]}...)")
+    print(f"[Logger] MySQL ID {mysql_id} → FAILED | htmltopdfstatus=2 ({short_error[:80]}...)")
 
 
 if __name__ == "__main__":

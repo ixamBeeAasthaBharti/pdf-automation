@@ -68,11 +68,21 @@ $rawHtml = str_replace('src="../images/', 'src="' . $imgBase, $rawHtml);
 
 /* ── Extract page title ── */
 $pageTitle = 'Study Notes';
-if (preg_match('/<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si', $rawHtml, $m)) {
-    $pageTitle = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
-} elseif (preg_match('/<title[^>]*>(.*?)<\/title>/si', $rawHtml, $m)) {
+if (preg_match('/<title[^>]*>(.*?)<\/title>/si', $rawHtml, $m)) {
     $extracted = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
-    $pageTitle = preg_replace('/^Study Notes:\s*/i', '', $extracted);
+    $extractedClean = preg_replace('/^Study Notes:\s*/i', '', $extracted);
+    if ($extractedClean !== '' && strtolower($extractedClean) !== 'study notes') {
+        $pageTitle = $extractedClean;
+    }
+}
+
+// Fallback selectors if title remains generic "Study Notes"
+if ($pageTitle === 'Study Notes') {
+    if (preg_match('/<h1[^>]*>(.*?)<\/h1>/si', $rawHtml, $m)) {
+        $pageTitle = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
+    } elseif (preg_match('/<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si', $rawHtml, $m)) {
+        $pageTitle = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
+    }
 }
 
 /* ── Extract <body> content only ── */

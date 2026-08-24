@@ -229,27 +229,37 @@ def extract_images(
 
             filename = f"page_{page_number+1:03d}_img_{image_count:03d}.png"
 
+            try:
+                # Normalize coordinates to handle inverted rectangles (e.g. x1 < x0 or y1 < y0)
+                rect = fitz.Rect(x0, y0, x1, y1).normalize()
+                # Intersect with the page rectangle to avoid cropping off-page content
+                rect = rect.intersect(page.rect)
+                
+                # Skip empty or extremely small/invalid rectangles to avoid PyMuPDF bandwriter crashes
+                if rect.is_empty or rect.width <= 2 or rect.height <= 2:
+                    print(f"   Skipping empty/tiny image on page {page_number + 1} at bbox ({x0:.1f}, {y0:.1f}, {x1:.1f}, {y1:.1f})")
+                    continue
 
-            rect = fitz.Rect(x0, y0, x1, y1)
+                pix = page.get_pixmap(
+                    matrix=fitz.Matrix(4, 4),
+                    clip=rect,
+                    alpha=True,
+                )
 
-            pix = page.get_pixmap(
-                matrix=fitz.Matrix(4, 4),
-                clip=rect,
-                alpha=True,
-            )
+                pix.save(image_dir / filename)
 
-            pix.save(image_dir / filename)
+                image_map.append(
+                    {
+                        "id":       f"IMAGE_{image_count:03d}",
+                        "page":     page_number + 1,
+                        "filename": filename,
+                        "bbox":     [x0, y0, x1, y1],
+                    }
+                )
 
-            image_map.append(
-                {
-                    "id":       f"IMAGE_{image_count:03d}",
-                    "page":     page_number + 1,
-                    "filename": filename,
-                    "bbox":     [x0, y0, x1, y1],
-                }
-            )
-
-            image_count += 1
+                image_count += 1
+            except Exception as e:
+                print(f"   Warning: Skipping corrupt image on page {page_number + 1} due to error: {e}")
 
     # -------------------------------------------------
     # Save mapping

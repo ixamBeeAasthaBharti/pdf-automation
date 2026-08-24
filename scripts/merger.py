@@ -292,6 +292,20 @@ def merge_chunks(
     images_prefix = "images/"
 
     # --------------------------------------------------
+    # Load cover title from temp/cover_info.json if available
+    # --------------------------------------------------
+    doc_title = "Study Notes"
+    cover_info_path = output_file.parent / "temp" / "cover_info.json"
+    if cover_info_path.exists():
+        try:
+            info = json.loads(cover_info_path.read_text(encoding="utf-8"))
+            if info.get("title"):
+                doc_title = info["title"]
+                print(f"[Merger] Loaded cover page title from JSON: '{doc_title}'")
+        except Exception as e:
+            print(f"[Merger] Warning: Could not read cover info: {e}")
+
+    # --------------------------------------------------
     # Assemble the raw HTML shell
     # --------------------------------------------------
 
@@ -300,7 +314,7 @@ def merge_chunks(
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Study Notes</title>
+<title>{doc_title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
@@ -310,7 +324,7 @@ def merge_chunks(
 
 <header class="doc-header">
   <div class="doc-header-inner">
-    <div class="title">Study Notes</div>
+    <div class="title">{doc_title}</div>
     <div class="header-right">
       <div class="header-font-control">
         <button id="font-size-dec" class="font-btn-sep" aria-label="Decrease font size" title="Decrease font size">A−</button>
@@ -490,7 +504,7 @@ def merge_chunks(
 
     soup = BeautifulSoup(raw_html, "lxml")
 
-    build_cover(soup)
+    # build_cover(soup)
     strip_body_logos(soup)
     fix_image_sizes(soup, image_map_file=image_map_file)
 

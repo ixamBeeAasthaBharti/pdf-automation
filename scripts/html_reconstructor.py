@@ -145,8 +145,48 @@ def reconstruct_html(
             for child in children:
                 parent_container.append(child)
 
-    # Decompose cover page from DOM if flagged
+    # Extract cover title before decomposing
+    cover_title = ""
+    cover_subtitle = ""
     if skip_cover and len(pages) > 0:
+        # Find all text divs on page 1
+        text_divs = pages[0].find_all(lambda tag: tag.name == "div" and tag.get("style") and "font-size" in tag.get("style"))
+        # Sort text divs by font size descending to find the largest text (title)
+        def get_font_size(div):
+            style = div.get("style", "")
+            match = re.search(r"font-size:\s*([\d.]+)\s*(px|em|pt)", style)
+            if match:
+                val = float(match.group(1))
+                if match.group(2) == "em":
+                    val = val * 12
+                return val
+            return 0.0
+            
+        sorted_divs = sorted(text_divs, key=get_font_size, reverse=True)
+        
+        # Filter out empty text and generic labels
+        title_candidates = []
+        for div in sorted_divs:
+            txt = div.get_text(" ", strip=True)
+            if txt and txt not in title_candidates:
+                if txt.lower() not in ("study notes", "quick recap", "exambee") and not re.match(r'^\d+$', txt):
+                    title_candidates.append(txt)
+        
+        if title_candidates:
+            cover_title = title_candidates[0]
+            if len(title_candidates) > 1:
+                cover_subtitle = title_candidates[1]
+                
+        # Save to temp directory
+        temp_dir = output_html.parent
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        cover_info_path = temp_dir / "cover_info.json"
+        cover_info_path.write_text(json.dumps({
+            "title": cover_title,
+            "subtitle": cover_subtitle
+        }, indent=4), encoding="utf-8")
+
+        print(f"[html_reconstructor] Extracted cover page title: '{cover_title}'")
         print("[html_reconstructor] Decomposing cover page (Page 1) from the HTML DOM.")
         pages[0].decompose()
 
