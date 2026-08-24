@@ -73,8 +73,8 @@ def do_fetch(count: int = 1, target_ids: list[int] = None):
 # --process
 # ─────────────────────────────────────────────────────────────────────────────
 
-def do_process():
-    """Process all queue folders that have both document.pdf + document.html."""
+def do_process(limit: int = None):
+    """Process all PDF files in QUEUE_DIR that have a corresponding .html file."""
     print("\n" + "=" * 65)
     print(" PIPELINE - PROCESS MODE")
     print("=" * 65)
@@ -88,39 +88,58 @@ def do_process():
 
     processed_any = False
 
-    for subfolder in sorted(QUEUE_DIR.iterdir()):
-        if not subfolder.is_dir():
-            continue
+    # Find all .pdf files in QUEUE_DIR
+    pdf_files = sorted(QUEUE_DIR.glob("*.pdf"))
+    if limit is not None and limit > 0:
+        print(f"[Pipeline] Limiting processing to first {limit} item(s).")
+        pdf_files = pdf_files[:limit]
 
-        doc_id    = subfolder.name
-        pdf_path  = subfolder / "document.pdf"
-        html_path = subfolder / "document.html"
-
-        if not pdf_path.exists():
-            continue                          # not a valid queue entry
+    for pdf_path in pdf_files:
+        html_path = pdf_path.with_suffix(".html")
+        filename = pdf_path.name
 
         if not html_path.exists():
-            print(f"\n[Pipeline] ⏳ {doc_id} — document.html missing.")
-            print(f"           Convert the PDF with PDF24 and save to:")
+            print(f"\n[Pipeline] ⏳ {filename} — corresponding HTML missing.")
+            print(f"           Convert this PDF with PDF24 and save to:")
             print(f"           {html_path}")
             continue
 
-        # This folder has both files — process it
+        # Look up mysql_id by querying the database for this filename
+        mysql_id = None
+        from mysql_client import get_connection
+        try:
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id FROM tbl_studymaterial_lang_map WHERE content = %s LIMIT 1",
+                (filename,)
+            )
+            row = cursor.fetchone()
+            if row:
+                mysql_id = row["id"]
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print(f"[Pipeline] Warning: Could not resolve MySQL ID for {filename}: {e}")
+
+        if not mysql_id:
+            print(f"[Pipeline] Skipping {filename}: Could not find MySQL ID in tbl_studymaterial_lang_map.")
+            continue
+
+        doc_id = str(mysql_id)
+
+        # This pair has both files — process it
         print(f"\n{'=' * 65}")
-        print(f" Processing: {doc_id}")
+        print(f" Processing: {filename} (ID: {doc_id})")
         print(f"{'=' * 65}")
 
-        mysql_id = int(doc_id) if doc_id.isdigit() else None
-
         # Update status: HTML is ready
-        if mysql_id:
-            log_html_ready(mysql_id, str(html_path))
-            update_pdf_job_status(mysql_id, "HTML_READY")
+        log_html_ready(mysql_id, str(html_path))
+        update_pdf_job_status(mysql_id, "HTML_READY")
 
         # Update status: pipeline starting
-        if mysql_id:
-            log_processing(mysql_id)
-            update_pdf_job_status(mysql_id, "PROCESSING")
+        log_processing(mysql_id)
+        update_pdf_job_status(mysql_id, "PROCESSING")
 
         try:
             output_file = _run_pipeline(doc_id, pdf_path, html_path)
@@ -128,22 +147,20 @@ def do_process():
             # Read the full output HTML content
             html_content = output_file.read_text(encoding="utf-8")
 
-            if mysql_id:
-                log_completed(mysql_id, str(output_file), html_content)
-                update_pdf_job_status(mysql_id, "COMPLETED")
+            log_completed(mysql_id, str(output_file), html_content)
+            update_pdf_job_status(mysql_id, "COMPLETED")
 
-            # Move processed queue folder to archive
-            _archive(subfolder, doc_id)
+            # Move processed PDF and HTML from queue to archive
+            _archive(pdf_path, html_path, doc_id)
 
             processed_any = True
-            print(f"[Pipeline] SUCCESS {doc_id} -> COMPLETED")
+            print(f"[Pipeline] SUCCESS {filename} -> COMPLETED")
 
         except Exception:
             tb = traceback.format_exc()
-            print(f"[Pipeline] FAILED  {doc_id} -> FAILED\n{tb}")
-            if mysql_id:
-                log_failed(mysql_id, tb)
-                update_pdf_job_status(mysql_id, "FAILED")
+            print(f"[Pipeline] FAILED  {filename} -> FAILED\n{tb}")
+            log_failed(mysql_id, tb)
+            update_pdf_job_status(mysql_id, "FAILED")
 
         # Regenerate dashboard after each document so progress is visible
         try:
@@ -153,7 +170,7 @@ def do_process():
 
     if not processed_any:
         print("\n[Pipeline] No documents ready to process.")
-        print("[Pipeline] Run --fetch first, then add document.html files.")
+        print("[Pipeline] Run --fetch first, then add HTML files.")
 
 
 def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
@@ -173,7 +190,7 @@ def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
     final_output_file     = doc_out_dir / "output.html"
 
     print(f"\n--- Step 1/6 : Extract Images from PDF ---")
-    extract_images(
+    skip_cover = extract_images(
         pdf_file=pdf_path,
         image_dir=image_dir,
         image_map_path=image_map_file,
@@ -184,6 +201,7 @@ def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
         input_html=html_path,
         image_map_path=image_map_file,
         output_html=reconstructed_html,
+        skip_cover=skip_cover,
     )
 
     print(f"\n--- Step 3/6 : Clean HTML Markup ---")
@@ -218,22 +236,25 @@ def _run_pipeline(doc_id: str, pdf_path: Path, html_path: Path) -> Path:
     return final_output_file
 
 
-def _archive(queue_folder: Path, doc_id: str):
-    """Move a processed queue folder to storage/archive/."""
-    if not queue_folder.exists():
-        print(f"[Pipeline] Queue folder {queue_folder} already moved/archived.")
-        return
-    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-    dest = ARCHIVE_DIR / doc_id
-    if dest.exists():
-        import shutil
-        shutil.rmtree(dest)
+def _archive(pdf_path: Path, html_path: Path, doc_id: str):
+    """Move processed PDF and HTML files from queue to storage/archive/<doc_id>/."""
+    dest_dir = ARCHIVE_DIR / doc_id
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    import shutil
+    # Move PDF
     try:
-        import shutil
-        shutil.move(str(queue_folder), str(dest))
-        print(f"[Pipeline] Archived input files -> {dest}")
+        shutil.move(str(pdf_path), str(dest_dir / "document.pdf"))
+        print(f"[Pipeline] Archived PDF -> {dest_dir / 'document.pdf'}")
     except Exception as e:
-        print(f"[Pipeline] Archive warning (non-fatal): {e}")
+        print(f"[Pipeline] Archive PDF warning (non-fatal): {e}")
+
+    # Move HTML
+    try:
+        shutil.move(str(html_path), str(dest_dir / "document.html"))
+        print(f"[Pipeline] Archived HTML -> {dest_dir / 'document.html'}")
+    except Exception as e:
+        print(f"[Pipeline] Archive HTML warning (non-fatal): {e}")
 
 
 
@@ -303,6 +324,7 @@ Examples:
     parser.add_argument("--count",   type=int, default=1,  help="Number of PDFs to fetch (use with --fetch, default: 1)")
     parser.add_argument("--ids",     type=str, help="Comma-separated specific MySQL IDs to fetch (e.g. 1474,7908)")
     parser.add_argument("--process", action="store_true", help="Process HTML-ready queue items")
+    parser.add_argument("--limit",   type=int, help="Limit the number of items to process (use with --process)")
     parser.add_argument("--status",  action="store_true", help="Show current job statuses")
     args = parser.parse_args()
 
@@ -312,7 +334,7 @@ Examples:
             target_ids = [int(x.strip()) for x in args.ids.split(",") if x.strip().isdigit()]
         do_fetch(count=args.count, target_ids=target_ids)
     elif args.process:
-        do_process()
+        do_process(limit=args.limit)
     elif args.status:
         do_status()
     else:

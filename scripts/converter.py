@@ -71,13 +71,13 @@ def main():
     print("Step 2/7 : Extract Images")
     print("=" * 60)
 
-    extract_images()
+    skip_cover = extract_images()
 
     print("=" * 60)
     print("Step 3/7 : Reconstruct HTML")
     print("=" * 60)
 
-    reconstruct_html()
+    reconstruct_html(skip_cover=skip_cover)
 
     print("=" * 60)
     print("Step 4/7 : Preprocess HTML")

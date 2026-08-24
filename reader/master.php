@@ -57,7 +57,10 @@ if (empty($doc['html_content'])) {
 }
 
 /* ── Rewrite image paths ── */
-$imgBase = '/storage/outputs/' . $mysqlId . '/images/';
+$imgBase = '/storage/archive/' . $mysqlId . '/images/';
+if (!is_dir(__DIR__ . '/..' . $imgBase)) {
+    $imgBase = '/storage/outputs/' . $mysqlId . '/images/';
+}
 $rawHtml = $doc['html_content'];
 $rawHtml = str_replace('src="images/',    'src="' . $imgBase, $rawHtml);
 $rawHtml = str_replace("src='images/",    "src='" . $imgBase, $rawHtml);
@@ -65,8 +68,11 @@ $rawHtml = str_replace('src="../images/', 'src="' . $imgBase, $rawHtml);
 
 /* ── Extract page title ── */
 $pageTitle = 'Study Notes';
-if (preg_match('/<title[^>]*>(.*?)<\/title>/si', $rawHtml, $m)) {
-    $pageTitle = trim(strip_tags($m[1]));
+if (preg_match('/<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si', $rawHtml, $m)) {
+    $pageTitle = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
+} elseif (preg_match('/<title[^>]*>(.*?)<\/title>/si', $rawHtml, $m)) {
+    $extracted = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
+    $pageTitle = preg_replace('/^Study Notes:\s*/i', '', $extracted);
 }
 
 /* ── Extract <body> content only ── */
@@ -77,6 +83,20 @@ if (preg_match('/<body[^>]*>(.*?)<\/body>/si', $rawHtml, $bm)) {
 
 /* Remove the old embedded sticky header (master.php renders its own) */
 $bodyContent = preg_replace('/<header\s[^>]*class="[^"]*doc-header[^"]*"[^>]*>.*?<\/header>/si', '', $bodyContent);
+
+/* Format cover title for documents where topic is in cover-subtitle */
+$bodyContent = preg_replace(
+    '/(<h1[^>]*class="[^"]*cover-title[^"]*"[^>]*>)(.*?)(<\/h1>)\s*<p[^>]*class="[^"]*cover-subtitle[^"]*"[^>]*>(.*?)<\/p>/si',
+    '<p class="cover-study-notes">$2</p>$1$4$3',
+    $bodyContent
+);
+
+/* Format cover title for documents where title and topic are combined in a single cover-title */
+$bodyContent = preg_replace(
+    '/(<h1[^>]*class="[^"]*cover-title[^"]*"[^>]*>)\s*Study Notes:\s*(.*?)(<\/h1>)/si',
+    '<p class="cover-study-notes">Study Notes</p>$1$2$3',
+    $bodyContent
+);
 
 /* Remove inline scripts (replaced by reader.js) */
 $bodyContent = preg_replace('/<script\b[^>]*>.*?<\/script>/si', '', $bodyContent);
@@ -92,7 +112,7 @@ $logoSrc = '../assets/logo.png';
   <meta name="description" content="ixamBee Study Notes - <?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/reader.css"/>
 </head>
 <body>
@@ -112,6 +132,20 @@ $logoSrc = '../assets/logo.png';
   </div>
   <div id="read-progress" class="read-progress"></div>
 </header>
+
+<article class="cover-article">
+  <div class="cover-page">
+    <div class="cover-logo-wrap">
+      <img src="<?php echo htmlspecialchars($logoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="ixamBee" class="cover-logo-img"/>
+    </div>
+    <div class="cover-body">
+      <p class="cover-study-notes">STUDY NOTES</p>
+      <h1 class="cover-title"><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
+    </div>
+    <div class="cover-contact">
+    </div>
+  </div>
+</article>
 
 <?php echo $bodyContent; ?>
 

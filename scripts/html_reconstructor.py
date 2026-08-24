@@ -19,6 +19,7 @@ def reconstruct_html(
     input_html: Path = None,
     image_map_path: Path = None,
     output_html: Path = None,
+    skip_cover: bool = False,
 ):
     """
     Reconstruct the PDF24 HTML by inserting extracted image tags at the
@@ -28,6 +29,7 @@ def reconstruct_html(
         input_html     : Path to the PDF24-converted HTML file
         image_map_path : Path to image_map.json produced by pymupdf_image_extractor
         output_html    : Path where the reconstructed HTML will be written
+        skip_cover     : If True, skips page 1 from image insertion and decomposes page 1.
     """
     # ------------------------------------------------------------------ #
     # Resolve paths                                                         #
@@ -76,6 +78,9 @@ def reconstruct_html(
     for image in image_map:
 
         page_number = image["page"] - 1
+
+        if skip_cover and page_number == 0:
+            continue
 
         if page_number >= len(pages):
             continue
@@ -140,6 +145,10 @@ def reconstruct_html(
             for child in children:
                 parent_container.append(child)
 
+    # Decompose cover page from DOM if flagged
+    if skip_cover and len(pages) > 0:
+        print("[html_reconstructor] Decomposing cover page (Page 1) from the HTML DOM.")
+        pages[0].decompose()
 
     print(f"Pages found : {len(soup.find_all(id=lambda x: x and x.startswith('page_')))}")
     print(f"Images found: {len(image_map)}")

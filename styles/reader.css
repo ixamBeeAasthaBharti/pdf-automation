@@ -8,9 +8,11 @@
 
 /* Cover page container: handles padding and border inset */
 article.cover-article {
-    max-width: 752px;
+    width: 100%;
+    max-width: 792px;
+    box-sizing: border-box;
     padding: 1.25rem;
-    margin-bottom: 2rem;
+    margin: 2rem auto;
 }
 
 /* Inner box with the navy border */
@@ -47,7 +49,7 @@ article.cover-article {
 
 /* "Study Notes" green label — NOT italic */
 .cover-study-notes {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: normal;
@@ -58,7 +60,7 @@ article.cover-article {
 
 /* Extra meta lines on cover (e.g. "Previous Year paper", "Professional Knowledge") */
 .cover-meta-line {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: normal;
@@ -70,7 +72,7 @@ article.cover-article {
 
 /* Subtitle line beneath the main title (exam code / year) */
 .cover-subtitle {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--ink-soft);
     font-size: 1rem;
     font-weight: 600;
@@ -80,8 +82,8 @@ article.cover-article {
 
 .cover-title {
     display: block;
-    font-family: var(--serif);
-    color: var(--navy);
+    font-family: var(--deepesh);
+    color: var(--reader-navy);
     font-size: 2.2rem;
     font-weight: 700;
     line-height: 1.35;
@@ -90,6 +92,24 @@ article.cover-article {
     border: none;
     padding: 0;
     margin: 0;
+}
+
+/* Responsive cover image styling */
+.cover-image-wrap {
+    margin: 1.5rem auto 0;
+    max-width: 640px;
+    /* Larger layout */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.cover-dashboard-img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1.5px solid rgba(230, 221, 205, 0.8);
+    object-fit: contain;
 }
 
 /* Contact line — pinned to the bottom of the cover */
@@ -124,6 +144,7 @@ article.cover-article {
     --ink-soft: #4a443c;
     --hairline: #e6ddc9;
     --serif: 'Lora', Georgia, 'Iowan Old Style', 'Apple Garamond', Baskerville, serif;
+    --deepesh: 'Literata', 'serif';
 }
 
 html {
@@ -131,7 +152,7 @@ html {
 }
 
 body {
-    font-family: var(--serif);
+    font-family: var(--deepesh);
     color: var(--ink);
     background: var(--paper);
     font-size: 1rem;
@@ -144,7 +165,8 @@ body {
    ===================================================== */
 article {
     width: 100%;
-    max-width: 720px;
+    max-width: 792px;
+    box-sizing: border-box;
     background: var(--page);
     border: 1px solid var(--hairline);
     box-shadow: 0 1px 3px rgba(0, 0, 0, .04), 0 12px 30px -18px rgba(27, 58, 107, .25);
@@ -163,7 +185,7 @@ article>header {
 }
 
 article>header h1 {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--navy);
     font-size: 1.5rem;
     font-weight: 700;
@@ -172,7 +194,7 @@ article>header h1 {
 }
 
 article>header h2 {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green-header);
     font-size: 1.15rem;
     font-weight: 700;
@@ -206,7 +228,7 @@ section>header p.running-header {
 section h2,
 .section-title {
     display: block;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--green-light);
     color: var(--navy);
     font-weight: 700;
@@ -355,7 +377,7 @@ figure img {
 }
 
 figcaption {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     color: var(--ink-soft);
     font-style: italic;
@@ -373,7 +395,7 @@ figcaption {
 
 /* Heading/title text that appears above an extracted table */
 .extracted-heading {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .92rem;
     font-weight: 700;
     color: var(--navy);
@@ -385,7 +407,7 @@ figcaption {
 
 /* Italic subtitle/caption above an extracted table */
 .extracted-subheading {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     font-style: italic;
     color: var(--ink-soft);
@@ -394,7 +416,7 @@ figcaption {
 
 /* Footnote/text below an extracted table */
 .extracted-note {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .82rem;
     color: var(--ink-soft);
     margin: .4rem 0 0;
@@ -435,7 +457,7 @@ section table,
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .92rem;
     border: 1px solid var(--hairline);
     border-radius: 8px;
@@ -570,7 +592,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .brand-name {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 2rem;
     font-weight: 700;
     color: var(--navy);
@@ -581,7 +603,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .tagline {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-style: italic;
@@ -590,7 +612,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .cover .study-notes {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: var(--green);
     font-weight: 700;
     font-size: 1.4rem;
@@ -614,7 +636,7 @@ section table tbody tr:nth-child(odd),
 }
 
 .doc-header {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--page);
     border-bottom: 1px solid var(--hairline);
     box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
@@ -673,7 +695,7 @@ main.content-wrap {
 
 .section-title {
     display: block;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     background: var(--green-light);
     color: var(--navy);
     font-weight: 700;
@@ -764,7 +786,7 @@ ul.notes-subsub>li::before {
 }
 
 /* =====================================================
-   FLOW DIAGRAMS
+   PLAY DIAGRAMS
    ===================================================== */
 .flow-diagram {
     background: linear-gradient(180deg, #faf7f0 0%, #f4eee1 100%);
@@ -801,7 +823,7 @@ ul.notes-subsub>li::before {
 }
 
 .flow-node {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: #fff;
     font-weight: 700;
     border-radius: 10px;
@@ -826,7 +848,7 @@ ul.notes-subsub>li::before {
     font-size: 1.6rem;
     font-weight: 700;
     color: var(--green);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     user-select: none;
     display: flex;
     align-items: center;
@@ -868,7 +890,7 @@ ul.notes-subsub>li::before {
 }
 
 .flow-arrow-glyph {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     user-select: none;
     display: flex;
     align-items: center;
@@ -882,7 +904,7 @@ ul.notes-subsub>li::before {
    FOOTER
    ===================================================== */
 footer.doc-footer {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     color: #9a9182;
     font-size: .82rem;
 }
@@ -989,7 +1011,7 @@ footer.doc-footer {
     --reader-page: #fffdf8;
     --reader-ink: #292621;
     --reader-muted: #655e54;
-    --reader-navy: #183c70;
+    --reader-navy: #043821;
     --reader-brown: #8a4f24;
     --reader-orange: #ef9b63;
     --reader-orange-soft: #fff0e4;
@@ -1029,6 +1051,19 @@ article:not(.cover-article) {
     background: var(--reader-page);
     border: 1px solid rgba(230, 221, 205, .9);
     border-radius: 14px;
+    box-shadow:
+        0 2px 8px rgba(48, 38, 24, .035),
+        0 18px 45px rgba(48, 38, 24, .07);
+    box-sizing: border-box;
+}
+
+article.cover-article {
+    width: min(100% - 2rem, 820px);
+    max-width: 820px;
+    margin: 2.25rem auto 2rem;
+    background: var(--reader-page);
+    border: 1px solid rgba(230, 221, 205, .9);
+    border-radius: 10px;
     box-shadow:
         0 2px 8px rgba(48, 38, 24, .035),
         0 18px 45px rgba(48, 38, 24, .07);
@@ -1087,7 +1122,7 @@ article:not(.cover-article) section h3 {
     margin: 1.45rem 0 .7rem;
     padding: .12rem 0 .12rem 1rem;
     color: var(--reader-brown);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 1.02rem;
     font-weight: 800;
     line-height: 1.4;
@@ -1110,17 +1145,16 @@ article:not(.cover-article) section h4 {
     margin: 1.2rem 0 .55rem;
     padding: .15rem 0 .35rem;
     color: var(--reader-navy);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: .94rem;
     font-weight: 750;
     line-height: 1.45;
     border-bottom: 1px dashed rgba(138, 79, 36, .28);
-    text-wrap: balance;
 }
 
 /* Avoid making the table's h3 look like an unrelated subsection heading. */
 #rural-economy-structure>h3 {
-    width: min(100%, 640px);
+    width: 100%;
     margin: 1rem auto .2rem;
     padding: .58rem .9rem;
     color: #fff;
@@ -1142,13 +1176,8 @@ article:not(.cover-article) section h4 {
    in the original study notes. Give it a readable Kindle-style marker effect. */
 article:not(.cover-article) strong {
     color: var(--reader-navy);
-    font-weight: 800;
-    background:
-        linear-gradient(to bottom,
-            transparent 55%,
-            var(--reader-highlight) 55%,
-            var(--reader-highlight) 94%,
-            transparent 94%);
+    font-weight: 600;
+    background: none;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
     padding: 0 .08em;
@@ -1285,7 +1314,7 @@ article:not(.cover-article) section ol[type="1"]>li::marker {
    Native tables inside .table-responsive get the new compact style.
    Existing .notes-table and .notes-table.blue keep their current design. */
 article:not(.cover-article) .table-responsive {
-    width: min(100%, 640px);
+    width: 100%;
     max-width: 100%;
     margin: .15rem auto 1.2rem;
     padding: 0;
@@ -1299,17 +1328,25 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) {
     width: 100%;
     min-width: 0;
     margin: 0;
-    table-layout: fixed;
+
+    /* Let the browser size columns naturally */
+    table-layout: auto;
+
     border-collapse: separate;
     border-spacing: 0;
-    font-family: Arial, Helvetica, sans-serif;
+
+    font-family: var(--deepesh);
     font-size: .88rem;
     line-height: 1.35;
+
     color: var(--reader-navy);
     background: var(--reader-page);
+
     border: 1px solid #b7c7df;
     border-radius: 0 0 9px 9px;
+
     overflow: hidden;
+
     box-shadow: 0 3px 10px rgba(24, 60, 112, .06);
 }
 
@@ -1319,7 +1356,7 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th {
     background: var(--reader-table-blue-soft);
     color: var(--reader-navy);
     text-align: center;
-    font-weight: 800;
+    font-weight: 600;
     border: 0;
     border-bottom: 1px solid #b7c7df;
     vertical-align: middle;
@@ -1335,8 +1372,9 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) tbody th {
     border: 0;
     border-top: 1px solid #d7e0ec;
     vertical-align: middle;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
     word-break: normal;
+    white-space: normal;
     text-align: center;
 }
 
@@ -1381,11 +1419,11 @@ article:not(.cover-article) .extracted-table-block {
 
 article:not(.cover-article) .extracted-heading {
     color: var(--reader-navy);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: .93rem;
-    font-weight: 800;
+    font-family: var(--deepesh);
+    font-size: 1rem;
+    font-weight: 600;
     line-height: 1.4;
-    margin: 0 0 .5rem;
+    margin: 0 0 2rem;
     padding-left: .7rem;
     border-left: 3px solid var(--reader-orange);
 }
@@ -1407,6 +1445,14 @@ article:not(.cover-article) figure img {
     display: inline-block;
 }
 
+article:not(.cover-article) figcaption,
+figcaption {
+    text-align: center !important;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--reader-ink);
+}
+
 /* ---------- Better separation between sections ---------- */
 article:not(.cover-article) section {
     scroll-margin-top: 1rem;
@@ -1420,14 +1466,84 @@ article:not(.cover-article) section>p:first-of-type {
     margin-top: .45rem;
 }
 
-/* ---------- Soft callout style if generated content uses .content-note ---------- */
+/* ---------- Soft callout style for .note and .content-note ---------- */
+article:not(.cover-article) .note,
+article:not(.cover-article) aside.note,
+article:not(.cover-article) div.note,
 article:not(.cover-article) .content-note {
-    margin: 1rem 0;
-    padding: .85rem 1rem;
+    margin: 1.25rem 0;
+    padding: 1.25rem 1.5rem;
     background: #faf6eb;
-    border-left: 3px solid #c9bd98;
-    border-radius: 0 8px 8px 0;
+    border-left: 4px solid #c9bd98;
+    border-radius: 4px;
 }
+
+/* Header inside Note/Callout */
+article:not(.cover-article) .note h2,
+article:not(.cover-article) .note h3,
+article:not(.cover-article) .note h4,
+article:not(.cover-article) .note h5,
+article:not(.cover-article) .note h6,
+article:not(.cover-article) .content-note h2,
+article:not(.cover-article) .content-note h3,
+article:not(.cover-article) .content-note h4,
+article:not(.cover-article) .content-note h5,
+article:not(.cover-article) .content-note h6,
+article:not(.cover-article) .note .note-title,
+article:not(.cover-article) .content-note .note-title {
+    color: var(--navy, #1b3a6b);
+    font-family: var(--deepesh);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+/* Lists inside Note/Callout */
+article:not(.cover-article) .note ul,
+article:not(.cover-article) .note ol,
+article:not(.cover-article) .content-note ul,
+article:not(.cover-article) .content-note ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+article:not(.cover-article) .note li,
+article:not(.cover-article) .content-note li {
+    position: relative;
+    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    color: var(--ink, #2b2620);
+}
+
+article:not(.cover-article) .note li:last-child,
+article:not(.cover-article) .content-note li:last-child {
+    margin-bottom: 0;
+}
+
+/* Custom list bullet / dash inside Note/Callout */
+article:not(.cover-article) .note li::before,
+article:not(.cover-article) .content-note li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #c9bd98;
+    font-weight: 700;
+}
+
+/* Bold text inside Note/Callout */
+article:not(.cover-article) .note strong,
+article:not(.cover-article) .content-note strong {
+    color: var(--navy, #1b3a6b);
+    font-weight: 700;
+}
+
 
 /* ---------- Keep generated flow diagrams usable ---------- */
 article:not(.cover-article) .flow-diagram {
@@ -1548,7 +1664,7 @@ article:not(.cover-article) a:hover {
 
     /* On very narrow screens, horizontal scrolling is preferable to crushed cells. */
     article:not(.cover-article) .table-responsive>table:not(.notes-table) {
-        min-width: 430px;
+        min-width: 680px;
     }
 }
 
@@ -1599,6 +1715,7 @@ article:not(.cover-article) a:hover {
     left: 0;
     right: 0;
     width: 100%;
+    max-width: 100%;
     margin: 0;
     padding: 0;
     z-index: 1000;
@@ -1606,7 +1723,8 @@ article:not(.cover-article) a:hover {
     border-bottom: 1px solid var(--reader-line, #e6ddcd);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
+    overflow: visible;
 }
 
 .doc-header.scrolled {
@@ -1630,7 +1748,7 @@ article:not(.cover-article) a:hover {
 }
 
 .doc-header .title {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-weight: 700;
     font-style: italic;
     color: var(--reader-navy, #183c70);
@@ -1665,7 +1783,7 @@ article:not(.cover-article) a:hover {
     padding: 0;
 
     color: #4f943b;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
     font-size: 0.82rem;
     font-weight: 600;
     line-height: 1;
@@ -1752,7 +1870,7 @@ article:not(.cover-article) a:hover {
     overflow-y: auto;
     z-index: 900;
     transition: transform 0.3s ease, opacity 0.3s ease;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--deepesh);
 }
 
 #dynamic-toc.collapsed {
@@ -1824,7 +1942,7 @@ article.cover-article {
 /* Headings & Section titles scaling */
 article section h2,
 article .section-title {
-    font-size: calc(1.08rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.5rem * var(--reader-font-scale, 1)) !important;
 }
 
 article section h3 {
@@ -1832,11 +1950,11 @@ article section h3 {
 }
 
 article section h4 {
-    font-size: calc(0.94rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.1rem * var(--reader-font-scale, 1)) !important;
 }
 
 article .extracted-heading {
-    font-size: calc(0.93rem * var(--reader-font-scale, 1)) !important;
+    font-size: calc(1.1rem * var(--reader-font-scale, 1)) !important;
 }
 
 /* Tables & Table Cells scaling */
@@ -1858,33 +1976,99 @@ article .notes-table tbody th {
     font-size: calc(0.88rem * var(--reader-font-scale, 1)) !important;
 }
 
-
 /* =========================================================
-   FINAL MOBILE READER OVERRIDES
+   FINAL MOBILE FIX
    ========================================================= */
-
-/* ---------- Tablet ---------- */
 
 @media (max-width: 768px) {
 
-    /* -----------------------------
-       STICKY HEADER
-       ----------------------------- */
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    body {
+        padding-top: 50px;
+    }
+
+    /* ---------- Article ---------- */
+
+    article:not(.cover-article),
+    article.cover-article {
+        width: calc(100% - 16px);
+        max-width: none;
+        margin: .5rem auto 1.5rem;
+        box-sizing: border-box;
+    }
+
+    article:not(.cover-article) {
+        padding: 1.15rem .9rem 1.5rem;
+    }
+
+    article.cover-article {
+        padding: 0.65rem;
+    }
+
+    article:not(.cover-article) main {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
+
+    /* Prevent long content from pushing the page wider */
+    article:not(.cover-article) * {
+        max-width: 100%;
+    }
+
+    article:not(.cover-article) img,
+    article:not(.cover-article) figure {
+        max-width: 100%;
+    }
+
+    /* ---------- Sticky Header ---------- */
+
+    .doc-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
 
     .doc-header-inner {
-        padding: 0.6rem 0.85rem;
-        min-height: 48px;
-        gap: 0.65rem;
+        width: 100%;
+        max-width: 100%;
+        min-height: 50px;
+        padding: .55rem .75rem;
+        gap: .5rem;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+
+    .read-progress {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 0%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--green), var(--navy));
+        transition: width 0.08s linear;
+        z-index: 1001;
+        display: block;
     }
 
     .doc-header .title {
         flex: 1 1 auto;
         min-width: 0;
         max-width: none;
-
-        font-size: 0.92rem;
+        font-size: .9rem;
         line-height: 1.2;
-
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1892,383 +2076,91 @@ article .notes-table tbody th {
 
     .header-right {
         flex: 0 0 auto;
-        gap: 0.55rem;
+        gap: .45rem;
+        min-width: 0;
     }
 
     .header-font-control {
-        gap: 0.35rem;
+        gap: .3rem;
         margin-bottom: 0;
     }
 
     .font-btn-sep {
         width: 30px;
         height: 25px;
-        border-radius: 5px;
-        font-size: 0.78rem;
+        flex: 0 0 30px;
+        font-size: .78rem;
+    }
+
+    .header-logo-wrap {
+        flex: 0 0 auto;
     }
 
     .header-logo-img {
-        height: 32px;
+        height: 30px;
         width: auto;
+        max-width: 95px;
     }
 
-
-    /* -----------------------------
-       READING CARD
-       ----------------------------- */
-
-    article:not(.cover-article) {
-        width: calc(100% - 1rem);
-        max-width: none;
-
-        margin: 0.75rem auto 1.5rem;
-
-        padding: 1.35rem 1rem 1.75rem;
-
-        border-radius: 9px;
-    }
-
-    article:not(.cover-article) main {
-        width: 100%;
-        max-width: none;
-    }
-
-
-    /* -----------------------------
-       READING TEXT
-       ----------------------------- */
+    /* ---------- Text ---------- */
 
     article:not(.cover-article) p {
-        font-size: 1rem;
-        line-height: 1.58;
-        margin: 0.55rem 0 0.85rem;
+        font-size: inherit;
+        line-height: 1.55;
+        overflow-wrap: break-word;
     }
 
     article:not(.cover-article) section h2,
     article:not(.cover-article) .section-title {
-        margin: 1.45rem 0 0.75rem;
-        padding: 0.55rem 0.7rem 0.55rem 0.8rem;
-
-        font-size: 1rem !important;
+        font-size: calc(1.1rem * var(--reader-font-scale, 1)) !important;
         line-height: 1.35;
     }
 
     article:not(.cover-article) section h3 {
-        margin: 1.15rem 0 0.55rem;
-        font-size: 0.96rem !important;
+        font-size: calc(1rem * var(--reader-font-scale, 1)) !important;
         line-height: 1.4;
     }
 
     article:not(.cover-article) section h4 {
-        font-size: 0.9rem !important;
+        font-size: calc(.88rem * var(--reader-font-scale, 1)) !important;
+        line-height: 1.4;
+        overflow-wrap: break-word;
     }
 
-
-    /* -----------------------------
-       LISTS
-       ----------------------------- */
+    /* ---------- Lists ---------- */
 
     article:not(.cover-article) section>ul>li,
     article:not(.cover-article) section main>ul>li,
     article:not(.cover-article) ul.notes-list>li {
         padding-left: 1.15rem;
-        margin-bottom: 0.4rem;
-        line-height: 1.55;
+        margin-bottom: .4rem;
     }
 
-    article:not(.cover-article) section>ul>li>ul,
-    article:not(.cover-article) section main>ul>li>ul,
-    article:not(.cover-article) ul.notes-sub {
-        padding-left: 0.85rem;
-    }
+    /* ---------- Tables ---------- */
 
-
-    /* -----------------------------
-       TABLES
-       ----------------------------- */
-
-    /*
-       Don't force the whole page to 560px.
-       Only the table itself should scroll.
-    */
-
-    section {
-        max-width: 100%;
-    }
-
-    section table,
-    .notes-table {
-        min-width: 0;
-    }
-
-    .table-responsive {
+    article:not(.cover-article) .table-responsive {
         width: 100%;
         max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
-
         -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
     }
 
+    /*
+       Keep tables scrollable instead of allowing them
+       to expand the entire page.
+    */
     article:not(.cover-article) .table-responsive>table {
-        min-width: 430px;
+        max-width: none;
     }
 
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) {
-        font-size: 0.8rem !important;
-    }
-
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th,
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) tbody td {
-        padding: 0.45rem 0.4rem;
-    }
-
-
-    /* -----------------------------
-       IMAGES
-       ----------------------------- */
-
-    article:not(.cover-article) figure {
-        width: 100%;
-        margin: 0.9rem auto 1.1rem;
-    }
-
-    article:not(.cover-article) figure img {
-        max-width: 100%;
-        height: auto;
-    }
-
-
-    /* -----------------------------
-       CALLOUTS
-       ----------------------------- */
-
-    article:not(.cover-article) .content-note {
-        margin: 0.85rem 0;
-        padding: 0.75rem 0.85rem;
-    }
-
-
-    /* -----------------------------
-       FLOW DIAGRAMS
-       ----------------------------- */
+    /* ---------- Flow diagrams ---------- */
 
     article:not(.cover-article) .flow-diagram {
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
-        padding: 1rem 0.75rem !important;
-    }
-
-    article:not(.cover-article) .flow-node {
-        max-width: 260px;
-        font-size: 0.82rem;
-    }
-}
-
-
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 576px) {
-
-    /* -----------------------------
-       HEADER
-       ----------------------------- */
-
-    .doc-header-inner {
-        min-height: 44px;
-        padding: 0.5rem 0.65rem;
-        gap: 0.45rem;
-    }
-
-    .doc-header .title {
-        font-size: 0.84rem;
-    }
-
-    .header-right {
-        gap: 0.4rem;
-    }
-
-    .header-font-control {
-        gap: 0.25rem;
-    }
-
-    .font-btn-sep {
-        width: 28px;
-        height: 24px;
-
-        border-radius: 5px;
-
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .header-logo-img {
-        height: 29px;
-    }
-
-
-    /* -----------------------------
-       CONTENT CARD
-       ----------------------------- */
-
-    article:not(.cover-article) {
-        width: calc(100% - 0.5rem);
-
-        margin: 0.25rem auto 1rem;
-
-        padding: 1rem 0.8rem 1.4rem;
-
-        border-radius: 8px;
-
-        box-shadow:
-            0 2px 12px rgba(48, 38, 24, 0.055);
-    }
-
-
-    /* -----------------------------
-       BODY TEXT
-       ----------------------------- */
-
-    body {
-        font-size: 0.94rem;
-    }
-
-    article:not(.cover-article) p {
-        font-size: 0.96rem;
-        line-height: 1.58;
-        margin: 0.5rem 0 0.75rem;
-    }
-
-
-    /* -----------------------------
-       HEADINGS
-       ----------------------------- */
-
-    article:not(.cover-article) section h2,
-    article:not(.cover-article) .section-title {
-        margin: 1.25rem 0 0.7rem;
-
-        padding: 0.5rem 0.65rem 0.5rem 0.7rem;
-
-        font-size: 0.92rem !important;
-        line-height: 1.35;
-    }
-
-    article:not(.cover-article) section h3 {
-        margin: 1rem 0 0.5rem;
-
-        font-size: 0.9rem !important;
-    }
-
-    article:not(.cover-article) section h4 {
-        font-size: 0.86rem !important;
-    }
-
-
-    /* -----------------------------
-       LISTS
-       ----------------------------- */
-
-    article:not(.cover-article) section>ul>li,
-    article:not(.cover-article) section main>ul>li,
-    article:not(.cover-article) ul.notes-list>li {
-        padding-left: 1.05rem;
-        margin-bottom: 0.34rem;
-        line-height: 1.53;
-    }
-
-    article:not(.cover-article) section>ul>li>ul,
-    article:not(.cover-article) section main>ul>li>ul,
-    article:not(.cover-article) ul.notes-sub {
-        padding-left: 0.7rem;
-    }
-
-
-    /* -----------------------------
-       HIGHLIGHTED TEXT
-       ----------------------------- */
-
-    article:not(.cover-article) strong {
-        padding: 0 0.04em;
-    }
-
-
-    /* -----------------------------
-       TABLES
-       ----------------------------- */
-
-    article:not(.cover-article) .table-responsive {
-        width: 100%;
-        margin-left: 0;
-        margin-right: 0;
-    }
-
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) {
-        min-width: 430px;
-        font-size: 0.76rem !important;
-    }
-
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) thead th,
-    article:not(.cover-article) .table-responsive>table:not(.notes-table) tbody td {
-        padding: 0.4rem 0.3rem;
-    }
-
-
-    /* -----------------------------
-       COVER PAGE
-       ----------------------------- */
-
-    article.cover-article {
-        width: calc(100% - 0.5rem);
-        box-sizing: border-box;
-
-        padding: 0.65rem;
-
-        margin: 0.25rem auto 1rem;
-    }
-
-    .cover-page {
-        min-height: 500px;
-
-        padding: 1.5rem 0.85rem;
-
-        border-width: 1.5px;
-        border-radius: 4px;
-    }
-
-    .cover-logo-img {
-        width: 145px;
-        max-width: 75%;
-    }
-
-    .cover-study-notes {
-        font-size: 0.9rem !important;
-        letter-spacing: 0.04em;
-    }
-
-    .cover-meta-line {
-        font-size: 0.82rem !important;
-        letter-spacing: 0.025em;
-    }
-
-    .cover-subtitle {
-        font-size: 0.82rem !important;
-    }
-
-    .cover-title {
-        font-size: 1.55rem !important;
-        line-height: 1.25;
-    }
-
-    .cover-contact {
-        margin-bottom: 0.5rem;
-    }
-
-    .cover-contact p {
-        font-size: 0.72rem;
+        overflow-x: auto;
     }
 }
 
@@ -2277,51 +2169,163 @@ article .notes-table tbody th {
    EXTRA SMALL PHONES
    ========================================================= */
 
-@media (max-width: 380px) {
+@media (max-width: 480px) {
+
 
     .doc-header-inner {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding: .5rem .6rem;
     }
 
     .doc-header .title {
-        font-size: 0.78rem;
+        font-size: .82rem;
     }
 
     .header-right {
-        gap: 0.3rem;
+        gap: .3rem;
+    }
+
+    .header-font-control {
+        gap: .2rem;
     }
 
     .font-btn-sep {
-        width: 26px;
-        height: 23px;
-        font-size: 0.7rem;
+        width: 28px;
+        height: 24px;
+        flex-basis: 28px;
+        font-size: .75rem;
     }
 
     .header-logo-img {
-        height: 26px;
+        height: 27px;
+        max-width: 85px;
     }
 
-    article:not(.cover-article) {
-        width: calc(100% - 0.35rem);
-        padding-left: 0.72rem;
-        padding-right: 0.72rem;
+    article:not(.cover-article),
+    article.cover-article {
+        width: calc(100% - 10px);
+        padding-left: .8rem;
+        padding-right: .8rem;
+    }
+}
+
+
+/* =========================================================
+   PDF INFO CARD / CALLOUT
+   Clean textbook-style design
+   ========================================================= */
+
+.info-card {
+    width: 94%;
+    max-width: 94%;
+
+    margin: 14px auto;
+    padding: 10px 22px;
+
+    box-sizing: border-box;
+
+    /* Soft warm background */
+    background-color: #fffaf5;
+
+    /* Thin, clean orange border */
+    border: 2px solid #d96b3b;
+    border-radius: 10px;
+
+    /* Very subtle depth */
+    box-shadow: 0 1px 4px rgba(180, 80, 30, 0.08);
+
+    text-align: center;
+
+    /* Keep the card clean when converted to PDF */
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+
+/* Main text */
+
+.info-card p {
+    margin: 0;
+
+    padding: 0;
+
+    font-family: var(--deepesh);
+    font-size: calc(0.95rem * var(--reader-font-scale, 1));
+    line-height: 1.45;
+
+    color: #e36c0a;
+
+    text-align: center;
+}
+
+
+/* Bold / highlighted text */
+
+.info-card strong,
+.info-card p strong {
+    color: #e36c0a !important;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   PDF / PRINT
+   ========================================================= */
+
+@media print {
+    .info-card {
+        width: 94%;
+        max-width: 94%;
+
+        margin: 12px auto;
+        padding: 9px 20px;
+
+        background-color: #fffaf5;
+
+        border: 1.5px solid #d96b3b;
+
+        box-shadow: none;
+
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
-    article:not(.cover-article) p {
-        font-size: 0.94rem;
+    .info-card p {
+        font-size: 0.95rem;
+        line-height: 1.4;
     }
+}
 
-    article:not(.cover-article) section h2,
-    article:not(.cover-article) .section-title {
-        font-size: 0.89rem !important;
-    }
+/* Custom premium image scaling */
+figure img {
+    max-width: min(500px, 100%) !important;
+    margin: 1.5rem auto 0.5rem !important;
+}
 
-    .cover-title {
-        font-size: 1.4rem !important;
-    }
+/* Custom table headings styling */
+.table-headings, .table-heading {
+    position: relative;
+    color: var(--reader-navy);
+    font-family: var(--deepesh);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.4;
+    margin: 1.5rem 0 1rem;
+    padding: 0.2rem 0 0.5rem 0.7rem;
+    border-left: 3px solid var(--reader-orange);
+    border-bottom: 1px dashed #e1e8ed;
+}
 
-    .cover-logo-img {
-        width: 130px;
-    }
+/* Style overrides for lists containing alphanumeric items to prevent double bullets */
+article:not(.cover-article) ul.list-alphanumeric,
+ul.list-alphanumeric {
+    list-style: none !important;
+}
+article:not(.cover-article) ul.list-alphanumeric>li,
+ul.list-alphanumeric>li {
+    padding-left: 0 !important;
+}
+article:not(.cover-article) ul.list-alphanumeric>li::before,
+ul.list-alphanumeric>li::before {
+    content: "" !important;
 }

@@ -92,13 +92,10 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
         print(f"[Fetcher] ({i}/{len(rows)}) MySQL ID {mysql_id} : {content}")
 
         # ------------------------------------------------------------------ #
-        # Create isolated queue folder                                         #
+        # Download directly to QUEUE_DIR with original filename               #
         # ------------------------------------------------------------------ #
         doc_id       = str(mysql_id)
-        queue_folder = QUEUE_DIR / doc_id
-        queue_folder.mkdir(parents=True, exist_ok=True)
-
-        pdf_dest = queue_folder / "document.pdf"
+        pdf_dest     = QUEUE_DIR / content
 
         if pdf_dest.exists():
             size_kb = pdf_dest.stat().st_size / 1024
@@ -161,19 +158,19 @@ def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
     print(f"\n{sep}")
     print(f" DOWNLOAD COMPLETE  ({len(fetched_ids)} PDF(s) ready)")
     print(sep)
-    for mid in fetched_ids:
-        folder = QUEUE_DIR / str(mid)
-        print(f"  ID {mid:>6} -> {folder}")
+    for row in rows:
+        if row["id"] in fetched_ids:
+            print(f"  ID {row['id']:>6} -> storage/queue/{row['content']}")
     print(sep)
     print(f"""
- NEXT STEPS for EACH folder above:
+ NEXT STEPS:
    1. Open https://tools.pdf24.org/en/pdf-to-html
-   2. Upload the document.pdf from the folder
-   3. Download the resulting HTML
-   4. Save it as document.html in THE SAME folder
-      (e.g. storage/queue/2598/document.html)
+   2. Upload the downloaded PDF files from storage/queue/
+   3. Download the resulting HTML files
+   4. Save them with the exact same name (with .html extension) in storage/queue/
+      (e.g., storage/queue/Practice-Questions.pdf -> storage/queue/Practice-Questions.html)
 
- Once ALL folders have document.html, run:
+ Once HTML files are saved, run:
    python scripts/pipeline.py --process
 {sep}
 """)

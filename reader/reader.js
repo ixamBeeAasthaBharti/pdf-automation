@@ -1,20 +1,10 @@
-﻿/**
+/**
  * reader.js
  * ---------------------------------------------------------
  * Standalone JS for the ixamBee PDF reader.
- *
- * Features:
- *   1. Sticky header glass effect on scroll
- *   2. Reading progress bar
- *   3. Kindle-style A+ / A- font-size controls (localStorage)
- *   4. Dynamic Table of Contents + ScrollSpy
- * ---------------------------------------------------------
  */
-
 (function () {
   "use strict";
-
-  /* --- 1. SCROLL : sticky header + progress bar --- */
 
   var header         = document.querySelector(".doc-header");
   var globalProgress = document.getElementById("read-progress");
@@ -30,9 +20,6 @@
     if (tocProgress)    tocProgress.style.width    = pct + "%";
   }, { passive: true });
 
-
-  /* --- 2. FONT-SIZE CONTROLS --- */
-
   var FONT_LEVELS = [
     { label: "100%", scale: 1.0  },
     { label: "110%", scale: 1.1  },
@@ -44,7 +31,6 @@
   ];
 
   var currentFontIndex = 0;
-
   var savedIndex = localStorage.getItem("readerFontScale");
   if (savedIndex !== null && !isNaN(savedIndex)) {
     var parsed = parseInt(savedIndex, 10);
@@ -65,15 +51,9 @@
     if (incBtn) incBtn.disabled = (index === FONT_LEVELS.length - 1);
   }
 
-  /* Apply saved / default scale immediately */
   applyFontScale(currentFontIndex);
 
-
-  /* --- 3. DOM-READY : bind buttons + build TOC --- */
-
   document.addEventListener("DOMContentLoaded", function () {
-
-    /* Font buttons */
     var decBtn = document.getElementById("font-size-dec");
     var incBtn = document.getElementById("font-size-inc");
 
@@ -91,14 +71,12 @@
       });
     }
 
-    /* Dynamic Table of Contents + ScrollSpy */
     var tocList  = document.getElementById("toc-list");
     var sections = document.querySelectorAll(
       "article:not(.cover-article) section, main section"
     );
 
     if (tocList && sections.length > 0) {
-
       sections.forEach(function (section) {
         var heading   = section.querySelector("h2.section-title, h2, h1, h3");
         var sectionId = section.getAttribute("aria-labelledby") || section.id
@@ -131,9 +109,7 @@
         tocList.appendChild(li);
       });
 
-      /* ScrollSpy via IntersectionObserver */
       var tocLinks = tocList.querySelectorAll("a");
-
       var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (!entry.isIntersecting) return;
