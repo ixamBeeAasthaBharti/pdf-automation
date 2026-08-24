@@ -42,8 +42,9 @@ try {
 
 /* ── Fetch document ── */
 $stmt = $pdo->prepare(
-    'SELECT mysql_id, html_content, status FROM htmltopdfautomation WHERE mysql_id = :id LIMIT 1'
+    'SELECT mysql_id, html_content, status FROM tbl_html_to_pdf WHERE mysql_id = :id LIMIT 1'
 );
+
 $stmt->execute([':id' => $mysqlId]);
 $doc = $stmt->fetch();
 

@@ -35,7 +35,8 @@ BASE_URL  = "https://www.ixambee.com/miscellaneous-pdf/"
 def fetch_next(count: int = 1, target_ids: list[int] = None) -> list[int]:
     """
     Fetch the next N eligible rows from MySQL, download their PDFs, and
-    register them in local SQLite + MySQL htmltopdfautomation.
+    register them in local SQLite + MySQL tbl_html_to_pdf.
+
 
     Filters applied:
       - type_order  = 2
