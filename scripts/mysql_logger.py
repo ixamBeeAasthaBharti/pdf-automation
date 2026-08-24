@@ -23,11 +23,11 @@ from mysql_client import get_connection
 
 
 def log_html_ready(mysql_id: int, pdf_html_path: str):
-    """Update htmltopdfautomation: PDF24 HTML is ready, about to process."""
+    """Update tbl_html_to_pdf: Aspose HTML is ready, about to process."""
     conn   = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    pdf_html_format = %s,
                status          = 'HTML_READY',
                updated_on      = NOW(),
@@ -37,15 +37,15 @@ def log_html_ready(mysql_id: int, pdf_html_path: str):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} → HTML_READY")
+    print(f"[Logger] MySQL ID {mysql_id} -> HTML_READY")
 
 
 def log_processing(mysql_id: int):
-    """Update htmltopdfautomation: Gemini pipeline is running. Stamps processing_started_at."""
+    """Update tbl_html_to_pdf: Gemini pipeline is running. Stamps processing_started_at."""
     conn   = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    status                = 'PROCESSING',
                processing_started_at = NOW(),
                updated_on            = NOW(),
@@ -61,16 +61,16 @@ def log_processing(mysql_id: int):
 def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     """
     Mark job as COMPLETED:
-      - Writes output_html path and full html_content (LONGTEXT) into htmltopdfautomation
+      - Writes output_html path and full html_content (LONGTEXT) into tbl_html_to_pdf
       - Stamps processing_completed_at
-      - Sets tbl_studymaterial_lang_map.htmltopdfstatus = 1
+      - Sets tbl_studymaterial_lang_map.html_status = 1
     """
     conn   = get_connection()
     cursor = conn.cursor()
 
     # 1. Upsert into automation log table to guarantee html_content is stored
     cursor.execute("""
-        INSERT INTO htmltopdfautomation
+        INSERT INTO tbl_html_to_pdf
             (mysql_id, output_html, html_content, status, processing_completed_at, created_by, updated_by)
         VALUES
             (%s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
@@ -83,30 +83,28 @@ def log_completed(mysql_id: int, output_html_path: str, html_content: str):
             updated_by              = 'system'
     """, (mysql_id, output_html_path, html_content))
 
-    # 2. Write back htmltopdfstatus = 1 to the source table
+    # 2. Write back html_status = 1 to the source table
     cursor.execute("""
         UPDATE tbl_studymaterial_lang_map
-        SET    htmltopdfstatus = 1
+        SET    html_status = 1
         WHERE  id = %s
     """, (mysql_id,))
 
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | html_content saved in DB | htmltopdfstatus=1")
-
+    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | html_content saved in DB | html_status=1")
 
 
 def log_failed(mysql_id: int, error: str):
-    """Mark job as FAILED in htmltopdfautomation (source table status unchanged)."""
+    """Mark job as FAILED in tbl_html_to_pdf (source table status unchanged)."""
     conn   = get_connection()
     cursor = conn.cursor()
 
-    # Truncate error to fit VARCHAR if needed (use first 500 chars as a note)
     short_error = error[:500] if error else "Unknown error"
 
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    status     = 'FAILED',
                updated_on = NOW(),
                updated_by = 'system'
@@ -115,8 +113,4 @@ def log_failed(mysql_id: int, error: str):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} → FAILED  ({short_error[:80]}...)")
-
-
-if __name__ == "__main__":
-    print("[mysql_logger] Imported OK. Use individual functions from pipeline.py.")
+    print(f"[Logger] MySQL ID {mysql_id} -> FAILED  ({short_error[:80]}...)")

@@ -238,7 +238,7 @@ def _archive(queue_folder: Path, doc_id: str):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def do_status():
-    """Print a summary of all jobs from MySQL htmltopdfautomation."""
+    """Print a summary of all jobs from MySQL tbl_html_to_pdf."""
     from mysql_client import get_connection
     conn   = get_connection()
     cursor = conn.cursor(dictionary=True)
@@ -247,7 +247,7 @@ def do_status():
         SELECT   pdf_id, mysql_id, status,
                  created_on, updated_on,
                  CHAR_LENGTH(html_content) AS content_chars
-        FROM     htmltopdfautomation
+        FROM     tbl_html_to_pdf
         ORDER BY pdf_id DESC
         LIMIT    50
     """)
@@ -257,12 +257,13 @@ def do_status():
     cursor.execute("""
         SELECT COUNT(*) AS cnt
         FROM   tbl_studymaterial_lang_map
-        WHERE  type_order = 2 AND htmltopdfstatus = 0
+        WHERE  type_order = 2 AND html_status = 0
     """)
     pending_cnt = cursor.fetchone()["cnt"]
 
     cursor.close()
     conn.close()
+
 
     print(f"\n{'='*80}")
     print(f" PDF Automation — Job Status")

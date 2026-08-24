@@ -154,4 +154,5 @@ python scripts/pipeline.py --status
    Open [`index.html`](file:///c:/Users/AASTHA/Desktop/pdf%20automation/index.html) in your web browser to access the interactive reader dashboard.
 
 3. **PHP Reader URL**:
-   Access the output via your PHP web server (e.g. `http://localhost:8000/reader/master.php?id=<ID>`). The full HTML with semantic tags is automatically saved to the `html_content` column in the `htmltopdfautomation` database table upon completion.
+   Access the output via your PHP web server (e.g. `http://localhost:8000/reader/master.php?id=<ID>`). The full HTML with semantic tags is automatically saved to the `html_content` column in the `tbl_html_to_pdf` database table upon completion.
+
