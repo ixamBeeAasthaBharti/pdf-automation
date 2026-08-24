@@ -140,6 +140,26 @@ body {
 }
 
 /* =====================================================
+   HINDI LANGUAGE / FONT SUPPORT ("Mangal")
+   ===================================================== */
+html[lang="hi"],
+body.lang-hi,
+.lang-hi,
+.lang-hi p,
+.lang-hi li,
+.lang-hi td,
+.lang-hi th,
+.lang-hi h1,
+.lang-hi h2,
+.lang-hi h3,
+.lang-hi h4,
+.lang-hi span,
+.lang-hi div {
+    font-family: 'Mangal', 'Noto Sans Devanagari', 'Segoe UI Devanagari', Arial, sans-serif !important;
+}
+
+
+/* =====================================================
    PAGE CARD  (wraps the whole article)
    ===================================================== */
 article {

@@ -32,7 +32,7 @@ from db_manager       import (init_db, init_pdf_jobs_db,
                               upsert_pdf_job, update_pdf_job_status)
 from mysql_fetcher    import fetch_next
 from mysql_logger     import log_html_ready, log_processing, log_completed, log_failed
-from dashboard        import generate_dashboard
+
 
 from pymupdf_image_extractor import extract_images
 from html_reconstructor      import reconstruct_html
@@ -134,13 +134,10 @@ def do_process():
                 log_failed(mysql_id, tb)
                 update_pdf_job_status(mysql_id, "FAILED")
 
-        # Regenerate dashboard after each document so progress is visible
-        try:
-            generate_dashboard()
-        except Exception as dash_err:
-            print(f"[Pipeline] WARN: dashboard update failed: {dash_err}")
+        pass
 
     if not processed_any:
+
         print("\n[Pipeline] No documents ready to process.")
 
 

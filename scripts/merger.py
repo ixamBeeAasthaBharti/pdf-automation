@@ -171,21 +171,31 @@ def merge_chunks(
     images_prefix = "images/"
 
     # --------------------------------------------------
+    # Detect language (Hindi / Devanagari font check)
+    # --------------------------------------------------
+    import re
+    all_body_text = "".join(merged_body)
+    is_hindi = bool(re.search(r'[\u0900-\u097F]', all_body_text))
+    lang_attr = 'lang="hi" class="lang-hi"' if is_hindi else 'lang="en"'
+    body_class = ' class="lang-hi"' if is_hindi else ''
+
+    # --------------------------------------------------
     # Assemble the raw HTML shell
     # --------------------------------------------------
 
     raw_html = f"""<!DOCTYPE html>
-<html lang="en">
+<html {lang_attr}>
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Study Notes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="{css_href}"/>
 </head>
-<body>
+<body{body_class}>
+
 
 <header class="doc-header">
   <div class="doc-header-inner">
