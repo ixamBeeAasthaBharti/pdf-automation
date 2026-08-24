@@ -1197,9 +1197,34 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             "bbox": (dr.x0, dr.y0, dr.x1, dr.y1),
             "data": dr
         })
+
+    # Deduplicate images: skip smaller sub-images contained inside a diagram or larger graphic
+    diagram_bboxes = [e["bbox"] for e in page_elements if e["type"] == "diagram"]
+    filtered_elements = []
+    for el in page_elements:
+        if el["type"] == "image":
+            ibox = el["bbox"]
+            is_sub = False
+            for dbox in diagram_bboxes:
+                inter_x0 = max(ibox[0], dbox[0])
+                inter_y0 = max(ibox[1], dbox[1])
+                inter_x1 = min(ibox[2], dbox[2])
+                inter_y1 = min(ibox[3], dbox[3])
+                if inter_x1 > inter_x0 and inter_y1 > inter_y0:
+                    inter_area = (inter_x1 - inter_x0) * (inter_y1 - inter_y0)
+                    iarea = max(1, (ibox[2] - ibox[0]) * (ibox[3] - ibox[1]))
+                    darea = max(1, (dbox[2] - dbox[0]) * (dbox[3] - dbox[1]))
+                    if iarea < darea * 0.95 and (inter_area / iarea) > 0.4:
+                        is_sub = True
+                        break
+            if is_sub:
+                continue
+        filtered_elements.append(el)
+    page_elements = filtered_elements
         
     # Sort all elements on page top-to-bottom
     page_elements.sort(key=lambda e: e["bbox"][1])
+
     
     # 5. Merge info cards (consecutive blocks with color 0xe36c0a)
     merged_elements = []

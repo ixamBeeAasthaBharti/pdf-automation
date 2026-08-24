@@ -516,32 +516,41 @@ section table tbody tr:nth-child(odd),
 }
 
 /* Blue table variant */
-.notes-table.blue thead th {
-    background: #3a6ea5;
-    color: #fff;
-}
-
-.notes-table.blue thead th:not(:last-child) {
-    border-right: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.notes-table.blue tbody tr:nth-child(odd) {
-    background: #e9f0f7;
-}
-
+table.blue,
 .notes-table.blue {
     border-color: #d0deec;
 }
 
+table.blue thead th,
+.notes-table.blue thead th {
+    background: #3a6ea5 !important;
+    color: #fff !important;
+}
+
+table.blue thead th:not(:last-child),
+.notes-table.blue thead th:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+table.blue tbody tr:nth-child(odd),
+.notes-table.blue tbody tr:nth-child(odd) {
+    background: #e9f0f7 !important;
+}
+
+table.blue td,
+table.blue tbody th,
 .notes-table.blue td,
 .notes-table.blue tbody th {
     border-top-color: #d0deec;
 }
 
+table.blue tbody td:not(:last-child),
+table.blue tbody th:not(:last-child),
 .notes-table.blue tbody td:not(:last-child),
 .notes-table.blue tbody th:not(:last-child) {
     border-right-color: #d0deec;
 }
+
 
 @media (max-width: 768px) {
 
