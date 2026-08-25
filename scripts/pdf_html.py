@@ -425,6 +425,114 @@ def is_watermark_image(block: dict, page: fitz.Page) -> bool:
     return False
 
 
+def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict, valid_tables: list) -> bool:
+    """
+    Determine whether a candidate drawing cluster is a genuine vector diagram/flowchart
+    vs. a decorative background text region or watermark.
+    """
+    # 1. Dimension check
+    if cluster.width < 50 or cluster.height < 30:
+        print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_small", file=sys.stderr)
+        return False
+
+    cluster_area = cluster.width * cluster.height
+
+    # 2. Table overlap check
+    for t in valid_tables:
+        tb = fitz.Rect(t.bbox)
+        intersect = cluster & tb
+        if not intersect.is_empty:
+            if (intersect.width * intersect.height) / cluster_area > 0.2:
+                print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=overlaps_table", file=sys.stderr)
+                return False
+
+    # 3. Inspect vector drawings inside the cluster
+    all_drawings = page.get_drawings()
+    total_drawings = 0
+    meaningful_drawings = 0
+
+    for d in all_drawings:
+        r = fitz.Rect(d["rect"])
+        if cluster.x0 - 5 <= r.x0 and r.x1 <= cluster.x1 + 5 and cluster.y0 - 5 <= r.y0 and r.y1 <= cluster.y1 + 5:
+            total_drawings += 1
+            fill = d.get("fill")
+            # Skip light gray watermark fills
+            if fill and len(fill) == 3:
+                r_val, g_val, b_val = fill
+                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
+                    continue
+
+            # Simple decorative rectangular background fills (wide/shallow rectangles used as text highlights)
+            items = d.get("items", [])
+            is_simple_bg_rect = False
+            if len(items) <= 2 and fill is not None:
+                if r.width > 60 and r.height < 35:
+                    is_simple_bg_rect = True
+                elif r.width > cluster.width * 0.8 and r.height < cluster.height * 0.5:
+                    is_simple_bg_rect = True
+
+            if not is_simple_bg_rect:
+                meaningful_drawings += 1
+
+    # 4. Inspect selectable text inside the cluster
+    text_blocks_count = 0
+    text_line_count = 0
+    total_text_area = 0.0
+
+    for tb in text_dict.get("blocks", []):
+        if tb.get("type", 0) != 0:
+            continue
+        tb_bbox = tb.get("bbox", (0, 0, 0, 0))
+        tb_rect = fitz.Rect(tb_bbox)
+        tb_area = tb_rect.width * tb_rect.height
+        if tb_area <= 0:
+            continue
+
+        intersect = cluster & tb_rect
+        if not intersect.is_empty:
+            inter_area = intersect.width * intersect.height
+            if (inter_area / tb_area) >= 0.3:
+                text_blocks_count += 1
+                lines = tb.get("lines", [])
+                text_line_count += len(lines)
+                total_text_area += inter_area
+
+    text_coverage_ratio = total_text_area / cluster_area if cluster_area > 0 else 0.0
+
+    # 5. Check text density signal:
+    # A cluster that contains paragraph/list text AND has few meaningful drawing shapes (< 4)
+    # is a text section with decorative vector highlights, NOT a flowchart/diagram.
+    # Genuine flowcharts (like multi-stage chevrons/boxes) contain >= 4 vector shapes.
+    if text_line_count >= 3 and text_coverage_ratio >= 0.12 and meaningful_drawings < 4:
+        print(
+            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
+            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
+            f"text_coverage={text_coverage_ratio:.3f} reason=text_dense_decorative_cluster",
+            file=sys.stderr
+        )
+        return False
+
+    # 6. Genuine diagram check:
+    # Genuine diagrams/flowcharts/chemical structures must have at least 2 meaningful vector drawing elements.
+    if meaningful_drawings < 2:
+        print(
+            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
+            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
+            f"text_coverage={text_coverage_ratio:.3f} reason=insufficient_meaningful_vector_geometry",
+            file=sys.stderr
+        )
+        return False
+
+    print(
+        f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} total_drawings={total_drawings} "
+        f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
+        f"text_coverage={text_coverage_ratio:.3f}",
+        file=sys.stderr
+    )
+    return True
+
+
+
 
 
 def _table_cell_text(cell) -> str:
@@ -1023,28 +1131,15 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             if changed:
                 break
 
-    # Keep clusters containing at least 5 drawings
+    # Extract page text dictionary early for diagram validation
+    text_dict = page.get_text("dict")
+
+    # Validate vector diagram candidates with conservative geometry & text density rules
     valid_diagram_rects = []
     for c in diagram_clusters:
-        if c.width < 50 or c.height < 30:
-            continue
-            
-        # Ignore diagram if it overlaps with any valid table
-        overlaps_table = False
-        for t in valid_tables:
-            tb = fitz.Rect(t.bbox)
-            intersect = c & tb
-            if not intersect.is_empty:
-                if (intersect.width * intersect.height) / (c.width * c.height) > 0.2:
-                    overlaps_table = True
-                    break
-        if overlaps_table:
-            continue
-            
-        valid_diagram_rects.append(c)
-        
-    # 2. Extract and filter text lines
-    text_dict = page.get_text("dict")
+        if is_valid_vector_diagram(c, page, text_dict, valid_tables):
+            valid_diagram_rects.append(c)
+
     
     # Pre-process spans to split merged list prefixes (e.g. "a. text" -> "a." and " text")
     import re
@@ -1079,19 +1174,23 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         if is_inside_table(bbox, valid_tables):
             continue
             
-        # Skip blocks inside diagrams
+        # Skip blocks inside diagrams (require at least 60% of block area to be inside diagram)
         bx0, by0, bx1, by1 = bbox
+        block_area = max(1.0, (bx1 - bx0) * (by1 - by0))
         inside_diagram = False
         for dr in valid_diagram_rects:
-            inter_x0 = max(bx0, dr.x0 - 10)
-            inter_y0 = max(by0, dr.y0 - 10)
-            inter_x1 = min(bx1, dr.x1 + 10)
-            inter_y1 = min(by1, dr.y1 + 10)
+            inter_x0 = max(bx0, dr.x0)
+            inter_y0 = max(by0, dr.y0)
+            inter_x1 = min(bx1, dr.x1)
+            inter_y1 = min(by1, dr.y1)
             if inter_x1 > inter_x0 and inter_y1 > inter_y0:
-                inside_diagram = True
-                break
+                inter_area = (inter_x1 - inter_x0) * (inter_y1 - inter_y0)
+                if (inter_area / block_area) >= 0.60:
+                    inside_diagram = True
+                    break
         if inside_diagram:
             continue
+
             
         for line in block.get("lines", []):
             ly0 = line["bbox"][1]
