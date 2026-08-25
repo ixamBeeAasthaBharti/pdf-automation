@@ -375,6 +375,27 @@ def is_inside_table(bbox, tables) -> bool:
     return False
 
 
+def image_overlaps_table(bbox, tables, threshold=0.50) -> bool:
+    """
+    Return True when the overlap between an image bbox and any validated table
+    bbox is greater than or equal to the specified threshold (default 50%).
+    """
+    img_rect = fitz.Rect(bbox)
+    img_area = img_rect.width * img_rect.height
+    if img_area <= 0:
+        return False
+
+    for t in tables:
+        tbl_rect = fitz.Rect(t.bbox)
+        intersection = img_rect & tbl_rect
+        if not intersection.is_empty:
+            intersection_area = intersection.width * intersection.height
+            if (intersection_area / img_area) >= threshold:
+                return True
+    return False
+
+
+
 def _table_cell_text(cell) -> str:
     text = str(cell or "").strip()
     # Table extraction does not retain span/font metadata, so decode common
@@ -448,6 +469,43 @@ def _table_quality_score(table, page) -> float:
     if occupancy < 0.30:
         return -1.0
 
+    # Column Content Distribution Check:
+    # A genuine multi-column table should have meaningful content distributed across columns.
+    col_cell_counts = [
+        sum(1 for row in rows if col < len(row) and _table_cell_text(row[col]))
+        for col in range(col_count)
+    ]
+    col_char_counts = [
+        sum(len(_table_cell_text(row[col])) for row in rows if col < len(row) and row[col])
+        for col in range(col_count)
+    ]
+    total_non_empty = len(non_empty)
+
+    if col_count >= 2 and total_non_empty > 0:
+        max_col_cells = max(col_cell_counts)
+        min_col_cells = min(col_cell_counts)
+        max_col_chars = max(col_char_counts)
+        min_col_chars = min(col_char_counts)
+
+        # Reject if >= 85% of non-empty cells are in 1 column while another column has <= 1 cell
+        if (max_col_cells / total_non_empty) >= 0.85 and min_col_cells <= 1 and col_count == 2:
+            print(
+                f"  [TABLE REJECT] bbox={table.bbox} rows={row_count} cols={col_count} "
+                f"col_cells={col_cell_counts} col_chars={col_char_counts} reason=extreme_cell_column_concentration",
+                file=sys.stderr
+            )
+            return -1.0
+
+        # Reject if >= 85% of text characters are in 1 column while another column has <= 1 non-empty cell (or <= 20 chars)
+        if total_chars > 0 and (max_col_chars / total_chars) >= 0.85 and (min_col_cells <= 1 or min_col_chars <= 20) and col_count == 2:
+            print(
+                f"  [TABLE REJECT] bbox={table.bbox} rows={row_count} cols={col_count} "
+                f"col_cells={col_cell_counts} col_chars={col_char_counts} reason=extreme_char_column_concentration",
+                file=sys.stderr
+            )
+            return -1.0
+
+
     # Inspect PyMuPDF's header metadata when available. In the bad
     # "Sectors of Economy" case, find_tables(lines) reports 10 columns but
     # only ONE actual header cell. That is a very strong false-positive
@@ -483,7 +541,14 @@ def _table_quality_score(table, page) -> float:
     score += min(occupancy, 1.0)
     score += min(col_count / 4.0, 1.0)
 
+    print(
+        f"  [TABLE ACCEPT] bbox={table.bbox} rows={row_count} cols={col_count} "
+        f"col_cells={col_cell_counts} col_chars={col_char_counts} score={score:.2f}",
+        file=sys.stderr
+    )
+
     return score
+
 
 
 def find_valid_tables(page):
@@ -690,8 +755,8 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
         inner = inner.replace("<strong>", "").replace("</strong>", "").replace("<em>", "").replace("</em>", "")
         return f"<figcaption>{inner}</figcaption>"
         
-    # Check if this block is an info card (colored 0xe36c0a)
-    if is_color_block(block, 0xe36c0a):
+    # Check if this block is an info card (disabled to preserve semantic paragraphs/lists)
+    if False and is_color_block(block, 0xe36c0a):
         para_spans = []
         for line in visible_lines:
             spans = line["spans"]
@@ -700,6 +765,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
             para_spans.extend(spans)
         inner = "".join(render_span_semantic(s) for s in para_spans)
         return f'<div class="info-card"><p>{inner}</p></div>'
+
         
     # Consolidate lines where a bullet character is split from its text on the same visual row
     merged_lines = []
@@ -896,7 +962,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         for idx_c, c in enumerate(diagram_clusters):
             dx = max(0, c.x0 - r.x1, r.x0 - c.x1)
             dy = max(0, c.y0 - r.y1, r.y0 - c.y1)
-            if dx < 40 and dy < 40:
+            if dx < 80 and dy < 80:
                 diagram_clusters[idx_c] = fitz.Rect(
                     min(r.x0, c.x0), min(r.y0, c.y0),
                     max(r.x1, c.x1), max(r.y1, c.y1)
@@ -915,7 +981,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 c1, c2 = diagram_clusters[i_c], diagram_clusters[j_c]
                 dx = max(0, c2.x0 - c1.x1, c1.x0 - c2.x1)
                 dy = max(0, c2.y0 - c1.y1, c1.y0 - c2.y1)
-                if dx < 40 and dy < 40:
+                if dx < 80 and dy < 80:
                     diagram_clusters[i_c] = fitz.Rect(
                         min(c1.x0, c2.x0), min(c1.y0, c2.y0),
                         max(c1.x1, c2.x1), max(c1.y1, c2.y1)
@@ -929,7 +995,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
     # Keep clusters containing at least 5 drawings
     valid_diagram_rects = []
     for c in diagram_clusters:
-        if c.width < 50 or c.height < 50:
+        if c.width < 50 or c.height < 30:
             continue
             
         # Ignore diagram if it overlaps with any valid table
@@ -944,18 +1010,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         if overlaps_table:
             continue
             
-        contains_count = 0
-        for d in page.get_drawings():
-            r = d["rect"]
-            fill = d.get("fill")
-            if fill and len(fill) == 3:
-                r_val, g_val, b_val = fill
-                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
-                    continue
-            if c.x0 - 5 <= r.x0 and r.x1 <= c.x1 + 5 and c.y0 - 5 <= r.y0 and r.y1 <= c.y1 + 5:
-                contains_count += 1
-        if contains_count >= 5:
-            valid_diagram_rects.append(c)
+        valid_diagram_rects.append(c)
         
     # 2. Extract and filter text lines
     text_dict = page.get_text("dict")
@@ -995,11 +1050,13 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             
         # Skip blocks inside diagrams
         bx0, by0, bx1, by1 = bbox
-        bcx = (bx0 + bx1) / 2
-        bcy = (by0 + by1) / 2
         inside_diagram = False
         for dr in valid_diagram_rects:
-            if dr.x0 - 5 <= bcx <= dr.x1 + 5 and dr.y0 - 5 <= bcy <= dr.y1 + 5:
+            inter_x0 = max(bx0, dr.x0 - 10)
+            inter_y0 = max(by0, dr.y0 - 10)
+            inter_x1 = min(bx1, dr.x1 + 10)
+            inter_y1 = min(by1, dr.y1 + 10)
+            if inter_x1 > inter_x0 and inter_y1 > inter_y0:
                 inside_diagram = True
                 break
         if inside_diagram:
@@ -1175,11 +1232,14 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             bbox = block.get("bbox", (0, 0, 0, 0))
             if page.number == 0 or bbox[3] < 90 or bbox[1] > page_height - 75:
                 continue
+            if image_overlaps_table(bbox, valid_tables):
+                continue
             page_elements.append({
                 "type": "image",
                 "bbox": bbox,
                 "data": block
             })
+
             
     # Add only validated table blocks. Keep the Table object so render_table()
     # can use PyMuPDF's detected header geometry/names.
