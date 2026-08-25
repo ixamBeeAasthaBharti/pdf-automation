@@ -2311,7 +2311,8 @@ figure img {
 }
 
 /* Custom table headings styling */
-.table-headings, .table-heading {
+.table-headings,
+.table-heading {
     position: relative;
     color: var(--reader-navy);
     font-family: var(--deepesh);
@@ -2330,10 +2331,12 @@ article:not(.cover-article) ul.list-alphanumeric,
 ul.list-alphanumeric {
     list-style: none !important;
 }
+
 article:not(.cover-article) ul.list-alphanumeric>li,
 ul.list-alphanumeric>li {
     padding-left: 0 !important;
 }
+
 article:not(.cover-article) ul.list-alphanumeric>li::before,
 ul.list-alphanumeric>li::before {
     content: "" !important;
