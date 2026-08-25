@@ -58,30 +58,46 @@ def log_processing(mysql_id: int):
     print(f"[Logger] MySQL ID {mysql_id} -> PROCESSING (timer started)")
 
 
-def log_completed(mysql_id: int, output_html_path: str, html_content: str):
+def log_completed(mysql_id: int, output_html_path: str, html_content: str, is_gemini: bool = False):
     """
     Mark job as COMPLETED:
-      - Writes output_html path and full html_content (LONGTEXT) into tbl_html_to_pdf
+      - Writes output_html path, full html_content, and script_html/gemini into tbl_html_to_pdf
       - Stamps processing_completed_at
       - Sets tbl_studymaterial_lang_map.html_status = 1
     """
     conn   = get_connection()
     cursor = conn.cursor()
 
-    # 1. Upsert into automation log table to guarantee html_content is stored
-    cursor.execute("""
-        INSERT INTO tbl_html_to_pdf
-            (mysql_id, output_html, html_content, status, processing_completed_at, created_by, updated_by)
-        VALUES
-            (%s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
-        ON DUPLICATE KEY UPDATE
-            output_html             = VALUES(output_html),
-            html_content            = VALUES(html_content),
-            status                  = 'COMPLETED',
-            processing_completed_at = NOW(),
-            updated_on              = NOW(),
-            updated_by              = 'system'
-    """, (mysql_id, output_html_path, html_content))
+    if is_gemini:
+        cursor.execute("""
+            INSERT INTO tbl_html_to_pdf
+                (mysql_id, output_html, html_content, gemini, status, processing_completed_at, created_by, updated_by)
+            VALUES
+                (%s, %s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
+            ON DUPLICATE KEY UPDATE
+                output_html             = VALUES(output_html),
+                html_content            = VALUES(html_content),
+                gemini                  = VALUES(gemini),
+                status                  = 'COMPLETED',
+                processing_completed_at = NOW(),
+                updated_on              = NOW(),
+                updated_by              = 'system'
+        """, (mysql_id, output_html_path, html_content, html_content))
+    else:
+        cursor.execute("""
+            INSERT INTO tbl_html_to_pdf
+                (mysql_id, output_html, html_content, script_html, status, processing_completed_at, created_by, updated_by)
+            VALUES
+                (%s, %s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
+            ON DUPLICATE KEY UPDATE
+                output_html             = VALUES(output_html),
+                html_content            = VALUES(html_content),
+                script_html             = VALUES(script_html),
+                status                  = 'COMPLETED',
+                processing_completed_at = NOW(),
+                updated_on              = NOW(),
+                updated_by              = 'system'
+        """, (mysql_id, output_html_path, html_content, html_content))
 
     # 2. Write back html_status = 1 to the source table
     cursor.execute("""
@@ -93,7 +109,8 @@ def log_completed(mysql_id: int, output_html_path: str, html_content: str):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | html_content saved in DB | html_status=1")
+    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | script_html & html_content saved in DB | html_status=1")
+
 
 
 def log_failed(mysql_id: int, error: str):
