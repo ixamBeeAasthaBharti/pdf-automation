@@ -334,7 +334,7 @@ def split_block_semantically(block: dict) -> list:
     return split_blocks
 
 def classify_heading(visible_lines: list, body_size: float):
-    """Return 'h2'..'h4' if block reads as a standalone heading."""
+    """Return 'h2' or 'h3' if block reads as a genuine standalone heading."""
     if len(visible_lines) != 1:
         return None
     spans = [s for s in visible_lines[0].get("spans", []) if s.get("text", "").strip()]
@@ -347,13 +347,19 @@ def classify_heading(visible_lines: list, body_size: float):
     text = "".join(decode_span_text(s) for s in spans).strip()
     if len(text) <= 2 or text.isdigit():
         return None
+
+    # Full sentences ending with periods are paragraphs, not headings
+    if text.endswith(".") and len(text) > 40:
+        return None
+
     max_size = max(s.get("size", 12) for s in spans)
     ratio = max_size / body_size if body_size else 1
-    if ratio >= 1.2:
+    if ratio >= 1.18:
         return "h2"
-    if ratio >= 1.05:
+    if ratio >= 1.08 and len(text) <= 100:
         return "h3"
-    return "h4"
+    return None
+
 
 def is_inside_table(bbox, tables) -> bool:
     """
