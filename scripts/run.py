@@ -51,13 +51,13 @@ DEFAULT_PENDING_QUERY = """
             WHERE exam_id = 39 AND package_id = 841 AND chapter_id = 310 AND status = 1
         )
     )
-    AND type_order = 2 AND status = 1 AND htmltopdfstatus = 0
+    AND type_order = 2 AND status = 1 AND html_status = 0
     ORDER BY id ASC
 """
 
 DEFAULT_STATUS_QUERY = """
-    SELECT SUM(htmltopdfstatus=0) AS pending, SUM(htmltopdfstatus=1) AS done,
-           SUM(htmltopdfstatus=2) AS failed, COUNT(*) AS total
+    SELECT SUM(html_status=0) AS pending, SUM(html_status=1) AS done,
+           SUM(html_status=2) AS failed, COUNT(*) AS total
     FROM tbl_studymaterial_lang_map
     WHERE content_id IN (
         SELECT content_id FROM tbl_studymaterial_mapping_with_esc
@@ -129,7 +129,7 @@ def init_job_record(mysql_id, pdf_url):
     try:
         conn = get_connection(); cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO htmltopdfautomation (mysql_id, original_pdf, status, created_by)
+            INSERT INTO tbl_html_to_pdf (mysql_id, original_pdf, status, created_by)
             VALUES (%s, %s, 'PROCESSING', 'system')
             ON DUPLICATE KEY UPDATE
                 original_pdf=VALUES(original_pdf), status='PROCESSING',
@@ -176,7 +176,7 @@ def upload_html(mysql_id, html_path):
     html_content = html_path.read_text(encoding="utf-8")
     print(f"  [Upload  ] {len(html_content):,} chars -> MySQL...")
     log_completed(mysql_id, str(html_path), html_content)
-    print(f"  [Upload  ] htmltopdfstatus = 1")
+    print(f"  [Upload  ] html_status = 1")
 
 
 def archive_folder(mysql_id):
@@ -196,15 +196,15 @@ def mark_failed(mysql_id, error):
     try:
         conn = get_connection(); cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO htmltopdfautomation (mysql_id, status, created_by)
+            INSERT INTO tbl_html_to_pdf (mysql_id, status, created_by)
             VALUES (%s, 'FAILED', 'system')
             ON DUPLICATE KEY UPDATE status='FAILED', updated_on=NOW(), updated_by='system'
         """, (mysql_id,))
         cursor.execute("""
-            UPDATE tbl_studymaterial_lang_map SET htmltopdfstatus=2 WHERE id=%s
+            UPDATE tbl_studymaterial_lang_map SET html_status=2 WHERE id=%s
         """, (mysql_id,))
         conn.commit(); cursor.close(); conn.close()
-        print(f"  [Failed  ] ID {mysql_id} -> htmltopdfstatus=2")
+        print(f"  [Failed  ] ID {mysql_id} -> html_status=2")
     except Exception as e:
         print(f"  [Failed  ] Could not write to DB: {e}")
 
@@ -237,8 +237,11 @@ def show_status():
     cursor.execute("""
         SELECT mysql_id, status, created_on, updated_on,
                CHAR_LENGTH(html_content) AS content_chars
-        FROM   htmltopdfautomation ORDER BY mysql_id DESC LIMIT 30
+        FROM   tbl_html_to_pdf ORDER BY mysql_id DESC LIMIT 30
     """)
+    rows = cursor.fetchall()
+    cursor.close(); conn.close()
+
     rows = cursor.fetchall()
     cursor.close(); conn.close()
 

@@ -23,11 +23,11 @@ from mysql_client import get_connection
 
 
 def log_html_ready(mysql_id: int, pdf_html_path: str):
-    """Update htmltopdfautomation: PDF24 HTML is ready, about to process."""
+    """Update tbl_html_to_pdf: HTML is ready, about to process."""
     conn   = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    pdf_html_format = %s,
                status          = 'HTML_READY',
                updated_on      = NOW(),
@@ -41,11 +41,11 @@ def log_html_ready(mysql_id: int, pdf_html_path: str):
 
 
 def log_processing(mysql_id: int):
-    """Update htmltopdfautomation: Gemini pipeline is running. Stamps processing_started_at."""
+    """Update tbl_html_to_pdf: Gemini pipeline is running. Stamps processing_started_at."""
     conn   = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    status                = 'PROCESSING',
                processing_started_at = NOW(),
                updated_on            = NOW(),
@@ -58,43 +58,62 @@ def log_processing(mysql_id: int):
     print(f"[Logger] MySQL ID {mysql_id} -> PROCESSING (timer started)")
 
 
-def log_completed(mysql_id: int, output_html_path: str, html_content: str):
+def log_completed(mysql_id: int, output_html_path: str, html_content: str, is_gemini: bool = False):
     """
     Mark job as COMPLETED:
-      - Writes output_html path and full html_content (LONGTEXT)
-      - Stamps processing_completed_at (use with processing_started_at for duration)
-      - Sets tbl_studymaterial_lang_map.htmltopdfstatus = 1
+      - Writes output_html path, full html_content, and script_html/gemini into tbl_html_to_pdf
+      - Stamps processing_completed_at
+      - Sets tbl_studymaterial_lang_map.html_status = 1
     """
     conn   = get_connection()
     cursor = conn.cursor()
 
-    # 1. Update the automation log table
-    cursor.execute("""
-        UPDATE htmltopdfautomation
-        SET    output_html             = %s,
-               html_content            = %s,
-               status                  = 'COMPLETED',
-               processing_completed_at = NOW(),
-               updated_on              = NOW(),
-               updated_by              = 'system'
-        WHERE  mysql_id = %s
-    """, (output_html_path, html_content, mysql_id))
+    if is_gemini:
+        cursor.execute("""
+            INSERT INTO tbl_html_to_pdf
+                (mysql_id, output_html, html_content, gemini, status, processing_completed_at, created_by, updated_by)
+            VALUES
+                (%s, %s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
+            ON DUPLICATE KEY UPDATE
+                output_html             = VALUES(output_html),
+                html_content            = VALUES(html_content),
+                gemini                  = VALUES(gemini),
+                status                  = 'COMPLETED',
+                processing_completed_at = NOW(),
+                updated_on              = NOW(),
+                updated_by              = 'system'
+        """, (mysql_id, output_html_path, html_content, html_content))
+    else:
+        cursor.execute("""
+            INSERT INTO tbl_html_to_pdf
+                (mysql_id, output_html, html_content, script_html, status, processing_completed_at, created_by, updated_by)
+            VALUES
+                (%s, %s, %s, %s, 'COMPLETED', NOW(), 'system', 'system')
+            ON DUPLICATE KEY UPDATE
+                output_html             = VALUES(output_html),
+                html_content            = VALUES(html_content),
+                script_html             = VALUES(script_html),
+                status                  = 'COMPLETED',
+                processing_completed_at = NOW(),
+                updated_on              = NOW(),
+                updated_by              = 'system'
+        """, (mysql_id, output_html_path, html_content, html_content))
 
-    # 2. Write back htmltopdfstatus = 1 to the source table
+    # 2. Write back html_status = 1 to the source table
     cursor.execute("""
         UPDATE tbl_studymaterial_lang_map
-        SET    htmltopdfstatus = 1
+        SET    html_status = 1
         WHERE  id = %s
     """, (mysql_id,))
 
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | htmltopdfstatus=1")
+    print(f"[Logger] MySQL ID {mysql_id} -> COMPLETED | script_html & html_content saved in DB | html_status=1")
 
 
 def log_failed(mysql_id: int, error: str):
-    """Mark job as FAILED in htmltopdfautomation (source table status unchanged)."""
+    """Mark job as FAILED in tbl_html_to_pdf (source table status unchanged)."""
     conn   = get_connection()
     cursor = conn.cursor()
 
@@ -102,7 +121,7 @@ def log_failed(mysql_id: int, error: str):
     short_error = error[:500] if error else "Unknown error"
 
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    status     = 'FAILED',
                updated_on = NOW(),
                updated_by = 'system'
@@ -112,6 +131,7 @@ def log_failed(mysql_id: int, error: str):
     cursor.close()
     conn.close()
     print(f"[Logger] MySQL ID {mysql_id} → FAILED  ({short_error[:80]}...)")
+
 
 
 if __name__ == "__main__":

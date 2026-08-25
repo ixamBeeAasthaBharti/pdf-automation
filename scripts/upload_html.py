@@ -19,12 +19,14 @@ def upload_edited_html(mysql_id):
     cursor = conn.cursor()
     
     cursor.execute("""
-        UPDATE htmltopdfautomation
+        UPDATE tbl_html_to_pdf
         SET    html_content            = %s,
+               script_html             = %s,
                updated_on              = NOW(),
                updated_by              = 'manual_edit'
         WHERE  mysql_id = %s
-    """, (html_content, mysql_id))
+    """, (html_content, html_content, mysql_id))
+
     
     conn.commit()
     cursor.close()
