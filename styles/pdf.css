@@ -1,8 +1,18 @@
+/* Preserve original Literata font over Bootstrap default font reset */
+:root {
+    --bs-body-font-family: 'Literata', serif !important;
+}
+
+body, p, li, h1, h2, h3, h4, h5, h6, table, th, td {
+    font-family: var(--deepesh, 'Literata', serif);
+}
+
 .wage-box {
     background: #ececec;
     border: 3px solid #b94c4c !important;
     border-radius: 35px;
 }
+
 
 .wage-box p,
 .wage-box li,
