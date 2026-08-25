@@ -395,6 +395,37 @@ def image_overlaps_table(bbox, tables, threshold=0.50) -> bool:
     return False
 
 
+def is_watermark_text(text: str) -> bool:
+    """Check if a text string is a watermark (e.g. www.ixambee.com)."""
+    if not text:
+        return False
+    norm = text.strip().lower().replace(" ", "")
+    if "www.ixambee.com" in norm or "ixambee.com" in norm or "www.ixambee" in norm:
+        return True
+    if norm in ("ixambee", "prepare50%faster"):
+        return True
+    return False
+
+
+def is_watermark_image(block: dict, page: fitz.Page) -> bool:
+    """Check if an image block is a full-page or background watermark image."""
+    bbox = block.get("bbox", (0, 0, 0, 0))
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+    page_w = page.rect.width
+    page_h = page.rect.height
+
+    # Large background watermark spanning >45% page width and >35% page height near center
+    if w > page_w * 0.45 and h > page_h * 0.35:
+        cx = (bbox[0] + bbox[2]) / 2
+        cy = (bbox[1] + bbox[3]) / 2
+        if abs(cx - page_w / 2) < 100 and abs(cy - page_h / 2) < 120:
+            return True
+
+    return False
+
+
+
 
 def _table_cell_text(cell) -> str:
     text = str(cell or "").strip()
@@ -1070,6 +1101,10 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             if ly1 < 68 or ly0 > page_height - 75:
                 continue
                 
+            line_text = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+            if is_watermark_text(line_text):
+                continue
+
             raw_lines.append(line)
             
     # Sort all lines on the page top-to-bottom
@@ -1232,6 +1267,8 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             bbox = block.get("bbox", (0, 0, 0, 0))
             if page.number == 0 or bbox[3] < 90 or bbox[1] > page_height - 75:
                 continue
+            if is_watermark_image(block, page):
+                continue
             if image_overlaps_table(bbox, valid_tables):
                 continue
             page_elements.append({
@@ -1239,6 +1276,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 "bbox": bbox,
                 "data": block
             })
+
 
             
     # Add only validated table blocks. Keep the Table object so render_table()
