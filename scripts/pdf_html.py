@@ -396,207 +396,33 @@ def image_overlaps_table(bbox, tables, threshold=0.50) -> bool:
 
 
 def is_watermark_text(text: str) -> bool:
-    """Check if a text string is a watermark (e.g. www.ixambee.com, ixamBee, etc.)."""
+    """Check if a text string is a watermark (e.g. www.ixambee.com)."""
     if not text:
         return False
-    norm = text.strip().lower().replace(" ", "").replace("-", "").replace("/", "")
-    if "ixambee" in norm or "prepare50%faster" in norm:
+    norm = text.strip().lower().replace(" ", "")
+    if "www.ixambee.com" in norm or "ixambee.com" in norm or "www.ixambee" in norm:
+        return True
+    if norm in ("ixambee", "prepare50%faster"):
         return True
     return False
 
 
 def is_watermark_image(block: dict, page: fitz.Page) -> bool:
-    """Check if an image block is a watermark image."""
+    """Check if an image block is a full-page or background watermark image."""
     bbox = block.get("bbox", (0, 0, 0, 0))
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     page_w = page.rect.width
     page_h = page.rect.height
 
-    if page_w <= 0 or page_h <= 0:
-        return False
-
-    # Watermark image positioned near page center covering substantial area
-    cx = (bbox[0] + bbox[2]) / 2
-    cy = (bbox[1] + bbox[3]) / 2
-    if abs(cx - page_w / 2) < 140 and abs(cy - page_h / 2) < 160:
-        if w > page_w * 0.35 and h > page_h * 0.25:
+    # Large background watermark spanning >45% page width and >35% page height near center
+    if w > page_w * 0.45 and h > page_h * 0.35:
+        cx = (bbox[0] + bbox[2]) / 2
+        cy = (bbox[1] + bbox[3]) / 2
+        if abs(cx - page_w / 2) < 100 and abs(cy - page_h / 2) < 120:
             return True
 
     return False
-
-
-
-def is_text_backed_image(block: dict, text_dict: dict, page: fitz.Page) -> bool:
-    """
-    Determine whether an image block (type == 1) is a background/rasterized
-    text region that overlaps multiple selectable text blocks from the PDF.
-    """
-    bbox = block.get("bbox", (0, 0, 0, 0))
-    img_rect = fitz.Rect(bbox)
-    img_area = img_rect.width * img_rect.height
-    page_area = page.rect.width * page.rect.height
-
-    if img_area <= 0 or page_area <= 0:
-        return False
-
-    image_area_ratio = img_area / page_area
-
-    # Small logos/icons/figures (covers <= 5% page area) are never rejected
-    if image_area_ratio < 0.05:
-        print(f"  [IMAGE ACCEPT] bbox={bbox} page_area_ratio={image_area_ratio:.3f} reason=small_image", file=sys.stderr)
-        return False
-
-    text_blocks_inside = 0
-    total_intersection_area = 0.0
-
-    for tb in text_dict.get("blocks", []):
-        if tb.get("type", 0) != 0:  # Only check text blocks
-            continue
-        tb_bbox = tb.get("bbox", (0, 0, 0, 0))
-        tb_rect = fitz.Rect(tb_bbox)
-        tb_area = tb_rect.width * tb_rect.height
-        if tb_area <= 0:
-            continue
-
-        intersection = img_rect & tb_rect
-        if not intersection.is_empty:
-            inter_area = intersection.width * intersection.height
-            # If text block substantially intersects image (> 30% of text block area)
-            if (inter_area / tb_area) >= 0.30:
-                text_blocks_inside += 1
-                total_intersection_area += inter_area
-
-    text_overlap_ratio = total_intersection_area / img_area if img_area > 0 else 0.0
-
-    # Background/rasterized text region heuristic:
-    # 1. Covers > 8% of page area (image_area_ratio > 0.08)
-    # 2. Overlaps at least 2 selectable text blocks inside (text_blocks_inside >= 2)
-    # 3. Text overlap ratio >= 0.15
-    if image_area_ratio > 0.08 and text_blocks_inside >= 2 and text_overlap_ratio >= 0.15:
-        print(
-            f"  [IMAGE REJECT] bbox={bbox} page_area_ratio={image_area_ratio:.3f} "
-            f"text_blocks_inside={text_blocks_inside} text_overlap_ratio={text_overlap_ratio:.3f} "
-            f"reason=text_backed_image",
-            file=sys.stderr
-        )
-        return True
-
-    print(
-        f"  [IMAGE ACCEPT] bbox={bbox} page_area_ratio={image_area_ratio:.3f} "
-        f"text_blocks_inside={text_blocks_inside} text_overlap_ratio={text_overlap_ratio:.3f}",
-        file=sys.stderr
-    )
-    return False
-
-
-def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict, valid_tables: list) -> bool:
-    """
-    Determine whether a candidate drawing cluster is a genuine vector diagram/flowchart
-    vs. a decorative background text region or watermark.
-    """
-    # 1. Dimension check
-    if cluster.width < 50 or cluster.height < 30:
-        print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_small", file=sys.stderr)
-        return False
-
-    cluster_area = cluster.width * cluster.height
-
-    # 2. Table overlap check
-    for t in valid_tables:
-        tb = fitz.Rect(t.bbox)
-        intersect = cluster & tb
-        if not intersect.is_empty:
-            if (intersect.width * intersect.height) / cluster_area > 0.2:
-                print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=overlaps_table", file=sys.stderr)
-                return False
-
-    # 3. Inspect vector drawings inside the cluster
-    all_drawings = page.get_drawings()
-    total_drawings = 0
-    meaningful_drawings = 0
-
-    for d in all_drawings:
-        r = fitz.Rect(d["rect"])
-        # Check if drawing falls inside cluster
-        if cluster.x0 - 5 <= r.x0 and r.x1 <= cluster.x1 + 5 and cluster.y0 - 5 <= r.y0 and r.y1 <= cluster.y1 + 5:
-            total_drawings += 1
-            fill = d.get("fill")
-            # Skip light gray watermark fills
-            if fill and len(fill) == 3:
-                r_val, g_val, b_val = fill
-                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
-                    continue
-
-            # Simple decorative rectangular background fills (wide/shallow rectangles used as text highlights)
-            items = d.get("items", [])
-            is_simple_bg_rect = False
-            if len(items) <= 2 and fill is not None:
-                if r.width > 60 and r.height < 35:
-                    is_simple_bg_rect = True
-                elif r.width > cluster.width * 0.8 and r.height < cluster.height * 0.5:
-                    is_simple_bg_rect = True
-
-            if not is_simple_bg_rect:
-                meaningful_drawings += 1
-
-    # 4. Inspect selectable text inside the cluster
-    text_blocks_count = 0
-    text_line_count = 0
-    total_text_area = 0.0
-
-    for tb in text_dict.get("blocks", []):
-        if tb.get("type", 0) != 0:
-            continue
-        tb_bbox = tb.get("bbox", (0, 0, 0, 0))
-        tb_rect = fitz.Rect(tb_bbox)
-        tb_area = tb_rect.width * tb_rect.height
-        if tb_area <= 0:
-            continue
-
-        intersect = cluster & tb_rect
-        if not intersect.is_empty:
-            inter_area = intersection_area = intersect.width * intersect.height
-            if (inter_area / tb_area) >= 0.3:
-                text_blocks_count += 1
-                lines = tb.get("lines", [])
-                text_line_count += len(lines)
-                total_text_area += inter_area
-
-    text_coverage_ratio = total_text_area / cluster_area if cluster_area > 0 else 0.0
-
-    # 5. Check text density signal:
-    # A cluster that contains substantial paragraph/list text (>= 3 text lines AND text_coverage >= 0.12)
-    # is a text section with decorative vector highlights, NOT a flowchart/diagram.
-    if text_line_count >= 3 and text_coverage_ratio >= 0.12:
-        print(
-            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-            f"text_coverage={text_coverage_ratio:.3f} reason=text_dense_decorative_cluster",
-            file=sys.stderr
-        )
-        return False
-
-    # 6. Genuine diagram check:
-    # Genuine diagrams/flowcharts/chemical structures must have at least 2 meaningful vector drawing elements.
-    if meaningful_drawings < 2:
-        print(
-            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-            f"text_coverage={text_coverage_ratio:.3f} reason=insufficient_meaningful_vector_geometry",
-            file=sys.stderr
-        )
-        return False
-
-    print(
-        f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-        f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-        f"text_coverage={text_coverage_ratio:.3f}",
-        file=sys.stderr
-    )
-    return True
-
-
 
 
 
@@ -1197,19 +1023,32 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             if changed:
                 break
 
-    # Extract page text dictionary early for diagram & image validation
-    text_dict = page.get_text("dict")
-
-    # Validate vector diagram candidates with conservative geometry & text density rules
+    # Keep clusters containing at least 5 drawings
     valid_diagram_rects = []
     for c in diagram_clusters:
-        if is_valid_vector_diagram(c, page, text_dict, valid_tables):
-            valid_diagram_rects.append(c)
-
+        if c.width < 50 or c.height < 30:
+            continue
+            
+        # Ignore diagram if it overlaps with any valid table
+        overlaps_table = False
+        for t in valid_tables:
+            tb = fitz.Rect(t.bbox)
+            intersect = c & tb
+            if not intersect.is_empty:
+                if (intersect.width * intersect.height) / (c.width * c.height) > 0.2:
+                    overlaps_table = True
+                    break
+        if overlaps_table:
+            continue
+            
+        valid_diagram_rects.append(c)
+        
+    # 2. Extract and filter text lines
+    text_dict = page.get_text("dict")
+    
     # Pre-process spans to split merged list prefixes (e.g. "a. text" -> "a." and " text")
     import re
     prefix_pattern = re.compile(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])(\s+)')
-
     for block in text_dict.get("blocks", []):
         if block.get("type", 0) == 0:
             for line in block.get("lines", []):
@@ -1430,8 +1269,6 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 continue
             if is_watermark_image(block, page):
                 continue
-            if is_text_backed_image(block, text_dict, page):
-                continue
             if image_overlaps_table(bbox, valid_tables):
                 continue
             page_elements.append({
@@ -1439,7 +1276,6 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 "bbox": bbox,
                 "data": block
             })
-
 
 
             
