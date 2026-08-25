@@ -270,7 +270,25 @@ def is_bullet_span(span: dict) -> bool:
         
     return False
 
+def is_standalone_line_prefix(text: str) -> bool:
+    """Check if a line text starts an MCQ option, explanation, passage, or question header."""
+    if not text:
+        return False
+    text_clean = text.strip()
+    # MCQ options e.g. "A. ", "B. ", "C. ", "D. ", "E. ", "(A)", "(B)", "a)", "b)"
+    if re.match(r'^(?:[A-E]\.|\([A-E]\)|[a-e]\))\s*', text_clean):
+        return True
+    # Explanation / Passage / Question prefixes e.g. "Explanation-", "Explanation:", "Passage -", "Passage:"
+    if re.match(r'^(Explanation|Passage|Note|Solution)\b', text_clean, re.IGNORECASE):
+        return True
+    # Question numbers e.g. "6. ", "15. ", "Q1. ", "Q.1 "
+    if re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', text_clean):
+        return True
+    return False
+
+
 def is_pink_heading_block(bbox, page) -> bool:
+
     if page is None:
         return False
     bx0, by0, bx1, by1 = bbox
@@ -1035,10 +1053,18 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                         else:
                             html_out[-1] = last_item + inner
                 else:
+                    line_text = "".join(decode_span_text(s) for s in spans).strip()
+                    # If this line starts an MCQ option (e.g. A., B.), Explanation, or Question number, start a new paragraph
+                    if current_para_spans and is_standalone_line_prefix(line_text):
+                        para_text = "".join(render_span_semantic(s) for s in current_para_spans)
+                        html_out.append(f"<p>{para_text}</p>")
+                        current_para_spans = []
+
                     # Append to running paragraph list, keeping word spacing clean
                     if current_para_spans and not current_para_spans[-1].get("text", "").endswith(" ") and not spans[0].get("text", "").startswith(" "):
                         current_para_spans.append({"text": " ", "font": spans[0].get("font", ""), "size": spans[0].get("size", 12), "color": spans[0].get("color", 0)})
                     current_para_spans.extend(spans)
+
                 
         # Flush remaining paragraph or list wraps
         if current_para_spans:
@@ -1202,13 +1228,20 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             ly0 = line["bbox"][1]
             ly1 = line["bbox"][3]
             
-            # Skip header and footer zones (ly1 < 68 skips running headers)
-            if ly1 < 68 or ly0 > page_height - 75:
+            # Skip header and footer zones (ly1 < 75 skips running headers)
+            if ly1 < 75 or ly0 > page_height - 75:
                 continue
                 
             line_text = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
             if is_watermark_text(line_text):
                 continue
+
+            # Skip running headers at top of page (e.g. "ESI- RBI_2018")
+            if ly1 < 95:
+                norm_line = line_text.lower().replace(" ", "").replace("-", "").replace("_", "")
+                if norm_line in ("esirbi2018", "rbigradeb2018", "wwwixambeecom", "ixambee"):
+                    continue
+
 
             raw_lines.append(line)
             

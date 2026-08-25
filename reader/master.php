@@ -40,21 +40,29 @@ try {
     die('<p style="font-family:sans-serif;color:red">DB connection failed: ' . htmlspecialchars($e->getMessage()) . '</p>');
 }
 
-/* ── Fetch document ── */
-$stmt = $pdo->prepare(
-    'SELECT mysql_id, html_content, status FROM tbl_html_to_pdf WHERE mysql_id = :id LIMIT 1'
-);
+/* ── Fetch document (Prioritize disk file for instant manual edits preview) ── */
+$rawHtml = '';
+$diskArchive = __DIR__ . '/../storage/archive/' . $mysqlId . '/document.html';
+$diskOutputs = __DIR__ . '/../storage/outputs/' . $mysqlId . '/output.html';
 
-$stmt->execute([':id' => $mysqlId]);
-$doc = $stmt->fetch();
-
-if (!$doc) {
-    http_response_code(404);
-    die('<p style="font-family:sans-serif;color:red">Document ID <strong>' . $mysqlId . '</strong> not found.</p>');
+if (file_exists($diskArchive)) {
+    $rawHtml = file_get_contents($diskArchive);
+} elseif (file_exists($diskOutputs)) {
+    $rawHtml = file_get_contents($diskOutputs);
+} else {
+    $stmt = $pdo->prepare(
+        'SELECT mysql_id, COALESCE(NULLIF(script_html, ""), html_content) AS html_content, status FROM tbl_html_to_pdf WHERE mysql_id = :id LIMIT 1'
+    );
+    $stmt->execute([':id' => $mysqlId]);
+    $doc = $stmt->fetch();
+    if ($doc && !empty($doc['html_content'])) {
+        $rawHtml = $doc['html_content'];
+    }
 }
-if (empty($doc['html_content'])) {
+
+if (empty($rawHtml)) {
     http_response_code(404);
-    die('<p style="font-family:sans-serif;color:red">Document <strong>' . $mysqlId . '</strong> has no HTML content yet (status: ' . htmlspecialchars($doc['status']) . ').</p>');
+    die('<p style="font-family:sans-serif;color:red">Document <strong>' . $mysqlId . '</strong> has no HTML content available.</p>');
 }
 
 /* ── Rewrite image paths ── */
@@ -62,10 +70,10 @@ $imgBase = '/storage/archive/' . $mysqlId . '/images/';
 if (!is_dir(__DIR__ . '/..' . $imgBase)) {
     $imgBase = '/storage/outputs/' . $mysqlId . '/images/';
 }
-$rawHtml = $doc['html_content'];
 $rawHtml = str_replace('src="images/',    'src="' . $imgBase, $rawHtml);
 $rawHtml = str_replace("src='images/",    "src='" . $imgBase, $rawHtml);
 $rawHtml = str_replace('src="../images/', 'src="' . $imgBase, $rawHtml);
+
 
 /* ── Extract page title ── */
 $pageTitle = 'Study Notes';
@@ -115,6 +123,8 @@ $logoSrc = '../assets/logo.png';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
    <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/reader.css"/>
+  <link rel="stylesheet" href="../styles/pdf.css"/>
+
 </head>
 <body>
 

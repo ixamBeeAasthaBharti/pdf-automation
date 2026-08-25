@@ -1,0 +1,193 @@
+.wage-box {
+    background: #ececec;
+    border: 3px solid #b94c4c !important;
+    border-radius: 35px;
+}
+
+.wage-box p,
+.wage-box li,
+.wage-box h4,
+.wage-box h6 {
+    color: var(--reader-ink);
+}
+
+.headBg {
+    background: linear-gradient(90deg, rgba(107, 157, 88, .10), transparent 75%);
+    color: var(--reader-navy);
+}
+
+/* =========================================================
+   DERIVATIVES CARD ROW
+   Forwards / Futures / Options / Swaps / Combination
+   Always a single row — scales down, then scrolls on very
+   small screens instead of wrapping.
+   ========================================================= */
+.derivatives-section {
+    margin: 1.25rem 0 1.5rem;
+}
+
+.derivatives-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .85rem;
+    width: 100%;
+    align-items: stretch;
+}
+
+.derivative-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    background: var(--reader-page, #fffdf8);
+    border: 1px solid var(--reader-line, #e6ddcd);
+    border-top: 3px solid var(--reader-green, #6b9d58);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(48, 38, 24, .05);
+
+    padding: 1rem .6rem;
+    min-height: 6.5rem;
+    box-sizing: border-box;
+
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.derivative-card--options {
+    justify-content: flex-start;
+    text-align: left;
+    padding: 1rem .9rem;
+}
+
+.derivative-title {
+    margin: 0;
+    color: var(--reader-navy, #043821);
+    font-family: var(--deepesh);
+    font-size: .92rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.derivative-card--options .derivative-title {
+    text-align: center;
+    width: 100%;
+    margin-bottom: .5rem;
+}
+
+.derivative-text {
+    margin: 0 0 .4rem;
+    color: var(--reader-ink, #292621);
+    font-size: .78rem;
+    line-height: 1.45;
+}
+
+.derivative-text strong {
+    color: var(--reader-navy, #043821);
+}
+
+.derivative-text--last {
+    margin-bottom: 0;
+}
+
+/* Accent colors per card, echoing the flow-diagram palette */
+.derivative-card.accent-1 {
+    border-top-color: var(--reader-brown, #8a4f24);
+}
+
+.derivative-card.accent-2 {
+    border-top-color: var(--reader-table-blue, #3f70bd);
+}
+
+.derivative-card.accent-3 {
+    border-top-color: var(--reader-orange, #ef9b63);
+}
+
+.derivative-card.accent-4 {
+    border-top-color: var(--reader-green, #6b9d58);
+}
+
+.derivative-card.accent-5 {
+    border-top-color: var(--reader-navy, #043821);
+}
+
+@media (min-width: 769px) {
+    .derivative-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(48, 38, 24, .09);
+    }
+}
+
+/* ---------- Tablet: shrink padding/text, stay one row ---------- */
+@media (max-width: 768px) {
+    .derivatives-row {
+        gap: .55rem;
+    }
+
+    .derivative-card {
+        padding: .75rem .4rem;
+        min-height: 5.75rem;
+        border-radius: 8px;
+    }
+
+    .derivative-card--options {
+        padding: .75rem .55rem;
+    }
+
+    .derivative-title {
+        font-size: .8rem;
+    }
+
+    .derivative-text {
+        font-size: .68rem;
+    }
+}
+
+/* ---------- Small phones: row no longer fits — scroll instead of wrap ---------- */
+@media (max-width: 576px) {
+    .derivatives-row {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        padding-bottom: .4rem;
+        margin: 0 -.2rem;
+    }
+
+    .derivative-card {
+        flex: 0 0 auto;
+        width: 8.5rem;
+        scroll-snap-align: start;
+    }
+
+    .derivative-card--options {
+        width: 11rem;
+    }
+}
+
+/* ---------- Print / PDF export: force the row to fit the page ---------- */
+@media print {
+    .derivatives-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: .5rem;
+    }
+
+    .derivative-card {
+        box-shadow: none;
+        break-inside: avoid;
+        padding: .7rem .35rem;
+        min-height: 0;
+    }
+
+    .derivative-title {
+        font-size: .74rem;
+    }
+
+    .derivative-text {
+        font-size: .62rem;
+    }
+}
