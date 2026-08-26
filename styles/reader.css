@@ -1622,6 +1622,14 @@ article:not(.cover-article) .content-note .note-title {
     padding: 0;
 }
 
+article:not(.cover-article) .note h2::before,
+article:not(.cover-article) .note h3::before,
+article:not(.cover-article) .content-note h2::before,
+article:not(.cover-article) .content-note h3::before {
+    content: none !important;
+    display: none !important;
+}
+
 /* Lists inside Note/Callout */
 article:not(.cover-article) .note ul,
 article:not(.cover-article) .note ol,
