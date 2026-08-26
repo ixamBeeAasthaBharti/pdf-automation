@@ -5,13 +5,20 @@
     --bs-body-font-family: 'Literata', 'Mangal', 'Noto Sans Devanagari', 'Nirmala UI', serif !important;
 }
 
-body, p, li, h1, h2, h3, h4, h5, h6, table, th, td {
+body,
+p,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+table,
+th,
+td {
     font-family: var(--deepesh, 'Literata'), 'Mangal', 'Noto Sans Devanagari', 'Nirmala UI', serif;
 }
-
-
-
-
 
 
 .wage-box {
@@ -207,4 +214,156 @@ body, p, li, h1, h2, h3, h4, h5, h6, table, th, td {
     .derivative-text {
         font-size: .62rem;
     }
+}
+
+
+/* =====================================================
+   PDF BOX CARD  — "Box 1 / Box 2" from source PDFs
+   Full rounded border, pale-yellow bg,
+   table floats on top as its own clean layer.
+   ===================================================== */
+
+.pdf-box-card {
+    position: relative;
+    margin: 1.6rem 0 1.6rem;
+    padding: 1.25rem 1.5rem 1.4rem;
+
+    /* Very light yellow background */
+
+
+    background: #fffdf7;
+
+    /* Heavier, more visible border */
+
+
+    border: 3px solid #79b866;
+    border-radius: 14px;
+
+
+
+    /* Clean — no shadow on the card itself */
+
+    overflow: visible;
+}
+
+/* No left accent strip */
+.pdf-box-card::before {
+    content: none;
+    display: none;
+}
+
+/* ── Title: centred, bold, underlined ── */
+.pdf-box-card .box-title,
+.pdf-box-card h4 {
+    display: block;
+    width: 100%;
+    text-align: center;
+
+    font-family: var(--deepesh, 'Literata', serif);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #1a3f28;
+
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: #82bf6e;
+
+    margin: 0 0 1rem 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* ── Table inside the box ── */
+.pdf-box-card .notes-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.85rem;
+    margin: 0 !important;
+}
+
+/* ── Bullets inside the box ── */
+.pdf-box-card ul,
+.pdf-box-card ol {
+    margin: 0.25rem 0 0.25rem 0.5rem;
+    padding-left: 1.4rem;
+}
+
+.pdf-box-card ul li,
+.pdf-box-card ol li {
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+    color: #26382d;
+    line-height: 1.65;
+}
+
+/* Sub-heading bold underlined inside bullets */
+.pdf-box-card ul li>strong,
+.pdf-box-card ol li>strong {
+    display: block;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: #82bf6e;
+    color: #1a3f28;
+    margin-bottom: 0.2rem;
+}
+
+/* Plain paragraph text inside box */
+.pdf-box-card>p {
+    font-size: 0.9rem;
+    color: #26382d;
+    line-height: 1.65;
+    margin: 0.4rem 0 0.7rem;
+}
+
+/* ── Table wrapper: white card elevated ON TOP of yellow bg ──
+   The global .notes-table styles are NOT overridden here,
+   so the table renders exactly as it does outside the box.    */
+.pdf-box-card .table-responsive {
+    background: #ffffff;
+
+    /* Elevation: looks like the table sits above the card */
+    border-radius: 8px;
+    box-shadow:
+        0 2px 8px -2px rgba(0, 0, 0, 0.10),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+
+    margin-top: 0.85rem;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+
+/* =====================================================
+   EXTRACTED FIGURES  (diagram / image blocks)
+   ===================================================== */
+
+figure {
+    display: block;
+    margin: 1.4rem auto 1.1rem;
+    text-align: center;
+    max-width: 100%;
+}
+
+figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px -4px rgba(27, 58, 107, 0.16);
+    display: block;
+    margin: 0 auto;
+}
+
+figcaption {
+    margin-top: 0.45rem;
+    font-family: var(--deepesh, 'Literata', serif);
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--ink-soft, #4a443c);
+    text-align: center;
+    line-height: 1.4;
 }

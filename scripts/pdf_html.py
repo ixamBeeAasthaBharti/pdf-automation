@@ -1804,12 +1804,51 @@ def post_process_worksheet_html(raw_html: str) -> str:
     in_mcq = False
     in_q_section = False
     in_exp_card = False
+    in_box_card = False      # NEW: tracks open .pdf-box-card divs
     opt_index = 0
 
     labels = ["A.", "B.", "C.", "D.", "E.", "F.", "G."]
 
+    # Regex: matches "Box 1 – ..." / "Box 2: ..." / "Box-3 — ..." inside any tags
+    _RE_BOX = re.compile(
+        r'Box\s*[-–—]?\s*\d+\s*[-–—:]\s*(.+)',
+        re.IGNORECASE
+    )
+
     for line in lines:
         stripped = line.strip()
+
+        # ── Step 0: Detect "Box N – Title" heading ──────────────────────────
+        # Matches e.g.  <p><strong>Box 1 – NBFC-P2P in India – as of June 30, 2019 </strong></p>
+        clean_for_box = re.sub(r'<[^>]+>', '', stripped).strip()
+        m_box = _RE_BOX.match(clean_for_box)
+        if m_box:
+            # Close any open card/section first
+            if in_mcq:
+                out_lines.append('</ul></div>')
+                in_mcq = False
+                in_q_section = False
+            elif in_q_section:
+                out_lines.append('</div>')
+                in_q_section = False
+            elif in_exp_card:
+                out_lines.append('</div>')
+                in_exp_card = False
+            if in_box_card:
+                out_lines.append('</div>')
+                in_box_card = False
+
+            # Full text of the box title (everything after "Box N –")
+            box_title = re.sub(r'<[^>]+>', '', stripped).strip()
+            out_lines.append(f'<div class="pdf-box-card"><h4 class="box-title">{box_title}</h4>')
+            in_box_card = True
+            opt_index = 0
+            continue
+
+        # Close box card on section boundary
+        if in_box_card and (stripped == '</section>' or stripped.startswith('<section')):
+            out_lines.append('</div>')
+            in_box_card = False
 
         # 1. Fix Leaked Option E + Question Prompt (e.g. "<li>1.4 9. Which...", "Coimbattore 15. __ was...")
         m_leak = re.match(r'^(?:<li>|<p>)?\s*([A-Za-z0-9\.\,\s\-\%\/\(\)]+?)\s+(\d{1,3}\.\s+[A-Z_].*)', stripped)
@@ -1956,6 +1995,8 @@ def post_process_worksheet_html(raw_html: str) -> str:
     if in_mcq:
         out_lines.append('</ul></div>')
     elif in_q_section or in_exp_card:
+        out_lines.append('</div>')
+    if in_box_card:
         out_lines.append('</div>')
 
     return "\n".join(out_lines)
