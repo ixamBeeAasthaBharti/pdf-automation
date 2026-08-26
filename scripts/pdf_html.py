@@ -1845,7 +1845,9 @@ def post_process_worksheet_html(raw_html: str) -> str:
         re.IGNORECASE
     )
 
-    for line in lines:
+    num_lines = len(lines)
+    for idx in range(num_lines):
+        line = lines[idx]
         stripped = line.strip()
 
         # ── Step 0: Detect "Box N – Title" heading ──────────────────────────
@@ -1911,7 +1913,24 @@ def post_process_worksheet_html(raw_html: str) -> str:
 
         # 2. Check if Question Prompt e.g. "<p>1. According to...", "9. Which of the...", "<p>38. The data..."
         m_q = re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', clean_text)
+        is_actual_q = False
         if m_q:
+            # If it starts with "Q" / "Question" / "प्रश्" / "प्रश्न", it is a question
+            if re.match(r'^(?:Q(?:ues)?|प्रश्|प्रश्न)\b', clean_text, re.IGNORECASE):
+                is_actual_q = True
+            else:
+                # If it's a plain number (e.g. "1."), look ahead up to 12 lines for MCQ options
+                for lookahead_idx in range(idx + 1, min(idx + 13, num_lines)):
+                    lookahead_line = lines[lookahead_idx].strip()
+                    lookahead_clean = re.sub(r'<[^>]+>', '', lookahead_line).strip()
+                    if re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*\(?([A-Ga-g])\)?\s*[\.\)]', lookahead_line, re.IGNORECASE):
+                        is_actual_q = True
+                        break
+                    # Stop if we hit a section boundary or another heading
+                    if re.match(r'^<h[1-4]\b', lookahead_line, re.IGNORECASE) or re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', lookahead_clean):
+                        break
+
+        if is_actual_q:
             if in_mcq:
                 out_lines.append('</ul></div>')
                 in_mcq = False
