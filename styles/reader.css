@@ -1208,10 +1208,10 @@ article:not(.cover-article) section h3::before {
 /* The generic rule gives h3 a 1rem left-padding + position:relative + text-wrap:balance.   */
 /* We neutralise all of that here with a more-specific selector so no !important is needed   */
 /* in worksheet.css, and the grid layout always wins regardless of @import order.            */
-article:not(.cover-article) section .question-section h3,
-article section .question-section h3,
-section.pdf-page .question-section h3,
-.question-section h3 {
+article:not(.cover-article) section .question-section .q-header,
+article section .question-section .q-header,
+section.pdf-page .question-section .q-header,
+.question-section .q-header {
     display: grid !important;
     grid-template-columns: 2.2rem minmax(0, 1fr) !important;
     column-gap: 0 !important;
@@ -1233,15 +1233,15 @@ section.pdf-page .question-section h3,
     background: none !important;
 }
 
-article:not(.cover-article) section .question-section h3::before,
-article section .question-section h3::before,
-section.pdf-page .question-section h3::before,
-.question-section h3::before {
+article:not(.cover-article) section .question-section .q-header::before,
+article section .question-section .q-header::before,
+section.pdf-page .question-section .q-header::before,
+.question-section .q-header::before {
     content: none !important;
     display: none !important;
 }
 
-.question-section h3 .q-num {
+.question-section .q-header .q-num {
     display: block !important;
     width: 2.2rem !important;
     min-width: 0 !important;
@@ -1250,7 +1250,7 @@ section.pdf-page .question-section h3::before,
     color: var(--reader-ink, #2d3748) !important;
 }
 
-.question-section h3 .q-text {
+.question-section .q-header .q-text {
     display: block !important;
     min-width: 0 !important;
     width: auto !important;

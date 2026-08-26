@@ -162,8 +162,8 @@ def is_cover_page(page: fitz.Page, body_size: float) -> bool:
     """
     # 1. Quick-reject if tables are present (almost never on cover pages)
     try:
-        tables = page.find_tables()
-        if tables and len(tables.tables) > 0:
+        tables = find_valid_tables(page)
+        if tables and len(tables) > 0:
             return False
     except Exception:
         pass
@@ -300,8 +300,8 @@ def is_bullet_span(span: dict) -> bool:
     if "Courier" in font and decoded == "o":
         return True
     
-    # Match MCQ options e.g. "A.", "B.", "C.", "D.", "E.", "(A)", "(B)", "a)", "b)" or sub-list prefixes
-    pattern = r'^(\(?[A-Ea-e]\)[\.\)]?|[A-Ea-e][\.\)]|\(?([a-z]+|[IVX]+)\)[\.\)]?|([a-z]+|[IVX]+)[\.\)])$'
+    # Match MCQ options e.g. "A.", "B.", "C.", "D.", "E.", "(A)", "(B)", "a)", "b)" or sub-list prefixes (limit length to prevent matching normal words)
+    pattern = r'^(\(?[A-Ea-e]\)[\.\)]?|[A-Ea-e][\.\)]|\(?([a-z]{1,3}|[IVX]{1,4})\)[\.\)]?|([a-z]{1,3}|[IVX]{1,4})[\.\)])$'
     if re.match(pattern, decoded):
         return True
 
@@ -423,7 +423,7 @@ def classify_heading(visible_lines: list, body_size: float):
     ratio = max_size / body_size if body_size else 1
     if ratio >= 1.18:
         return "h2"
-    if ratio >= 1.08 and len(text) <= 100:
+    if ratio >= 0.95 and len(text) <= 100:
         return "h3"
     return None
 
@@ -488,8 +488,8 @@ def is_watermark_image(block: dict, page: fitz.Page) -> bool:
     page_w = page.rect.width
     page_h = page.rect.height
 
-    # Large background watermark spanning >45% page width and >35% page height near center
-    if w > page_w * 0.45 and h > page_h * 0.35:
+    # Large background watermark spanning >85% page width and >85% page height near center
+    if w > page_w * 0.85 and h > page_h * 0.85:
         cx = (bbox[0] + bbox[2]) / 2
         cy = (bbox[1] + bbox[3]) / 2
         if abs(cx - page_w / 2) < 100 and abs(cy - page_h / 2) < 120:
@@ -1049,7 +1049,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                     current_para_spans = []
                 x_bullet = spans[0]["bbox"][0]
                 bullet_char = decode_span_text(spans[0]).strip()
-                is_alphanumeric = bool(re.match(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$', bullet_char))
+                is_alphanumeric = bool(re.match(r'^(\(?([0-9]+|[a-z]{1,3}|[IVX]{1,4})\)[\.\)]?|([0-9]+|[a-z]{1,3}|[IVX]{1,4})[\.\)])$', bullet_char))
                 cls_extra = " list-alphanumeric" if is_alphanumeric else ""
                 
                 if not active_lists:
@@ -1225,8 +1225,8 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
     # Validate vector diagram candidates with conservative geometry & text density rules
     valid_diagram_rects = []
     for c in diagram_clusters:
-        # Skip header diagrams/logos sitting in top running header zone (y0 < 110 or y1 < 125)
-        if c.y0 < 110 or c.y1 < 125 or c.y0 > page_height - 75:
+        # Skip header diagrams/logos sitting in top running header zone (y1 < 80)
+        if c.y1 < 80 or c.y0 > page_height - 75:
             continue
         if is_valid_vector_diagram(c, page, text_dict, valid_tables):
             valid_diagram_rects.append(c)
@@ -1322,9 +1322,28 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
 
             raw_lines.append(line)
             
-    # Sort all lines on the page top-to-bottom
-    raw_lines.sort(key=lambda l: l["bbox"][1])
-    
+    # 2. Consolidate lines that are on the same visual row (similar Y0)
+    consolidated_lines = []
+    for line in raw_lines:
+        if not consolidated_lines:
+            consolidated_lines.append(line)
+            continue
+        prev_line = consolidated_lines[-1]
+        y_diff = abs(line["bbox"][1] - prev_line["bbox"][1])
+        if y_diff < 5:
+            # Merge spans
+            prev_line["spans"] = prev_line.get("spans", []) + line.get("spans", [])
+            # Update bbox
+            prev_line["bbox"] = [
+                min(prev_line["bbox"][0], line["bbox"][0]),
+                min(prev_line["bbox"][1], line["bbox"][1]),
+                max(prev_line["bbox"][2], line["bbox"][2]),
+                max(prev_line["bbox"][3], line["bbox"][3])
+            ]
+        else:
+            consolidated_lines.append(line)
+    raw_lines = consolidated_lines
+
     # Consolidate lines where a bullet character is split from its text on the same visual row
     merged_raw_lines = []
     i = 0
@@ -1399,7 +1418,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                         if l_spans and is_bullet_span(l_spans[0]):
                             last_bullet_x0 = l["bbox"][0]
                             break
-                    if gap < 16 and line_x0 > last_bullet_x0 + 8:
+                    if 0 <= gap < 16 and (line_x0 > last_bullet_x0 + 8 or gap < 10):
                         is_continuation = True
                     if not is_continuation:
                         should_flush = True
@@ -1441,7 +1460,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 is_mcq_or_prefix = is_standalone_line_prefix(line_text)
                 limit = 10.0 if (is_bullet or is_mcq_or_prefix) else 16.0
 
-                if gap >= limit:
+                if gap >= limit or gap < -5:
 
 
                     semantic_blocks.append({
@@ -1475,18 +1494,27 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
     
     # Add text blocks
     for sb in semantic_blocks:
+        is_heading = False
+        lines = sb.get("lines", [])
+        if len(lines) == 1:
+            spans = [s for s in lines[0].get("spans", []) if s.get("text", "").strip()]
+            if spans:
+                is_all_bold = all("Bold" in s.get("font", "") for s in spans)
+                text_content = "".join(decode_span_text(s) for s in spans).strip()
+                is_heading = is_all_bold and len(text_content) < 80 and not text_content.endswith(".")
         page_elements.append({
             "type": "text",
             "bbox": sb["bbox"],
-            "data": sb
+            "data": sb,
+            "is_heading": is_heading
         })
         
     # Add image blocks from the page (skipping cover page images, top running header logos, and footers)
     for block in text_dict.get("blocks", []):
         if block.get("type") == 1:  # Image block
             bbox = block.get("bbox", (0, 0, 0, 0))
-            # Skip cover page images, running header logos in top zone (bbox[1] < 110 or bbox[3] < 125), and footers
-            if page.number == 0 or bbox[1] < 110 or bbox[3] < 125 or bbox[1] > page_height - 75:
+            # Skip cover page images, running header logos in top zone (bbox[3] < 80), and footers
+            if page.number == 0 or bbox[3] < 80 or bbox[1] > page_height - 75:
                 continue
             if is_watermark_image(block, page):
                 continue
@@ -1763,6 +1791,8 @@ def merge_split_pages(all_pages_elements: list) -> None:
         el_next = next_elements[0]
         
         if el_prev["type"] == "text" and el_next["type"] == "text":
+            if el_prev.get("is_heading") or el_next.get("is_heading"):
+                continue
             lines_prev = el_prev["data"].get("lines", [])
             lines_next = el_next["data"].get("lines", [])
             if not lines_prev or not lines_next:
@@ -1869,9 +1899,9 @@ def post_process_worksheet_html(raw_html: str) -> str:
             if m_num:
                 qn = m_num.group(1).strip()
                 qt = m_num.group(2).strip()
-                out_lines.append(f'<div class="question-section"><h3><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></h3>')
+                out_lines.append(f'<div class="question-section"><p class="q-header"><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></p>')
             else:
-                out_lines.append(f'<div class="question-section"><h3><span class="q-text">{q_prompt}</span></h3>')
+                out_lines.append(f'<div class="question-section"><p class="q-header"><span class="q-text">{q_prompt}</span></p>')
             in_q_section = True
             opt_index = 0
             continue
@@ -1897,14 +1927,14 @@ def post_process_worksheet_html(raw_html: str) -> str:
             if m_num:
                 qn = m_num.group(1).strip()
                 qt = m_num.group(2).strip()
-                out_lines.append(f'<div class="question-section"><h3><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></h3>')
+                out_lines.append(f'<div class="question-section"><p class="q-header"><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></p>')
             else:
-                out_lines.append(f'<div class="question-section"><h3><span class="q-text">{clean_text}</span></h3>')
+                out_lines.append(f'<div class="question-section"><p class="q-header"><span class="q-text">{clean_text}</span></p>')
             in_q_section = True
             opt_index = 0
             continue
 
-        # 3. Check if Explanation heading (make Explanation heading use h3 and open explanation card)
+        # 3. Check if Explanation heading
         if re.match(r'^(Explanation|Solution)\b', clean_text, re.IGNORECASE):
             if in_mcq:
                 out_lines.append('</ul></div>')
@@ -1917,7 +1947,7 @@ def post_process_worksheet_html(raw_html: str) -> str:
                 out_lines.append('</div>')
                 in_exp_card = False
 
-            out_lines.append(f'<div class="explanation-card"><h3 class="explanation-title">{clean_text}</h3>')
+            out_lines.append(f'<div class="explanation-card"><p class="explanation-title">{clean_text}</p>')
             in_exp_card = True
             opt_index = 0
             continue
@@ -1948,7 +1978,7 @@ def post_process_worksheet_html(raw_html: str) -> str:
         # Join it as continuation of the question text!
         if in_q_section and not in_mcq and not is_explicit_opt and not is_list_item and not stripped.startswith('<ul'):
             if out_lines and 'class="q-text"' in out_lines[-1]:
-                out_lines[-1] = re.sub(r'</span>\s*</h3>$', f' {clean_text}</span></h3>', out_lines[-1])
+                out_lines[-1] = re.sub(r'</span>\s*</p>$', f' {clean_text}</span></p>', out_lines[-1])
                 continue
 
         if in_q_section and (is_explicit_opt or is_list_item or stripped.startswith('<p>')):

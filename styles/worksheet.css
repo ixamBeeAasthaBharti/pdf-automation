@@ -16,25 +16,25 @@
 
 /* Remove any ::before pseudo-element overlay lines on questions and explanation headings */
 article section h2::before,
-article section h3::before,
+article section .q-header::before,
 article section h4::before,
 .question-section::before,
 .question-section h2::before,
-.question-section h3::before,
+.question-section .q-header::before,
 .question-section h4::before,
 .explanation-card::before,
-.explanation-card h3::before,
+.explanation-card .explanation-title::before,
 .explanation-card h4::before,
 .explanation-title::before {
     content: none !important;
     display: none !important;
 }
 
-/* Question Header (h3, flex layout for hanging indent: q-num & q-text) */
-article:not(.cover-article) section h3,
-article section h3,
-.question-section h3,
-section.pdf-page h3 {
+/* Question Header (.q-header, flex layout for hanging indent: q-num & q-text) */
+article:not(.cover-article) section .q-header,
+article section .q-header,
+.question-section .q-header,
+section.pdf-page .q-header {
     display: flex !important;
     align-items: flex-start !important;
     margin: 1.2rem 0 .4rem 0 !important;
@@ -50,7 +50,7 @@ section.pdf-page h3 {
     background: none !important;
 }
 
-.question-section h3 .q-num {
+.question-section .q-header .q-num {
     min-width: 2.2rem !important;
     /* Exactly matches option label width for perfect vertical alignment! */
     font-weight: 400 !important;
@@ -59,7 +59,7 @@ section.pdf-page h3 {
     display: inline-block !important;
 }
 
-.question-section h3 .q-text {
+.question-section .q-header .q-text {
     flex: 1 !important;
 }
 
@@ -140,9 +140,8 @@ ul.mcq-options-list>li.correct-option .opt-text b {
     box-shadow: 0 1px 3px rgba(249, 115, 22, 0.08) !important;
 }
 
-.explanation-card h3,
-.explanation-card h4,
-.explanation-card .explanation-title {
+.explanation-card .explanation-title,
+.explanation-card h4 {
     color: #c2410c !important;
     font-size: 1.05rem !important;
     font-weight: 700 !important;
