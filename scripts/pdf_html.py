@@ -936,7 +936,8 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
     is_figure_caption = False
     if text_spans:
         text_content = "".join(s.get("text", "") for s in text_spans).strip()
-        is_note_block = bool(re.match(r'^(note\s*[:-]|नोट\s*[:-]|note\b)', text_content, re.IGNORECASE))
+        is_note_block = bool(re.match(r'^(please\s+note\s*[:-]|note\s*[:-]|नोट\s*[:-]|note\b)', text_content, re.IGNORECASE))
+
         is_figure_caption = bool(re.match(r'^figure\b', text_content, re.IGNORECASE))
         normalized_text = text_content.lower().replace(" ", "").replace("-", "")
         if normalized_text in ["economyintroduction", "studynotes"]:
@@ -1133,9 +1134,10 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
 
     if is_note_block:
         pattern = re.compile(
-            r'^((?:<[a-z0-9]+>)*(?:<strong>|<em>)*)(note\s*[:-]|नोट\s*[:-]|note\b)((?:</strong>|</em>)*)(\s*)',
+            r'^((?:<[a-z0-9]+>)*(?:<strong>|<em>)*)(please\s+note\s*[:-]|note\s*[:-]|नोट\s*[:-]|note\b)((?:</strong>|</em>)*)(\s*)',
             re.IGNORECASE
         )
+
         match = pattern.match(res)
         if match:
             before = match.group(1)
