@@ -1204,6 +1204,63 @@ article:not(.cover-article) section h3::before {
     background: var(--reader-orange);
 }
 
+/* ── Question-section h3 override (must appear AFTER the generic section h3 rule above) ── */
+/* The generic rule gives h3 a 1rem left-padding + position:relative + text-wrap:balance.   */
+/* We neutralise all of that here with a more-specific selector so no !important is needed   */
+/* in worksheet.css, and the grid layout always wins regardless of @import order.            */
+article:not(.cover-article) section .question-section h3,
+article section .question-section h3,
+section.pdf-page .question-section h3,
+.question-section h3 {
+    display: grid !important;
+    grid-template-columns: 2.2rem minmax(0, 1fr) !important;
+    column-gap: 0 !important;
+    align-items: start !important;
+
+    position: static !important;   /* kill the relative that anchors ::before */
+    padding: 0 !important;         /* kill the 1rem left-padding = the indentation */
+    margin: 1.2rem 0 .4rem 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+
+    color: var(--reader-ink, #2d3748) !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    letter-spacing: 0 !important;
+    text-wrap: unset !important;   /* kill balance – let text fill the grid cell */
+    border: none !important;
+    background: none !important;
+}
+
+article:not(.cover-article) section .question-section h3::before,
+article section .question-section h3::before,
+section.pdf-page .question-section h3::before,
+.question-section h3::before {
+    content: none !important;
+    display: none !important;
+}
+
+.question-section h3 .q-num {
+    display: block !important;
+    width: 2.2rem !important;
+    min-width: 0 !important;
+    flex: none !important;
+    font-weight: 400 !important;
+    color: var(--reader-ink, #2d3748) !important;
+}
+
+.question-section h3 .q-text {
+    display: block !important;
+    min-width: 0 !important;
+    width: auto !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+}
+/* ── end question-section h3 override ── */
+
 article:not(.cover-article) section h4 {
     margin: 1.2rem 0 .55rem;
     padding: .15rem 0 .35rem;
