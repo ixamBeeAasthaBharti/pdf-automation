@@ -30,22 +30,36 @@ article section h4::before,
     display: none !important;
 }
 
-/* Question Header (h3, non-indented, single line per question as in PDF) */
+/* Question Header (h3, flex layout for hanging indent: q-num & q-text) */
 article:not(.cover-article) section h3,
 article section h3,
 .question-section h3,
 section.pdf-page h3 {
+    display: flex !important;
+    align-items: flex-start !important;
     margin: 1.2rem 0 .4rem 0 !important;
-    padding: 0 !important; /* No left indentation */
+    padding: 0 !important;
     margin-left: 0 !important;
     color: var(--reader-ink, #2d3748) !important;
     font-family: var(--deepesh, 'Outfit', sans-serif) !important;
     font-size: 1rem !important;
-    font-weight: 400 !important; /* Not bold */
+    font-weight: 400 !important;
     line-height: 1.5 !important;
     border-bottom: none !important;
     border-left: none !important;
     background: none !important;
+}
+
+.question-section h3 .q-num {
+    min-width: 2.2rem !important; /* Exactly matches option label width for perfect vertical alignment! */
+    font-weight: 400 !important;
+    color: var(--reader-ink, #2d3748) !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+}
+
+.question-section h3 .q-text {
+    flex: 1 !important;
 }
 
 /* MCQ Options Indentation & Alignment (A. B. C. D. E., No bullets) */

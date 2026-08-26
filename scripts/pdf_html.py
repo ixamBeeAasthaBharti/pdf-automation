@@ -1825,7 +1825,14 @@ def post_process_worksheet_html(raw_html: str) -> str:
                 in_mcq = False
                 in_q_section = False
                 opt_index = 0
-            out_lines.append(f'<div class="question-section"><h3>{q_prompt}</h3>')
+            
+            m_num = re.match(r'^((?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.))\s*(.*)', q_prompt)
+            if m_num:
+                qn = m_num.group(1).strip()
+                qt = m_num.group(2).strip()
+                out_lines.append(f'<div class="question-section"><h3><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></h3>')
+            else:
+                out_lines.append(f'<div class="question-section"><h3><span class="q-text">{q_prompt}</span></h3>')
             in_q_section = True
             opt_index = 0
             continue
@@ -1847,7 +1854,13 @@ def post_process_worksheet_html(raw_html: str) -> str:
                 out_lines.append('</div>')
                 in_exp_card = False
 
-            out_lines.append(f'<div class="question-section"><h3>{clean_text}</h3>')
+            m_num = re.match(r'^((?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.))\s*(.*)', clean_text)
+            if m_num:
+                qn = m_num.group(1).strip()
+                qt = m_num.group(2).strip()
+                out_lines.append(f'<div class="question-section"><h3><span class="q-num">{qn}</span> <span class="q-text">{qt}</span></h3>')
+            else:
+                out_lines.append(f'<div class="question-section"><h3><span class="q-text">{clean_text}</span></h3>')
             in_q_section = True
             opt_index = 0
             continue
@@ -1885,15 +1898,24 @@ def post_process_worksheet_html(raw_html: str) -> str:
             continue
 
         # 6. Check if MCQ Option or <li> item inside Question Section
-        if in_q_section and (stripped.startswith('<li>') or stripped.startswith('<p>') or re.match(r'^[A-Ea-e][\.\)]', clean_text)):
+        m_lbl = re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', stripped)
+        if not m_lbl:
+            m_lbl = re.match(r'^([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', clean_text)
+
+        is_explicit_opt = bool(m_lbl and len(m_lbl.group(1)) <= 4)
+        is_list_item = stripped.startswith('<li>')
+
+        # If in question section but before option list started, and text does NOT start with explicit A. B. C. D. E. or <li>:
+        # Join it as continuation of the question text!
+        if in_q_section and not in_mcq and not is_explicit_opt and not is_list_item and not stripped.startswith('<ul'):
+            if out_lines and 'class="q-text"' in out_lines[-1]:
+                out_lines[-1] = re.sub(r'</span>\s*</h3>$', f' {clean_text}</span></h3>', out_lines[-1])
+                continue
+
+        if in_q_section and (is_explicit_opt or is_list_item or stripped.startswith('<p>')):
             is_bold_opt = bool(re.search(r'<strong>|<b>', stripped, re.IGNORECASE))
             
-            # Check if text already has explicit A., B., C., D., E. label
-            m_lbl = re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', stripped)
-            if not m_lbl:
-                m_lbl = re.match(r'^([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', clean_text)
-
-            if m_lbl and len(m_lbl.group(1)) <= 4:
+            if is_explicit_opt:
                 lbl = m_lbl.group(1).strip()
                 txt = m_lbl.group(2).strip()
             else:
@@ -1915,6 +1937,7 @@ def post_process_worksheet_html(raw_html: str) -> str:
             out_lines.append(f'<li{li_cls}><span class="opt-label">{lbl}</span> <span class="opt-text">{txt_clean}</span></li>')
             opt_index += 1
             continue
+
 
 
         # 7. Boundary reset
