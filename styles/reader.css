@@ -261,11 +261,45 @@ section.pdf-page p {
     word-spacing: 0.02em;
 }
 
-u {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-thickness: 1.5px;
+/* Question Sections & MCQ Option Indentation */
+.question-section {
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
 }
+
+.question-section h2,
+.question-section .question-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--navy, #1e293b);
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+ol.answer-list,
+.mcq-options-list {
+    list-style: none;
+    padding-left: 2.2rem;
+    margin-bottom: 1rem;
+}
+
+ol.answer-list>li,
+.mcq-options-list>li {
+    padding-left: 0;
+    margin-bottom: 0.45rem;
+    line-height: 1.55;
+    color: var(--reader-ink, #2d3748);
+}
+
+ol.answer-list>li::before,
+.mcq-options-list>li::before {
+    content: "" !important;
+    /* Remove bullet overlays for options like A., B., C. */
+}
+
 
 
 

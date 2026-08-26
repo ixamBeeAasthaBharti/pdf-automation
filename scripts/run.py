@@ -145,9 +145,15 @@ def download_pdf(mysql_id, content):
     queue_folder = QUEUE_DIR / str(mysql_id)
     queue_folder.mkdir(parents=True, exist_ok=True)
     pdf_dest = queue_folder / "document.pdf"
+
+    archived_pdf = ARCHIVE_DIR / str(mysql_id) / "document.pdf"
+    if archived_pdf.exists() and not pdf_dest.exists():
+        shutil.copy(archived_pdf, pdf_dest)
+
     if pdf_dest.exists():
-        print(f"  [Download] Already exists ({pdf_dest.stat().st_size/1024:.1f} KB) -- skipping.")
+        print(f"  [Download] Local copy ready ({pdf_dest.stat().st_size/1024:.1f} KB).")
         return pdf_dest
+
     pdf_url = BASE_PDF_URL + quote(content, safe="")
     print(f"  [Download] {pdf_url}")
     response = requests.get(pdf_url, stream=True, timeout=120, headers={"User-Agent": "Mozilla/5.0"})
@@ -157,6 +163,7 @@ def download_pdf(mysql_id, content):
             fh.write(chunk)
     print(f"  [Download] Saved ({pdf_dest.stat().st_size/1024:.1f} KB)")
     return pdf_dest
+
 
 
 def convert_pdf(mysql_id, pdf_path):

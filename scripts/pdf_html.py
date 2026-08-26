@@ -300,13 +300,13 @@ def is_bullet_span(span: dict) -> bool:
     if "Courier" in font and decoded == "o":
         return True
     
-    # Check for standalone numbered/lettered list prefixes (e.g. "1.", "a.", "(i)", "b)")
-    import re
-    pattern = r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])$'
+    # Match MCQ options e.g. "A.", "B.", "C.", "D.", "E.", "(A)", "(B)", "a)", "b)" or sub-list prefixes
+    pattern = r'^(\(?[A-Ea-e]\)[\.\)]?|[A-Ea-e][\.\)]|\(?([a-z]+|[IVX]+)\)[\.\)]?|([a-z]+|[IVX]+)[\.\)])$'
     if re.match(pattern, decoded):
         return True
-        
+
     return False
+
 
 def is_standalone_line_prefix(text: str) -> bool:
     """Check if a line text starts an MCQ option, explanation, passage, question header, or dash bullet."""
@@ -1437,9 +1437,13 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             if current_lines:
                 prev_line = current_lines[-1]
                 gap = line["bbox"][1] - prev_line["bbox"][3]
-                limit = 14.0 if is_bullet else 7.0
+                line_text = "".join(decode_span_text(s) for s in line.get("spans", [])).strip()
+                is_mcq_or_prefix = is_standalone_line_prefix(line_text)
+                limit = 10.0 if (is_bullet or is_mcq_or_prefix) else 16.0
 
                 if gap >= limit:
+
+
                     semantic_blocks.append({
                         "type": "text",
                         "bbox": (
@@ -1676,6 +1680,29 @@ def render_page(doc: fitz.Document, page: fitz.Page, body_size: float, html_path
 def extract_pdf_title(doc: fitz.Document) -> str:
     if len(doc) == 0:
         return "Document"
+
+    # Check if page 1 is a cover page vs content page
+    body_size = compute_body_size(doc)
+    has_cover = is_cover_page(doc[0], body_size)
+
+    # If no cover page exists, extract running header title from top of page 1 or page 2
+    if not has_cover:
+        for p_idx in [0, 1]:
+            if p_idx < len(doc):
+                p = doc[p_idx]
+                text_dict = p.get_text("dict")
+                for b in text_dict.get("blocks", []):
+                    if b.get("type") == 0:
+                        for l in b.get("lines", []):
+                            y1 = l.get("bbox", [0, 0, 0, 0])[3]
+                            if y1 < 120:  # Top running header region
+                                line_text = "".join(decode_span_text(s) for s in l.get("spans", [])).strip()
+                                norm = line_text.lower().replace(" ", "")
+                                if norm and norm not in ("www.ixambee.com", "ixambee", "prepare50%faster", "studynotes"):
+                                    cleaned_title = re.sub(r'\s+\d+$', '', line_text).strip()
+                                    if len(cleaned_title) > 3:
+                                        return cleaned_title
+
     page = doc[0]
     blocks = page.get_text("dict")["blocks"]
     
@@ -1691,12 +1718,12 @@ def extract_pdf_title(doc: fitz.Document) -> str:
     # Find non-generic spans
     non_generic_spans = []
     for s in spans:
-        text = s.get("text", "").strip()
+        text = decode_span_text(s).strip()
         if text and text.lower() not in ["study notes", "studynotes"]:
             non_generic_spans.append(s)
             
     if not non_generic_spans:
-        return spans[0].get("text", "").strip() if spans else "Document"
+        return decode_span_text(spans[0]).strip() if spans else "Document"
         
     # Find maximum font size among non-generic spans
     max_size = max(s.get("size", 0) for s in non_generic_spans)
@@ -1713,12 +1740,15 @@ def extract_pdf_title(doc: fitz.Document) -> str:
     # Join distinct parts
     title_parts = []
     for s in title_spans:
-        t = s.get("text", "").strip()
+        t = decode_span_text(s).strip()
         if t and t not in title_parts:
             title_parts.append(t)
             
     if title_parts:
         return " ".join(title_parts)
+
+    return Path(doc.name).stem
+
         
     return "Document"
 
