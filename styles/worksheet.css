@@ -1,0 +1,145 @@
+/* =====================================================
+   WORKSHEET & MCQ QUESTION SECTIONS STYLESHEET
+   ===================================================== */
+
+:root {
+    --reader-navy: #043821;
+}
+
+/* Question Section Container */
+.question-section {
+    margin-top: 1.2rem !important;
+    margin-bottom: 1.5rem !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* Remove any ::before pseudo-element overlay lines on questions and explanation headings */
+article section h2::before,
+article section h3::before,
+article section h4::before,
+.question-section::before,
+.question-section h2::before,
+.question-section h3::before,
+.question-section h4::before,
+.explanation-card::before,
+.explanation-card h3::before,
+.explanation-card h4::before,
+.explanation-title::before {
+    content: none !important;
+    display: none !important;
+}
+
+/* Question Header (h3, non-indented, single line per question as in PDF) */
+article:not(.cover-article) section h3,
+article section h3,
+.question-section h3,
+section.pdf-page h3 {
+    margin: 1.2rem 0 .4rem 0 !important;
+    padding: 0 !important; /* No left indentation */
+    margin-left: 0 !important;
+    color: var(--reader-ink, #2d3748) !important;
+    font-family: var(--deepesh, 'Outfit', sans-serif) !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important; /* Not bold */
+    line-height: 1.5 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    background: none !important;
+}
+
+/* MCQ Options Indentation & Alignment (A. B. C. D. E., No bullets) */
+ol.answer-list,
+.mcq-options-list,
+ul.mcq-options-list {
+    list-style: none !important;
+    list-style-type: none !important;
+    padding-left: 2.2rem !important;
+    margin-top: 0.35rem !important;
+    margin-bottom: 0.85rem !important;
+}
+
+ol.answer-list>li,
+.mcq-options-list>li,
+ul.mcq-options-list>li {
+    list-style: none !important;
+    list-style-type: none !important;
+    display: flex !important;
+    align-items: baseline !important;
+    padding-left: 0 !important;
+    margin-bottom: 0.25rem !important;
+    line-height: 1.45 !important;
+    color: var(--reader-ink, #2d3748) !important;
+}
+
+ol.answer-list>li::before,
+.mcq-options-list>li::before,
+ul.mcq-options-list>li::before {
+    content: none !important;
+    display: none !important;
+}
+
+/* Regular option labels (A. B. C. D. E.) NOT bold */
+ol.answer-list .opt-label,
+.mcq-options-list .opt-label,
+ul.mcq-options-list .opt-label {
+    min-width: 2.2rem !important;
+    font-weight: 400 !important;
+    display: inline-block !important;
+    color: var(--reader-ink, #2d3748) !important;
+}
+
+ol.answer-list .opt-text,
+.mcq-options-list .opt-text,
+ul.mcq-options-list .opt-text {
+    flex: 1 !important;
+    font-weight: 400 !important;
+}
+
+/* Highlighted/Correct option: Both label (A B C) AND text are BOLD and use --reader-navy (#043821) */
+ol.answer-list>li.correct-option .opt-label,
+ol.answer-list>li.correct-option .opt-text,
+ol.answer-list>li.correct-option .opt-text strong,
+ol.answer-list>li.correct-option .opt-text b,
+.mcq-options-list>li.correct-option .opt-label,
+.mcq-options-list>li.correct-option .opt-text,
+.mcq-options-list>li.correct-option .opt-text strong,
+.mcq-options-list>li.correct-option .opt-text b,
+ul.mcq-options-list>li.correct-option .opt-label,
+ul.mcq-options-list>li.correct-option .opt-text,
+ul.mcq-options-list>li.correct-option .opt-text strong,
+ul.mcq-options-list>li.correct-option .opt-text b {
+    font-weight: 700 !important;
+    color: var(--reader-navy, #043821) !important; /* #043821 reader-navy */
+}
+
+/* Explanation Card (Light Orangish Theme with Restored Left Orange Border Line) */
+.explanation-card {
+    background-color: #fff7ed !important;
+    border-left: 4px solid #f97316 !important; /* Restored left orange border on explanation card */
+    border-radius: 6px !important;
+    padding: 1.1rem 1.35rem !important;
+    margin: 1.25rem 0 !important;
+    box-shadow: 0 1px 3px rgba(249, 115, 22, 0.08) !important;
+}
+
+.explanation-card h3,
+.explanation-card h4,
+.explanation-card .explanation-title {
+    color: #c2410c !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    background: none !important;
+}
+
+.explanation-card p,
+.explanation-card ul,
+.explanation-card li {
+    color: #431407 !important;
+    font-size: 0.94rem !important;
+    line-height: 1.6 !important;
+}

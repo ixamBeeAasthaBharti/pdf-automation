@@ -1798,6 +1798,146 @@ def merge_split_pages(all_pages_elements: list) -> None:
                     # Remove the first element from next page
                     next_elements.pop(0)
 
+def post_process_worksheet_html(raw_html: str) -> str:
+    lines = raw_html.split("\n")
+    out_lines = []
+    in_mcq = False
+    in_q_section = False
+    in_exp_card = False
+    opt_index = 0
+
+    labels = ["A.", "B.", "C.", "D.", "E.", "F.", "G."]
+
+    for line in lines:
+        stripped = line.strip()
+
+        # 1. Fix Leaked Option E + Question Prompt (e.g. "<li>1.4 9. Which...", "Coimbattore 15. __ was...")
+        m_leak = re.match(r'^(?:<li>|<p>)?\s*([A-Za-z0-9\.\,\s\-\%\/\(\)]+?)\s+(\d{1,3}\.\s+[A-Z_].*)', stripped)
+        if m_leak and not re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+', stripped):
+            e_val = m_leak.group(1).strip()
+            q_prompt = m_leak.group(2).strip()
+            if in_mcq:
+                lbl = labels[opt_index % len(labels)] if opt_index < len(labels) else "E."
+                is_bold_opt = bool(re.search(r'<strong>|<b>', e_val, re.IGNORECASE))
+                li_cls = ' class="correct-option"' if is_bold_opt else ''
+                out_lines.append(f'<li{li_cls}><span class="opt-label">{lbl}</span> <span class="opt-text">{e_val}</span></li>')
+                out_lines.append('</ul></div>')
+                in_mcq = False
+                in_q_section = False
+                opt_index = 0
+            out_lines.append(f'<div class="question-section"><h3>{q_prompt}</h3>')
+            in_q_section = True
+            opt_index = 0
+            continue
+
+
+        clean_text = re.sub(r'<[^>]+>', '', stripped).strip()
+
+        # 2. Check if Question Prompt e.g. "<p>1. According to...", "9. Which of the...", "<p>38. The data..."
+        m_q = re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', clean_text)
+        if m_q:
+            if in_mcq:
+                out_lines.append('</ul></div>')
+                in_mcq = False
+                in_q_section = False
+            elif in_q_section:
+                out_lines.append('</div>')
+                in_q_section = False
+            elif in_exp_card:
+                out_lines.append('</div>')
+                in_exp_card = False
+
+            out_lines.append(f'<div class="question-section"><h3>{clean_text}</h3>')
+            in_q_section = True
+            opt_index = 0
+            continue
+
+        # 3. Check if Explanation heading (make Explanation heading use h3 and open explanation card)
+        if re.match(r'^(Explanation|Solution)\b', clean_text, re.IGNORECASE):
+            if in_mcq:
+                out_lines.append('</ul></div>')
+                in_mcq = False
+                in_q_section = False
+            elif in_q_section:
+                out_lines.append('</div>')
+                in_q_section = False
+            elif in_exp_card:
+                out_lines.append('</div>')
+                in_exp_card = False
+
+            out_lines.append(f'<div class="explanation-card"><h3 class="explanation-title">{clean_text}</h3>')
+            in_exp_card = True
+            opt_index = 0
+            continue
+
+        # 4. Handle List opening in Question Section
+        if in_q_section and (stripped.startswith('<ul') or stripped == '<ul>'):
+            if not in_mcq:
+                out_lines.append('<ul class="mcq-options-list">')
+                in_mcq = True
+                opt_index = 0
+            continue
+
+        # 5. Handle List closing in Question Section
+        if in_q_section and stripped == '</ul>' and in_mcq:
+            out_lines.append('</ul>')
+            in_mcq = False
+            continue
+
+        # 6. Check if MCQ Option or <li> item inside Question Section
+        if in_q_section and (stripped.startswith('<li>') or stripped.startswith('<p>') or re.match(r'^[A-Ea-e][\.\)]', clean_text)):
+            is_bold_opt = bool(re.search(r'<strong>|<b>', stripped, re.IGNORECASE))
+            
+            # Check if text already has explicit A., B., C., D., E. label
+            m_lbl = re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', stripped)
+            if not m_lbl:
+                m_lbl = re.match(r'^([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', clean_text)
+
+            if m_lbl and len(m_lbl.group(1)) <= 4:
+                lbl = m_lbl.group(1).strip()
+                txt = m_lbl.group(2).strip()
+            else:
+                lbl = labels[opt_index % len(labels)]
+                txt = re.sub(r'</?(?:p|li)[^>]*>', '', stripped, flags=re.IGNORECASE).strip()
+
+            txt_clean = re.sub(r'</?(?:p|li|span)[^>]*>', '', txt, flags=re.IGNORECASE).strip()
+            txt_clean = re.sub(r'^\s*<strong>\s*', '<strong>', txt_clean)
+            txt_clean = re.sub(r'\s*</strong>\s*$', '</strong>', txt_clean)
+
+            if is_bold_opt and not txt_clean.startswith('<strong>'):
+                txt_clean = f'<strong>{txt_clean}</strong>'
+
+            if not in_mcq:
+                out_lines.append('<ul class="mcq-options-list">')
+                in_mcq = True
+
+            li_cls = ' class="correct-option"' if is_bold_opt else ''
+            out_lines.append(f'<li{li_cls}><span class="opt-label">{lbl}</span> <span class="opt-text">{txt_clean}</span></li>')
+            opt_index += 1
+            continue
+
+
+        # 7. Boundary reset
+        if stripped == '</section>' or stripped.startswith('<section'):
+            if in_mcq:
+                out_lines.append('</ul>')
+                in_mcq = False
+            elif in_exp_card:
+                out_lines.append('</div>')
+                in_exp_card = False
+            out_lines.append(line)
+            continue
+
+        out_lines.append(line)
+
+    if in_mcq:
+        out_lines.append('</ul></div>')
+    elif in_q_section or in_exp_card:
+        out_lines.append('</div>')
+
+    return "\n".join(out_lines)
+
+
 def convert(pdf_path: Path, html_path: Path, start: int = None, end: int = None) -> None:
     doc = fitz.open(pdf_path)
     try:
@@ -1834,15 +1974,16 @@ def convert(pdf_path: Path, html_path: Path, start: int = None, end: int = None)
             page = doc[page_index]
             pages_html.append(render_page_elements(page, all_pages_elements[i], body_size, html_path))
 
-        html_path.write_text(
-            DOC_TEMPLATE.format(
-                title=html.escape(pdf_title),
-                pages="\n".join(pages_html),
-            ),
-            encoding="utf-8",
+        full_html = DOC_TEMPLATE.format(
+            title=html.escape(pdf_title),
+            pages="\n".join(pages_html),
         )
+        full_html = post_process_worksheet_html(full_html)
+
+        html_path.write_text(full_html, encoding="utf-8")
     finally:
         doc.close()
+
 
 
 def main() -> None:
