@@ -167,7 +167,8 @@ def convert_pdf(mysql_id, pdf_path):
     html_path = QUEUE_DIR / str(mysql_id) / "document.html"
     print(f"  [Convert ] {pdf_path.name} -> {html_path.name}")
 
-    pdf_html.convert(pdf_path, html_path, start=2, end=None)
+    pdf_html.convert(pdf_path, html_path, start=None, end=None)
+
 
     print(f"  [Convert ] Done ({html_path.stat().st_size/1024:.1f} KB)")
     return html_path

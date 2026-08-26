@@ -250,8 +250,24 @@ section main>ul,
 ul.notes-list {
     list-style: none;
     padding-left: 0;
-    margin-bottom: 0;
+    margin-bottom: 0.9rem;
 }
+
+/* Main content paragraphs (page 2 onwards) - justified alignment leaving cover page centered */
+section.pdf-page p {
+    text-align: justify;
+    line-height: 1.65;
+    margin-bottom: 0.9rem;
+    word-spacing: 0.02em;
+}
+
+u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+}
+
+
 
 section>ul>li,
 ul.notes-list>li {
@@ -263,13 +279,14 @@ ul.notes-list>li {
 
 section>ul>li::before,
 ul.notes-list>li::before {
-    content: "–";
+    content: "◦";
     position: absolute;
     left: 0;
     color: var(--green);
     font-weight: 700;
     top: 0;
 }
+
 
 /* First-level nested list */
 section>ul>li>ul,

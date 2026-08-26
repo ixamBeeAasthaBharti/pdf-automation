@@ -112,6 +112,10 @@ def compute_body_size(doc: fitz.Document) -> float:
 
 def decode_span_text(span: dict) -> str:
     text = span.get("text", "")
+    if not text:
+        return ""
+    # Clean CID encoding quotes artifacts (e.g. low double quotes „ -> ", high curly quotes “ ” -> ")
+    text = text.replace("„", '"').replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")
     font = span.get("font", "")
     if "Symbol" in font:
         return decode_symbol_font(text)
@@ -126,20 +130,26 @@ def decode_span_text(span: dict) -> str:
         return "".join(res)
     return text
 
+
 def render_span_semantic(span: dict) -> str:
     text = decode_span_text(span)
     if not text.strip():
         return ""
     font = span.get("font", "")
-    is_bold = "Bold" in font
-    is_italic = "Italic" in font or "Oblique" in font
+    flags = span.get("flags", 0)
+    is_bold = "Bold" in font or bool(flags & 1)
+    is_italic = "Italic" in font or "Oblique" in font or bool(flags & 2)
+    is_underline = "Underline" in font or bool(flags & 4) or span.get("is_underline", False)
     escaped_text = html.escape(text)
     
+    if is_underline:
+        escaped_text = f"<u>{escaped_text}</u>"
     if is_bold:
         escaped_text = f"<strong>{escaped_text}</strong>"
     if is_italic:
         escaped_text = f"<em>{escaped_text}</em>"
     return escaped_text
+
 
 def is_cover_page(page: fitz.Page, body_size: float) -> bool:
     """
@@ -252,13 +262,41 @@ def is_cover_page(page: fitz.Page, body_size: float) -> bool:
 
     return False
 
+COMMON_WORD_ABBREVS = {
+    "ibid", "etc", "note", "vol", "no", "vs", "dr", "mr", "ms", "inc",
+    "ltd", "co", "fig", "page", "total", "ref", "sec", "art", "para", "ver"
+}
+
+def is_alphanumeric_prefix(text: str) -> bool:
+    """Return True if text is a valid list prefix like '1.', 'a.', 'i.', '(a)', 'b)'."""
+    if not text:
+        return False
+    text_clean = text.strip()
+
+    # Match numeric list prefix e.g. "1.", "(1)", "1)"
+    if re.match(r'^(\(?\d{1,3}\)[\.\)]?|\d{1,3}[\.\)])$', text_clean):
+        return True
+
+    # Match letter / roman numeral list prefix e.g. "a.", "(a)", "a)", "i.", "ii)", "(iii)"
+    m = re.match(r'^(\(?([a-zA-Z]{1,3}|[IVXivx]{1,4})\)[\.\)]?|([a-zA-Z]{1,3}|[IVXivx]{1,4})[\.\)])$', text_clean)
+    if m:
+        raw_letters = (m.group(2) or m.group(3) or "").lower()
+        if raw_letters in COMMON_WORD_ABBREVS:
+            return False
+        return True
+
+    return False
+
+
 def is_bullet_span(span: dict) -> bool:
+
     font = span.get("font", "")
     if "Wingdings" in font or "Webdings" in font:
         return True
     decoded = decode_span_text(span).strip()
-    if decoded in ("•", "·", "◆", "▪", "▸", "►", "‣", "–", "—", "✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc"):
+    if decoded in ("-", "–", "—", "•", "·", "◆", "▪", "▸", "►", "‣", "✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc"):
         return True
+
     if "Courier" in font and decoded == "o":
         return True
     
@@ -271,10 +309,13 @@ def is_bullet_span(span: dict) -> bool:
     return False
 
 def is_standalone_line_prefix(text: str) -> bool:
-    """Check if a line text starts an MCQ option, explanation, passage, or question header."""
+    """Check if a line text starts an MCQ option, explanation, passage, question header, or dash bullet."""
     if not text:
         return False
     text_clean = text.strip()
+    # Dash bullet lines e.g. "- ", "– ", "— "
+    if re.match(r'^[-–—]\s+', text_clean):
+        return True
     # MCQ options e.g. "A. ", "B. ", "C. ", "D. ", "E. ", "(A)", "(B)", "a)", "b)"
     if re.match(r'^(?:[A-E]\.|\([A-E]\)|[a-e]\))\s*', text_clean):
         return True
@@ -285,6 +326,14 @@ def is_standalone_line_prefix(text: str) -> bool:
     if re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', text_clean):
         return True
     return False
+
+
+def format_paragraph_dashes_and_spaces(para_text: str) -> str:
+    """Return paragraph text as-is without replacing dashes with arrows."""
+    return para_text
+
+
+
 
 
 def is_pink_heading_block(bbox, page) -> bool:
@@ -1043,6 +1092,8 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                     else:
                         inner = ""
                 html_out.append(f"<li>{inner}")
+
+
             else:
                 if active_lists:
                     inner = "".join(render_span_semantic(s) for s in spans)
@@ -1054,9 +1105,10 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                             html_out[-1] = last_item + inner
                 else:
                     line_text = "".join(decode_span_text(s) for s in spans).strip()
-                    # If this line starts an MCQ option (e.g. A., B.), Explanation, or Question number, start a new paragraph
+                    # If this line starts an MCQ option (e.g. A., B.), Explanation, Question number, or Dash bullet, start a new paragraph
                     if current_para_spans and is_standalone_line_prefix(line_text):
                         para_text = "".join(render_span_semantic(s) for s in current_para_spans)
+                        para_text = format_paragraph_dashes_and_spaces(para_text)
                         html_out.append(f"<p>{para_text}</p>")
                         current_para_spans = []
 
@@ -1069,7 +1121,9 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
         # Flush remaining paragraph or list wraps
         if current_para_spans:
             para_text = "".join(render_span_semantic(s) for s in current_para_spans)
+            para_text = format_paragraph_dashes_and_spaces(para_text)
             html_out.append(f"<p>{para_text}</p>")
+
         
         while active_lists:
             html_out.append("</li></ul>")
@@ -1169,12 +1223,17 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
     # Validate vector diagram candidates with conservative geometry & text density rules
     valid_diagram_rects = []
     for c in diagram_clusters:
+        # Skip header diagrams/logos sitting in top running header zone (y0 < 110 or y1 < 125)
+        if c.y0 < 110 or c.y1 < 125 or c.y0 > page_height - 75:
+            continue
         if is_valid_vector_diagram(c, page, text_dict, valid_tables):
             valid_diagram_rects.append(c)
 
+
     
-    # Pre-process spans to split merged list prefixes (e.g. "a. text" -> "a." and " text")
+    # Pre-process spans to split merged list prefixes (e.g. "- text" -> "-" and " text", "a. text" -> "a." and " text")
     import re
+    dash_prefix_pattern = re.compile(r'^([-–—•·◆▪▸►‣])\s+(.*)')
     prefix_pattern = re.compile(r'^(\(?([0-9]+|[a-z]+|[IVX]+)\)[\.\)]?|([0-9]+|[a-z]+|[IVX]+)[\.\)])(\s+)')
     for block in text_dict.get("blocks", []):
         if block.get("type", 0) == 0:
@@ -1183,16 +1242,32 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 if spans:
                     first_span = spans[0]
                     text_val = first_span.get("text", "")
+
+                    # 1. Check dash / bullet prefix e.g. "- In June 2022..."
+                    dash_match = dash_prefix_pattern.match(text_val.strip())
+                    if dash_match:
+                        prefix = dash_match.group(1)
+                        idx_p = text_val.find(prefix)
+                        rest = text_val[idx_p + len(prefix):]
+                        if rest.strip():
+                            prefix_span = first_span.copy()
+                            prefix_span["text"] = prefix
+                            first_span["text"] = rest
+                            line["spans"] = [prefix_span] + spans
+                            continue
+
+                    # 2. Check alphanumeric prefix
                     match = prefix_pattern.match(text_val)
                     if match:
                         prefix = match.group(1)
                         spacing = match.group(4)
                         rest = text_val[match.end():]
-                        if rest.strip():
+                        if rest.strip() and is_alphanumeric_prefix(prefix):
                             prefix_span = first_span.copy()
                             prefix_span["text"] = prefix
                             first_span["text"] = spacing + rest
                             line["spans"] = [prefix_span] + spans
+
                             
     raw_lines = []
     
@@ -1360,7 +1435,8 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             if current_lines:
                 prev_line = current_lines[-1]
                 gap = line["bbox"][1] - prev_line["bbox"][3]
-                limit = 28.0 if is_bullet else 16.0
+                limit = 14.0 if is_bullet else 7.0
+
                 if gap >= limit:
                     semantic_blocks.append({
                         "type": "text",
@@ -1399,11 +1475,12 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             "data": sb
         })
         
-    # Add image blocks from the page
+    # Add image blocks from the page (skipping cover page images, top running header logos, and footers)
     for block in text_dict.get("blocks", []):
         if block.get("type") == 1:  # Image block
             bbox = block.get("bbox", (0, 0, 0, 0))
-            if page.number == 0 or bbox[3] < 90 or bbox[1] > page_height - 75:
+            # Skip cover page images, running header logos in top zone (bbox[1] < 110 or bbox[3] < 125), and footers
+            if page.number == 0 or bbox[1] < 110 or bbox[3] < 125 or bbox[1] > page_height - 75:
                 continue
             if is_watermark_image(block, page):
                 continue
@@ -1414,6 +1491,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 "bbox": bbox,
                 "data": block
             })
+
 
 
             
@@ -1688,38 +1766,52 @@ def merge_split_pages(all_pages_elements: list) -> None:
                     # Remove the first element from next page
                     next_elements.pop(0)
 
-def convert(pdf_path: Path, html_path: Path, start: int, end: int) -> None:
+def convert(pdf_path: Path, html_path: Path, start: int = None, end: int = None) -> None:
     doc = fitz.open(pdf_path)
-    page_count = doc.page_count
-    
-    # Auto-extract title from the first page of the PDF
-    pdf_title = extract_pdf_title(doc)
-    
-    # If start page is not specified, default to 2 to skip the cover page
-    start_idx = max(0, (start or 2) - 1)
-    end_idx = min(page_count, end or page_count)
-    body_size = compute_body_size(doc)
- 
-    all_pages_elements = []
-    for page_index in range(start_idx, end_idx):
-        page = doc[page_index]
-        all_pages_elements.append(extract_page_elements(doc, page, body_size))
+    try:
+        page_count = doc.page_count
         
-    merge_split_pages(all_pages_elements)
-    
-    pages_html = []
-    for i, page_index in enumerate(range(start_idx, end_idx)):
-        page = doc[page_index]
-        pages_html.append(render_page_elements(page, all_pages_elements[i], body_size, html_path))
- 
-    html_path.write_text(
-        DOC_TEMPLATE.format(
-            title=html.escape(pdf_title),
-            pages="\n".join(pages_html),
-        ),
-        encoding="utf-8",
-    )
-    doc.close()
+        # Auto-extract title from the first page of the PDF
+        pdf_title = extract_pdf_title(doc)
+        
+        body_size = compute_body_size(doc)
+        
+        # Auto-detect cover page if start page is not explicitly passed
+        if start is None:
+            if is_cover_page(doc[0], body_size):
+                start_idx = 1  # Skip cover page
+            else:
+                start_idx = 0  # Start from Page 1
+        else:
+            start_idx = max(0, start - 1)
+
+        end_idx = min(page_count, end or page_count)
+
+        all_pages_elements = []
+        for page_index in range(start_idx, end_idx):
+            page = doc[page_index]
+            all_pages_elements.append(extract_page_elements(doc, page, body_size))
+            
+        merge_split_pages(all_pages_elements)
+        
+        pages_html = []
+        if start_idx == 0:
+            pages_html.append("<!-- NO_COVER_PAGE -->")
+
+        for i, page_index in enumerate(range(start_idx, end_idx)):
+            page = doc[page_index]
+            pages_html.append(render_page_elements(page, all_pages_elements[i], body_size, html_path))
+
+        html_path.write_text(
+            DOC_TEMPLATE.format(
+                title=html.escape(pdf_title),
+                pages="\n".join(pages_html),
+            ),
+            encoding="utf-8",
+        )
+    finally:
+        doc.close()
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert a PDF to a semantic HTML file.")
