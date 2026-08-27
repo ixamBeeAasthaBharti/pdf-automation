@@ -581,6 +581,16 @@ table.blue thead th,
     color: #fff !important;
 }
 
+table.blue thead th:first-child,
+.notes-table.blue thead th:first-child {
+    border-top-left-radius: 8px;
+}
+
+table.blue thead th:last-child,
+.notes-table.blue thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
 table.blue thead th:not(:last-child),
 .notes-table.blue thead th:not(:last-child) {
     border-right: 1px solid rgba(255, 255, 255, 0.18);
