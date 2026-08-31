@@ -503,7 +503,7 @@ def is_watermark_image(block: dict, page: fitz.Page) -> bool:
 def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict, valid_tables: list) -> bool:
     """
     Determine whether a candidate drawing cluster is a genuine vector diagram/flowchart.
-    Accept any drawing cluster containing vector graphics/fills.
+    Rejects watermark clusters, light-gray background stamps, and website URL watermarks.
     """
     # 1. Dimension check
     if cluster.width < 40 or cluster.height < 25:
@@ -517,19 +517,42 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
 
     cluster_area = cluster.width * cluster.height
 
+    # 2. Inspect text content inside cluster:
+    # A genuine vector diagram/flowchart contains short label text inside shapes (e.g. "Refuse Indemnity").
+    # It MUST NOT enclose normal body text sentences/paragraphs (e.g. lines with >40 chars or full sentences).
+    for tb in text_dict.get("blocks", []):
+        if tb.get("type", 0) == 0:
+            tb_rect = fitz.Rect(tb.get("bbox", (0, 0, 0, 0)))
+            intersect = cluster & tb_rect
+            if not intersect.is_empty and (intersect.width * intersect.height) / max(1.0, tb_rect.width * tb_rect.height) > 0.2:
+                for line in tb.get("lines", []):
+                    line_txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+                    if is_watermark_text(line_txt):
+                        continue
+                    if len(line_txt) > 40 or (len(line_txt) > 25 and line_txt.endswith(".")):
+                        print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} text='{line_txt[:30]}...' reason=contains_body_text_line", file=sys.stderr)
+                        return False
+
     # 3. Inspect vector drawings inside the cluster
     all_drawings = page.get_drawings()
-    total_drawings = 0
+    meaningful_drawings = 0
 
     for d in all_drawings:
         r = fitz.Rect(d["rect"])
         if cluster.x0 - 5 <= r.x0 and r.x1 <= cluster.x1 + 5 and cluster.y0 - 5 <= r.y0 and r.y1 <= cluster.y1 + 5:
-            total_drawings += 1
+            fill = d.get("fill")
+            # Skip light gray watermark fills
+            if fill and len(fill) == 3:
+                r_val, g_val, b_val = fill
+                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
+                    continue
+            meaningful_drawings += 1
 
-    if total_drawings < 1:
+    if meaningful_drawings < 1:
+        print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=no_meaningful_drawings", file=sys.stderr)
         return False
 
-    print(f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} total_drawings={total_drawings}", file=sys.stderr)
+    print(f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} drawings={meaningful_drawings}", file=sys.stderr)
     return True
 
 
@@ -1436,12 +1459,36 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         # Skip drawings in header/footer zones
         if r.y1 < 80 or r.y0 > page_h - 75:
             continue
-        # Skip light gray watermark fills
+        # Skip light gray watermark fills or drawing paths belonging to watermark text (e.g. www.ixambee.com)
         fill = d.get("fill")
+        color = d.get("color")
         if fill and len(fill) == 3:
             r_val, g_val, b_val = fill
-            if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
+            if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.65 <= r_val <= 0.95:
                 continue
+        if color and len(color) == 3:
+            r_val, g_val, b_val = color
+            if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.65 <= r_val <= 0.95:
+                continue
+
+        # Check if this drawing path belongs to a watermark text region (e.g. www.ixambee.com)
+        d_rect = fitz.Rect(r)
+        is_wm_path = False
+        for tb in page.get_text("dict").get("blocks", []):
+            if tb.get("type", 0) == 0:
+                tb_rect = fitz.Rect(tb.get("bbox", (0, 0, 0, 0)))
+                inter = d_rect & tb_rect
+                if not inter.is_empty:
+                    for l in tb.get("lines", []):
+                        txt = "".join(s.get("text", "") for s in l.get("spans", [])).strip()
+                        if is_watermark_text(txt):
+                            is_wm_path = True
+                            break
+                if is_wm_path:
+                    break
+        if is_wm_path:
+            continue
+
         draw_rects.append(r)
 
     # Cluster drawings
@@ -1795,7 +1842,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             "is_heading": is_heading
         })
         
-    # Add image blocks from the page (skipping cover page images, top running header logos, and footers)
+    # Add image blocks from the page (skipping cover page images, top running header logos, footers, and background watermark images behind text)
     for block in text_dict.get("blocks", []):
         if block.get("type") == 1:  # Image block
             bbox = block.get("bbox", (0, 0, 0, 0))
@@ -1806,6 +1853,23 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 continue
             if image_overlaps_table(bbox, valid_tables):
                 continue
+
+            # Skip background watermark images that sit behind text paragraphs
+            img_rect = fitz.Rect(bbox)
+            img_area = max(1.0, img_rect.width * img_rect.height)
+            overlaps_text = False
+            for sb in semantic_blocks:
+                sb_rect = fitz.Rect(sb["bbox"])
+                inter = img_rect & sb_rect
+                if not inter.is_empty:
+                    inter_area = inter.width * inter.height
+                    if (inter_area / max(1.0, sb_rect.width * sb_rect.height)) > 0.25 or (inter_area / img_area) > 0.35:
+                        overlaps_text = True
+                        break
+            if overlaps_text:
+                print(f"  [IMAGE REJECT] bbox={bbox} reason=background_watermark_overlaps_text", file=sys.stderr)
+                continue
+
             page_elements.append({
                 "type": "image",
                 "bbox": bbox,
