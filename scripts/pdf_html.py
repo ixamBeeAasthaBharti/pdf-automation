@@ -1061,20 +1061,23 @@ def extract_table_data_accurate(table, page=None):
     return collapse_phantom_columns(refined_data, table, page)
 
 
-def render_table(table, page=None) -> str:
+def render_table(table, page=None, custom_matrix=None) -> str:
     """
     Render a validated PyMuPDF table while preserving its column geometry.
 
     The function deliberately does NOT delete empty columns. Empty cells can
     represent real table structure, merged cells, or extraction geometry.
     """
-    try:
-        table_data = extract_table_data_accurate(table, page)
-    except Exception:
+    if custom_matrix:
+        table_data = custom_matrix
+    else:
         try:
-            table_data = collapse_phantom_columns(table.extract(), table, page)
+            table_data = extract_table_data_accurate(table, page)
         except Exception:
-            return ""
+            try:
+                table_data = collapse_phantom_columns(table.extract(), table, page)
+            except Exception:
+                return ""
 
     if not table_data:
         return ""
@@ -1994,7 +1997,8 @@ def render_page_elements(page: fitz.Page, page_elements: list, body_size: float,
     for element in page_elements:
         el_type = element["type"]
         if el_type == "table":
-            elements_html.append(render_table(element["data"], page))
+            custom_mat = element.get("custom_data_matrix")
+            elements_html.append(render_table(element["data"], page, custom_matrix=custom_mat))
         elif el_type == "image":
             bbox = element["bbox"]
             clip_rect = fitz.Rect(bbox)
@@ -2132,47 +2136,87 @@ def merge_split_pages(all_pages_elements: list) -> None:
         next_elements = all_pages_elements[idx + 1]
         if not prev_elements or not next_elements:
             continue
-            
-        el_prev = prev_elements[-1]
-        el_next = next_elements[0]
-        
-        if el_prev["type"] == "text" and el_next["type"] == "text":
-            if el_prev.get("is_heading") or el_next.get("is_heading"):
-                continue
-            lines_prev = el_prev["data"].get("lines", [])
-            lines_next = el_next["data"].get("lines", [])
-            if not lines_prev or not lines_next:
-                continue
-                
-            # Get last line text of prev element
-            last_line = lines_prev[-1]
-            last_spans = [s for s in last_line.get("spans", []) if s.get("text", "").strip()]
-            if not last_spans:
-                continue
-            last_text = "".join(decode_span_text(s) for s in last_spans).strip()
-            
-            # If last text does not end with sentence-ending punctuation
-            if last_text and not last_text[-1] in (".", "?", "!", ":", ";", "”", '"'):
-                # Check if first line of next element is a bullet
-                first_line = lines_next[0]
-                first_spans = [s for s in first_line.get("spans", []) if s.get("text", "").strip()]
-                if not first_spans:
-                    continue
-                is_first_bullet = is_bullet_span(first_spans[0])
-                
-                if not is_first_bullet:
-                    # Merge el_next's lines into el_prev
-                    lines_prev.extend(lines_next)
-                    el_prev["data"]["lines"] = lines_prev
-                    # Update bbox of el_prev (extend vertically)
-                    el_prev["bbox"] = [
-                        min(el_prev["bbox"][0], el_next["bbox"][0]),
-                        min(el_prev["bbox"][1], el_next["bbox"][1]),
-                        max(el_prev["bbox"][2], el_next["bbox"][2]),
-                        max(el_prev["bbox"][3], el_next["bbox"][3])
-                    ]
-                    # Remove the first element from next page
-                    next_elements.pop(0)
+
+        # 1. Multi-page table continuation check across page break
+        last_tbl_idx = None
+        for i_e in range(len(prev_elements) - 1, -1, -1):
+            if prev_elements[i_e]["type"] == "table":
+                last_tbl_idx = i_e
+                break
+
+        first_tbl_idx = None
+        for i_e in range(len(next_elements)):
+            if next_elements[i_e]["type"] == "table":
+                if next_elements[i_e]["bbox"][1] < 240:
+                    first_tbl_idx = i_e
+                break
+
+        if last_tbl_idx is not None and first_tbl_idx is not None:
+            el_prev_tbl = prev_elements[last_tbl_idx]
+            el_next_tbl = next_elements[first_tbl_idx]
+
+            data_prev = el_prev_tbl.get("custom_data_matrix")
+            if not data_prev:
+                try:
+                    data_prev = extract_table_data_accurate(el_prev_tbl["data"], None)
+                except Exception:
+                    data_prev = []
+
+            try:
+                data_next = extract_table_data_accurate(el_next_tbl["data"], None)
+            except Exception:
+                data_next = []
+
+            if data_prev and data_next:
+                cols_prev = max((len(r) for r in data_prev), default=0)
+                cols_next = max((len(r) for r in data_next), default=0)
+
+                if cols_prev == cols_next and cols_prev >= 2:
+                    hdr_prev = [str(c or "").strip().lower() for c in data_prev[0]]
+                    hdr_next = [str(c or "").strip().lower() for c in data_next[0]]
+
+                    if hdr_prev == hdr_next:
+                        data_next = data_next[1:]
+
+                    if data_next:
+                        combined_matrix = list(data_prev) + list(data_next)
+                        el_prev_tbl["custom_data_matrix"] = combined_matrix
+                        next_elements.pop(first_tbl_idx)
+
+        # 2. Multi-page text paragraph continuation check across page break
+        if prev_elements and next_elements:
+            el_prev = prev_elements[-1]
+            el_next = next_elements[0]
+
+            if el_prev["type"] == "text" and el_next["type"] == "text":
+                if not el_prev.get("is_heading") and not el_next.get("is_heading"):
+                    lines_prev = el_prev["data"].get("lines", [])
+                    lines_next = el_next["data"].get("lines", [])
+
+                    if lines_prev and lines_next:
+                        last_line = lines_prev[-1]
+                        last_spans = [s for s in last_line.get("spans", []) if s.get("text", "").strip()]
+                        first_line = lines_next[0]
+                        first_spans = [s for s in first_line.get("spans", []) if s.get("text", "").strip()]
+
+                        if last_spans and first_spans and not is_bullet_span(first_spans[0]):
+                            last_text = "".join(decode_span_text(s) for s in last_spans).strip()
+                            if last_text and not last_text[-1] in (".", "?", "!", ":", ";", "”", '"'):
+                                if last_text.endswith("-") and len(last_text) > 2:
+                                    for s in reversed(last_spans):
+                                        if s.get("text", "").endswith("-"):
+                                            s["text"] = s["text"][:-1]
+                                            break
+
+                                lines_prev.extend(lines_next)
+                                el_prev["data"]["lines"] = lines_prev
+                                el_prev["bbox"] = [
+                                    min(el_prev["bbox"][0], el_next["bbox"][0]),
+                                    min(el_prev["bbox"][1], el_next["bbox"][1]),
+                                    max(el_prev["bbox"][2], el_next["bbox"][2]),
+                                    max(el_prev["bbox"][3], el_next["bbox"][3])
+                                ]
+                                next_elements.pop(0)
 
 def post_process_worksheet_html(raw_html: str) -> str:
     lines = raw_html.split("\n")
