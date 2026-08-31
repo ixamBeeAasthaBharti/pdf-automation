@@ -132,6 +132,8 @@ def decode_span_text(span: dict) -> str:
 
 
 def render_span_semantic(span: dict) -> str:
+    if "custom_html" in span:
+        return span["custom_html"]
     text = decode_span_text(span)
     if not text.strip():
         return ""
@@ -508,6 +510,11 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
         print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_small", file=sys.stderr)
         return False
 
+    page_h = page.rect.height
+    if cluster.height > 120 or cluster.height > page_h * 0.25:
+        print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_large_spans_page", file=sys.stderr)
+        return False
+
     cluster_area = cluster.width * cluster.height
 
     # 2. Table overlap check
@@ -535,10 +542,14 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
                 if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
                     continue
 
-            # Simple decorative rectangular background fills (wide/shallow rectangles used as text highlights)
+            # Simple decorative rectangular background fills, horizontal rule lines, or small inline arrow/bullet icons
             items = d.get("items", [])
             is_simple_bg_rect = False
-            if len(items) <= 2 and fill is not None:
+            if r.height <= 4:  # Rule lines, fraction bars, or underline paths
+                is_simple_bg_rect = True
+            elif r.width <= 35 and r.height <= 35:  # Small inline arrow/bullet icons
+                is_simple_bg_rect = True
+            elif len(items) <= 2 and fill is not None:
                 if r.width > 60 and r.height < 35:
                     is_simple_bg_rect = True
                 elif r.width > cluster.width * 0.8 and r.height < cluster.height * 0.5:
@@ -564,7 +575,7 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
         intersect = cluster & tb_rect
         if not intersect.is_empty:
             inter_area = intersect.width * intersect.height
-            if (inter_area / tb_area) >= 0.3:
+            if (inter_area / tb_area) >= 0.2:
                 text_blocks_count += 1
                 lines = tb.get("lines", [])
                 text_line_count += len(lines)
@@ -573,14 +584,12 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
     text_coverage_ratio = total_text_area / cluster_area if cluster_area > 0 else 0.0
 
     # 5. Check text density signal:
-    # A cluster that contains paragraph/list text AND has few meaningful drawing shapes (< 4)
-    # is a text section with decorative vector highlights, NOT a flowchart/diagram.
-    # Genuine flowcharts (like multi-stage chevrons/boxes) contain >= 4 vector shapes.
-    if text_line_count >= 3 and text_coverage_ratio >= 0.12 and meaningful_drawings < 4:
+    # Any cluster containing selectable text lines is a text region (or math formula), NOT a raster image diagram!
+    if text_line_count >= 1:
         print(
             f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
             f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-            f"text_coverage={text_coverage_ratio:.3f} reason=text_dense_decorative_cluster",
+            f"text_coverage={text_coverage_ratio:.3f} reason=contains_selectable_text",
             file=sys.stderr
         )
         return False
@@ -802,11 +811,37 @@ def find_valid_tables(page):
             if ty1 > page_height - 130 and table_height < 60:
                 continue
 
-            quality = _table_quality_score(table, page)
-            if quality < 0:
-                continue
+            # Split candidate tables at vertical row gaps > 22 to prevent swallowing surrounding paragraphs
+            rows = getattr(table, "rows", None) or []
+            tables_to_check = [table]
+            if len(rows) >= 2:
+                clusters = []
+                current_cluster = [rows[0]]
+                for r_i in range(1, len(rows)):
+                    gap = rows[r_i].bbox[1] - rows[r_i-1].bbox[3]
+                    if gap > 22:
+                        clusters.append(current_cluster)
+                        current_cluster = [rows[r_i]]
+                    else:
+                        current_cluster.append(rows[r_i])
+                clusters.append(current_cluster)
 
-            valid.append(table)
+                if len(clusters) > 1:
+                    tables_to_check = []
+                    for cl in clusters:
+                        sub_clip = fitz.Rect(tx0, cl[0].bbox[1] - 2, tx1, cl[-1].bbox[3] + 2)
+                        try:
+                            sub_finder = page.find_tables(clip=sub_clip, strategy=strategy)
+                            sub_candidates = getattr(sub_finder, "tables", []) or []
+                            tables_to_check.extend(sub_candidates)
+                        except Exception:
+                            pass
+
+            for tbl in tables_to_check:
+                quality = _table_quality_score(tbl, page)
+                if quality < 0:
+                    continue
+                valid.append(tbl)
 
         return valid
 
@@ -820,7 +855,213 @@ def find_valid_tables(page):
     return collect("lines")
 
 
-def render_table(table) -> str:
+def collapse_phantom_columns(table_data: list, table=None, page=None) -> list:
+    """
+    Intelligently detect and collapse phantom columns created by PyMuPDF table detection artifacts.
+    Preserves legitimate empty/partially-filled columns and re-assigns/merges displaced text spans.
+    """
+    if not table_data:
+        return table_data
+
+    num_rows = len(table_data)
+    num_cols = max((len(r) for r in table_data), default=0)
+
+    if num_cols <= 2 or num_rows == 0:
+        return table_data
+
+    # Pad rows to uniform num_cols
+    padded_data = [
+        list(r) + [""] * (num_cols - len(r))
+        for r in table_data
+    ]
+
+    # Identify banner title rows (e.g. single cell title across top of table)
+    data_rows_indices = []
+    for r_idx, row in enumerate(padded_data):
+        non_empty_cells = [c for c in row if c and str(c).strip()]
+        if len(non_empty_cells) == 1 and r_idx == 0 and len(str(non_empty_cells[0]).strip()) > 15:
+            continue
+        data_rows_indices.append(r_idx)
+
+    if not data_rows_indices:
+        data_rows_indices = list(range(num_rows))
+
+    nonempty_count = [0] * num_cols
+    total_chars = [0] * num_cols
+
+    for r_idx in data_rows_indices:
+        row = padded_data[r_idx]
+        for c_idx in range(num_cols):
+            val = str(row[c_idx] or "").strip()
+            if val:
+                nonempty_count[c_idx] += 1
+                total_chars[c_idx] += len(val)
+
+    max_nonempty = max(nonempty_count) if nonempty_count else 0
+    if max_nonempty < 2:
+        return table_data
+
+    # 1. First Pass: Identify completely empty or extremely sparse phantom columns
+    phantom_cols = set()
+    for c_idx in range(num_cols):
+        cnt = nonempty_count[c_idx]
+        t_chars = total_chars[c_idx]
+        if cnt == 0:
+            phantom_cols.add(c_idx)
+        elif cnt <= 1 and cnt <= max_nonempty * 0.15 and t_chars < 60:
+            phantom_cols.add(c_idx)
+
+    # 2. Second Pass: Check adjacent columns for phantom-split (near-zero row overlap)
+    # If adjacent columns c and c+1 have zero or at most 1 overlapping populated row,
+    # and at least one of them is a split fragment (nonempty <= max_nonempty * 0.45), merge them.
+    merged_pairs = []
+    for c_idx in range(num_cols - 1):
+        if c_idx in phantom_cols or (c_idx + 1) in phantom_cols:
+            continue
+
+        cnt1 = nonempty_count[c_idx]
+        cnt2 = nonempty_count[c_idx + 1]
+
+        both_populated = 0
+        for r_idx in data_rows_indices:
+            v1 = str(padded_data[r_idx][c_idx] or "").strip()
+            v2 = str(padded_data[r_idx][c_idx + 1] or "").strip()
+            if v1 and v2:
+                both_populated += 1
+
+        if both_populated <= 1 and (cnt1 <= max_nonempty * 0.45 or cnt2 <= max_nonempty * 0.45):
+            phantom_cols.add(c_idx + 1)
+            merged_pairs.append((c_idx, c_idx + 1))
+
+    if not phantom_cols or len(phantom_cols) >= num_cols - 1:
+        return table_data
+
+    # Log diagnostic message (Requirement 12)
+    phantom_list = sorted(list(phantom_cols))
+    print(
+        f"  [TABLE COLUMN FIX] original_cols={num_cols} nonempty={nonempty_count} removing_phantom_cols={phantom_list} merged_pairs={merged_pairs}",
+        file=sys.stderr
+    )
+
+    # Valid columns to keep
+    valid_cols = [c for c in range(num_cols) if c not in phantom_cols]
+
+    # Re-build clean matrix, merging text from phantom/split columns
+    clean_data = []
+    for r_idx, row in enumerate(padded_data):
+        new_row = [str(row[c] or "") for c in valid_cols]
+
+        for p_col in phantom_cols:
+            p_text = str(row[p_col] or "").strip()
+            if p_text:
+                nearest_v_idx = 0
+                min_dist = 999
+                for v_i, v_col in enumerate(valid_cols):
+                    dist = abs(v_col - p_col)
+                    if dist < min_dist:
+                        min_dist = dist
+                        nearest_v_idx = v_i
+
+                existing = new_row[nearest_v_idx].strip()
+                if p_text not in existing:
+                    if existing:
+                        new_row[nearest_v_idx] = f"{existing} {p_text}"
+                    else:
+                        new_row[nearest_v_idx] = p_text
+
+        clean_data.append(new_row)
+
+    return clean_data
+
+
+def extract_table_data_accurate(table, page=None):
+    """
+    Extract table cell text accurately from PyMuPDF table and page.
+    Prevents text in column c+1 from spilling into column c due to PyMuPDF's
+    span.x0 column matching, and prevents merging adjacent column headers.
+    """
+    try:
+        raw_data = table.extract()
+    except Exception:
+        return []
+
+    if not raw_data or not page:
+        return collapse_phantom_columns(raw_data or [], table, page)
+
+    num_cols = max((len(r) for r in raw_data), default=0)
+    if num_cols < 2:
+        return raw_data
+
+    cols = getattr(table, "cols", None) or []
+    col_bounds = []
+    if len(cols) == num_cols:
+        for c in cols:
+            cb = getattr(c, "bbox", None)
+            if cb:
+                col_bounds.append((cb[0], cb[2]))
+
+    if len(col_bounds) != num_cols:
+        tx0, ty0, tx1, ty1 = table.bbox
+        col_w = (tx1 - tx0) / num_cols
+        col_bounds = [(tx0 + i * col_w, tx0 + (i + 1) * col_w) for i in range(num_cols)]
+
+    dividers = []
+    for i in range(num_cols - 1):
+        dividers.append((col_bounds[i][1] + col_bounds[i+1][0]) / 2.0)
+
+    rows = getattr(table, "rows", None) or []
+    if not rows or len(rows) != len(raw_data):
+        return collapse_phantom_columns(raw_data, table, page)
+
+    text_dict = page.get_text("dict")
+    page_blocks = text_dict.get("blocks", [])
+
+    refined_data = []
+    for r_idx, row in enumerate(rows):
+        r_bbox = getattr(row, "bbox", None)
+        if not r_bbox:
+            refined_data.append(list(raw_data[r_idx]))
+            continue
+
+        ry0, ry1 = r_bbox[1] - 2, r_bbox[3] + 2
+
+        row_spans = []
+        for b in page_blocks:
+            if b.get("type", 0) != 0:
+                continue
+            for l in b.get("lines", []):
+                ly0, ly1 = l.get("bbox", [0, 0, 0, 0])[1], l.get("bbox", [0, 0, 0, 0])[3]
+                if ry0 <= ly0 and ly1 <= ry1:
+                    for s in l.get("spans", []):
+                        t = decode_span_text(s).strip()
+                        if t:
+                            sb = s.get("bbox", [0, 0, 0, 0])
+                            cx = (sb[0] + sb[2]) / 2.0
+                            row_spans.append((sb[0], sb[1], cx, t))
+
+        if not row_spans:
+            refined_data.append(list(raw_data[r_idx]))
+            continue
+
+        row_spans.sort(key=lambda item: (item[1], item[0]))
+
+        col_cells = [[] for _ in range(num_cols)]
+        for x0, y0, cx, text_val in row_spans:
+            c_idx = 0
+            for div in dividers:
+                if cx > div:
+                    c_idx += 1
+                else:
+                    break
+            col_cells[c_idx].append(text_val)
+
+        new_row = [" ".join(cell_list).strip() for cell_list in col_cells]
+        refined_data.append(new_row)
+
+    return collapse_phantom_columns(refined_data, table, page)
+
+
+def render_table(table, page=None) -> str:
     """
     Render a validated PyMuPDF table while preserving its column geometry.
 
@@ -828,9 +1069,12 @@ def render_table(table) -> str:
     represent real table structure, merged cells, or extraction geometry.
     """
     try:
-        table_data = table.extract()
+        table_data = extract_table_data_accurate(table, page)
     except Exception:
-        return ""
+        try:
+            table_data = collapse_phantom_columns(table.extract(), table, page)
+        except Exception:
+            return ""
 
     if not table_data:
         return ""
@@ -926,6 +1170,100 @@ def is_color_block(block: dict, target_color: int) -> bool:
                     return True
     return False
 
+def is_math_expression_line(text: str) -> bool:
+    """Return True if a text line looks like a math fraction numerator/denominator component."""
+    if not text:
+        return False
+    if len(text) > 85:
+        return False
+    if text.endswith((".", "?", "!", ":")):
+        return False
+    math_words = (
+        "ebit", "sales", "cost", "costs", "contribution", "dol", "dcl", "fl", "ol",
+        "change", "profit", "tax", "eat", "pbt", "earning", "earnings", "fixed",
+        "variable", "interest", "leverage", "equity", "debt", "margin", "ratio"
+    )
+    low = text.lower()
+    if any(w in low for w in math_words):
+        return True
+    if any(c in text for c in ("+", "-", "–", "—", "/", "*", "%", "=", "(", ")", "×", "÷")):
+        return True
+    if re.search(r'\d+', text):
+        return True
+    return False
+
+def detect_and_merge_math_fractions(visible_lines, page=None):
+    if len(visible_lines) < 2:
+        return visible_lines
+
+    merged_lines = []
+    i = 0
+    while i < len(visible_lines):
+        line1 = visible_lines[i]
+        if i + 1 >= len(visible_lines):
+            merged_lines.append(line1)
+            break
+
+        line2 = visible_lines[i + 1]
+
+        spans1 = [s for s in line1.get("spans", []) if s.get("text", "").strip()]
+        spans2 = [s for s in line2.get("spans", []) if s.get("text", "").strip()]
+
+        if not spans1 or not spans2:
+            merged_lines.append(line1)
+            i += 1
+            continue
+
+        if is_bullet_span(spans1[0]) or is_bullet_span(spans2[0]):
+            merged_lines.append(line1)
+            i += 1
+            continue
+
+        text1 = "".join(decode_span_text(s) for s in spans1).strip()
+        text2 = "".join(decode_span_text(s) for s in spans2).strip()
+
+        if is_math_expression_line(text1) and is_math_expression_line(text2):
+            bbox1 = line1.get("bbox", [0, 0, 0, 0])
+            bbox2 = line2.get("bbox", [0, 0, 0, 0])
+
+            cx1 = (bbox1[0] + bbox1[2]) / 2.0
+            cx2 = (bbox2[0] + bbox2[2]) / 2.0
+            gap = bbox2[1] - bbox1[3]
+
+            if abs(cx1 - cx2) < 65 and -3 <= gap <= 22:
+                rendered1 = "".join(render_span_semantic(s) for s in spans1)
+                rendered2 = "".join(render_span_semantic(s) for s in spans2)
+
+                den_text = rendered2
+                clean_den = text2.strip()
+                if (" " in clean_den or "-" in clean_den or "–" in clean_den or "+" in clean_den) and not (clean_den.startswith("(") and clean_den.endswith(")")):
+                    den_text = f"({rendered2})"
+
+                fraction_span = {
+                    "text": f"{text1} / {text2}",
+                    "font": spans1[0].get("font", ""),
+                    "size": spans1[0].get("size", 12),
+                    "color": spans1[0].get("color", 0),
+                    "custom_html": f"{rendered1} / {den_text}"
+                }
+
+                combined_line = line1.copy()
+                combined_line["spans"] = [fraction_span]
+                combined_line["bbox"] = [
+                    min(bbox1[0], bbox2[0]),
+                    bbox1[1],
+                    max(bbox1[2], bbox2[2]),
+                    bbox2[3]
+                ]
+                merged_lines.append(combined_line)
+                i += 2
+                continue
+
+        merged_lines.append(line1)
+        i += 1
+
+    return merged_lines
+
 def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = None) -> str:
     # Filter out running headers based on content and small font size
     text_spans = []
@@ -1008,7 +1346,7 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
         merged_lines.append(line)
         i += 1
         
-    visible_lines = merged_lines
+    visible_lines = detect_and_merge_math_fractions(merged_lines, page)
         
     # Check for pink heading
     is_pink = False
@@ -1189,7 +1527,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         for idx_c, c in enumerate(diagram_clusters):
             dx = max(0, c.x0 - r.x1, r.x0 - c.x1)
             dy = max(0, c.y0 - r.y1, r.y0 - c.y1)
-            if dx < 80 and dy < 80:
+            if dx < 40 and dy < 25:
                 diagram_clusters[idx_c] = fitz.Rect(
                     min(r.x0, c.x0), min(r.y0, c.y0),
                     max(r.x1, c.x1), max(r.y1, c.y1)
@@ -1208,7 +1546,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 c1, c2 = diagram_clusters[i_c], diagram_clusters[j_c]
                 dx = max(0, c2.x0 - c1.x1, c1.x0 - c2.x1)
                 dy = max(0, c2.y0 - c1.y1, c1.y0 - c2.y1)
-                if dx < 80 and dy < 80:
+                if dx < 40 and dy < 25:
                     diagram_clusters[i_c] = fitz.Rect(
                         min(c1.x0, c2.x0), min(c1.y0, c2.y0),
                         max(c1.x1, c2.x1), max(c1.y1, c2.y1)
@@ -1458,11 +1796,19 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 gap = line["bbox"][1] - prev_line["bbox"][3]
                 line_text = "".join(decode_span_text(s) for s in line.get("spans", [])).strip()
                 is_mcq_or_prefix = is_standalone_line_prefix(line_text)
-                limit = 10.0 if (is_bullet or is_mcq_or_prefix) else 16.0
+                
+                prev_spans = [s for s in prev_line.get("spans", []) if s.get("text", "").strip()]
+                prev_text = "".join(decode_span_text(s) for s in prev_spans).strip() if prev_spans else ""
+                
+                sentence_completed = bool(prev_text and prev_text[-1] in (".", "?", "!", ":"))
+                
+                limit = 6.5
+                if is_bullet or is_mcq_or_prefix:
+                    limit = 5.0
+                elif sentence_completed and gap >= 4.5:
+                    limit = 4.5
 
                 if gap >= limit or gap < -5:
-
-
                     semantic_blocks.append({
                         "type": "text",
                         "bbox": (
@@ -1648,7 +1994,7 @@ def render_page_elements(page: fitz.Page, page_elements: list, body_size: float,
     for element in page_elements:
         el_type = element["type"]
         if el_type == "table":
-            elements_html.append(render_table(element["data"]))
+            elements_html.append(render_table(element["data"], page))
         elif el_type == "image":
             bbox = element["bbox"]
             clip_rect = fitz.Rect(bbox)
