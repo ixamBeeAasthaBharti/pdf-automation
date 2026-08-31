@@ -150,11 +150,8 @@ def render_span_semantic(span: dict) -> str:
     flags = span.get("flags", 0)
     is_bold = "Bold" in font or bool(flags & 1)
     is_italic = "Italic" in font or "Oblique" in font or bool(flags & 2)
-    is_underline = "Underline" in font or bool(flags & 4) or span.get("is_underline", False)
     escaped_text = html.escape(text)
     
-    if is_underline:
-        escaped_text = f"<u>{escaped_text}</u>"
     if is_bold:
         escaped_text = f"<strong>{escaped_text}</strong>"
     if is_italic:
@@ -1964,46 +1961,76 @@ def render_page_elements(page: fitz.Page, page_elements: list, body_size: float,
             bbox = element["bbox"]
             clip_rect = fitz.Rect(bbox)
             if clip_rect.width > 0 and clip_rect.height > 0:
+                table_rendered = False
                 try:
-                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
-                    img_bytes = pix.tobytes("png")
-                    if images_dir:
-                        img_filename = f"page_{page.number + 1}_img_{image_counter}.png"
-                        (images_dir / img_filename).write_bytes(img_bytes)
-                        image_counter += 1
-                        img_tag = f'<img src="images/{img_filename}" alt="Extracted Graphic" />'
-                    else:
-                        b64 = base64.b64encode(img_bytes).decode("ascii")
-                        img_tag = f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
-                    if "caption" in element:
-                        caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
-                        elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
-                    else:
-                        elements_html.append(f'<figure>{img_tag}</figure>')
-                except Exception as e:
-                    print(f"Error extracting image block: {e}", file=sys.stderr)
+                    tbl_finder = page.find_tables(clip=clip_rect)
+                    tables = getattr(tbl_finder, "tables", []) or []
+                    for tbl in tables:
+                        if _table_quality_score(tbl, page) > 0:
+                            tbl_html = render_table(tbl.extract(), page)
+                            if tbl_html and tbl_html.strip():
+                                elements_html.append(tbl_html)
+                                table_rendered = True
+                                break
+                except Exception:
+                    pass
+
+                if not table_rendered:
+                    try:
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
+                        img_bytes = pix.tobytes("png")
+                        if images_dir:
+                            img_filename = f"page_{page.number + 1}_img_{image_counter}.png"
+                            (images_dir / img_filename).write_bytes(img_bytes)
+                            image_counter += 1
+                            img_tag = f'<img src="images/{img_filename}" alt="Extracted Graphic" />'
+                        else:
+                            b64 = base64.b64encode(img_bytes).decode("ascii")
+                            img_tag = f'<img src="data:image/png;base64,{b64}" alt="Extracted Graphic" />'
+                        if "caption" in element:
+                            caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
+                            elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
+                        else:
+                            elements_html.append(f'<figure>{img_tag}</figure>')
+                    except Exception as e:
+                        print(f"Error extracting image block: {e}", file=sys.stderr)
         elif el_type == "diagram":
             bbox = element["bbox"]
             clip_rect = fitz.Rect(bbox)
             if clip_rect.width > 0 and clip_rect.height > 0:
+                table_rendered = False
                 try:
-                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
-                    img_bytes = pix.tobytes("png")
-                    if images_dir:
-                        img_filename = f"page_{page.number + 1}_diag_{image_counter}.png"
-                        (images_dir / img_filename).write_bytes(img_bytes)
-                        image_counter += 1
-                        img_tag = f'<img src="images/{img_filename}" alt="Diagram/Flowchart" />'
-                    else:
-                        b64 = base64.b64encode(img_bytes).decode("ascii")
-                        img_tag = f'<img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" />'
-                    if "caption" in element:
-                        caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
-                        elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
-                    else:
-                        elements_html.append(f'<figure>{img_tag}</figure>')
-                except Exception as e:
-                    print(f"Error extracting diagram block: {e}", file=sys.stderr)
+                    tbl_finder = page.find_tables(clip=clip_rect)
+                    tables = getattr(tbl_finder, "tables", []) or []
+                    for tbl in tables:
+                        if _table_quality_score(tbl, page) > 0:
+                            tbl_html = render_table(tbl.extract(), page)
+                            if tbl_html and tbl_html.strip():
+                                elements_html.append(tbl_html)
+                                table_rendered = True
+                                break
+                except Exception:
+                    pass
+
+                if not table_rendered:
+                    try:
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
+                        img_bytes = pix.tobytes("png")
+                        if images_dir:
+                            img_filename = f"page_{page.number + 1}_diag_{image_counter}.png"
+                            (images_dir / img_filename).write_bytes(img_bytes)
+                            image_counter += 1
+                            img_tag = f'<img src="images/{img_filename}" alt="Diagram/Flowchart" />'
+                        else:
+                            b64 = base64.b64encode(img_bytes).decode("ascii")
+                            img_tag = f'<img src="data:image/png;base64,{b64}" alt="Diagram/Flowchart" />'
+                        if "caption" in element:
+                            caption_tag = f'<figcaption>{html.escape(element["caption"])}</figcaption>'
+                            elements_html.append(f'<figure>{img_tag}\n{caption_tag}</figure>')
+                        else:
+                            elements_html.append(f'<figure>{img_tag}</figure>')
+                    except Exception as e:
+                        print(f"Error extracting diagram block: {e}", file=sys.stderr)
         elif el_type == "text":
             text_html = render_text_block_semantic(element["data"], body_size, page)
             if text_html:
