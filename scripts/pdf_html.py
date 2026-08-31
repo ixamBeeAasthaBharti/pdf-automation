@@ -89,6 +89,57 @@ ul.list-alphanumeric, ul.list-alphanumeric li {{
 ul.list-alphanumeric li::before {{
     content: none !important;
 }}
+/* Warm Orange Callout Box Style (Clean Flat Card) */
+.callout-box {{
+    margin: 1.5rem 0;
+    padding: 1.5rem 1.75rem;
+    border-radius: 14px;
+    border-left: 6px solid #e67e22;
+    background: linear-gradient(135deg, #fffaf5 0%, #fff2e6 100%);
+    border-top: 1px solid #fcdcc5;
+    border-right: 1px solid #fcdcc5;
+    border-bottom: 1px solid #fcdcc5;
+    box-shadow: none;
+    transition: transform 0.2s ease;
+}}
+.callout-box:hover {{
+    transform: translateY(-2px);
+    box-shadow: none;
+}}
+.callout-title, .callout-box p strong, .callout-box h3 {{
+    color: #d35400 !important;
+    font-weight: 700;
+}}
+.callout-box ul.notes-list li {{
+    margin-bottom: 0.6rem;
+    line-height: 1.65;
+    color: #2c3e50;
+}}
+.callout-box ul.notes-list li strong {{
+    color: #d35400 !important;
+}}
+.callout-title {{
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    color: #2c3e50;
+    letter-spacing: -0.01em;
+}}
+.callout-box ul.notes-list {{
+    margin: 0;
+    padding-left: 1.2rem;
+}}
+.callout-box ul.notes-list li {{
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    color: #34495e;
+}}
+.callout-box p {{
+    margin: 0 0 0.5rem 0;
+    line-height: 1.6;
+    color: #34495e;
+}}
 </style>
 </head>
 <body>
@@ -421,6 +472,11 @@ def classify_heading(visible_lines: list, body_size: float):
     if text.endswith(".") and len(text) > 40:
         return None
 
+    FRUIT_HEADINGS = ("mango", "papaya", "guava", "sapota", "litchi", "banana", "grapes", "citrus")
+    clean_txt = text.lower().strip()
+    if clean_txt in FRUIT_HEADINGS or (len(clean_txt) < 15 and any(clean_txt == f or clean_txt.startswith(f + " ") for f in FRUIT_HEADINGS)):
+        return "h2"
+
     max_size = max(s.get("size", 12) for s in spans)
     ratio = max_size / body_size if body_size else 1
     if ratio >= 1.18:
@@ -533,6 +589,13 @@ def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict
         if all(is_watermark_text(txt) for txt in cluster_text_lines):
             print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=watermark_text", file=sys.stderr)
             return False
+
+        callout_kws = ("special techniques", "important practice", "important terms")
+        for line_t in cluster_text_lines:
+            low_t = line_t.strip().lower()
+            if any(kw in low_t for kw in callout_kws) and len(cluster_text_lines) > 1:
+                print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} title='{line_t}' reason=text_callout_box", file=sys.stderr)
+                return False
 
     # 3. Inspect vector drawings inside the cluster
     all_drawings = page.get_drawings()
@@ -1433,6 +1496,18 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
             wrapped = f'<span class="note-title">{prefix}</span>'
             res = before + wrapped + after + spacing + res[match.end():]
         return f'<div class="content-note">\n{res}\n</div>'
+
+    # Wrap callout blocks in clean flat Warm Orange card boxes (for remote server compatibility)
+    lines = block.get("lines", [])
+    callout_kws = ("special techniques", "important practice", "important terms")
+    for l_item in lines:
+        l_spans = [s for s in l_item.get("spans", []) if s.get("text", "").strip()]
+        if l_spans:
+            l_txt = "".join(decode_span_text(s) for s in l_spans).strip().lower()
+            if any(kw in l_txt for kw in callout_kws):
+                box_style = 'style="margin: 1.5rem 0; padding: 1.5rem 1.75rem; border-radius: 14px; border-left: 6px solid #e67e22; background: linear-gradient(135deg, #fffaf5 0%, #fff2e6 100%); border-top: 1px solid #fcdcc5; border-right: 1px solid #fcdcc5; border-bottom: 1px solid #fcdcc5; box-shadow: none;"'
+                return f'<div class="callout-box" {box_style}>\n{res}\n</div>'
+
     return res
 
 def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float) -> list:
@@ -1539,7 +1614,43 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         if c.y1 < 80 or c.y0 > page_height - 75:
             continue
         if is_valid_vector_diagram(c, page, text_dict, valid_tables):
-            valid_diagram_rects.append(c)
+            # Tightly bound cluster to actual vector drawings inside c to prevent stretching over text above/below
+            dr_drawings = []
+            for d in page.get_drawings():
+                r_d = fitz.Rect(d["rect"])
+                if c.x0 - 5 <= r_d.x0 and r_d.x1 <= c.x1 + 5 and c.y0 - 5 <= r_d.y0 and r_d.y1 <= c.y1 + 5:
+                    if r_d.width > page_w * 0.9 and r_d.height < 5:
+                        continue
+                    dr_drawings.append(r_d)
+            if dr_drawings:
+                tight_rect = fitz.Rect(
+                    min(r.x0 for r in dr_drawings),
+                    min(r.y0 for r in dr_drawings),
+                    max(r.x1 for r in dr_drawings),
+                    max(r.y1 for r in dr_drawings)
+                )
+            else:
+                tight_rect = fitz.Rect(c)
+
+            # Snap top and bottom boundary to internal text lines so text ABOVE and BELOW graphics is never cropped or deleted
+            contained_lines = []
+            for tb in text_dict.get("blocks", []):
+                if tb.get("type", 0) == 0:
+                    for line in tb.get("lines", []):
+                        l_box = line.get("bbox", [0, 0, 0, 0])
+                        intersect = tight_rect & fitz.Rect(l_box)
+                        if not intersect.is_empty and (intersect.width * intersect.height) / max(1.0, (l_box[2]-l_box[0])*(l_box[3]-l_box[1])) > 0.4:
+                            line_txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+                            if line_txt and not is_watermark_text(line_txt):
+                                contained_lines.append(l_box)
+
+            if contained_lines:
+                text_top = min(b[1] for b in contained_lines)
+                text_bottom = max(b[3] for b in contained_lines)
+                tight_rect.y0 = max(tight_rect.y0, text_top - 10)
+                tight_rect.y1 = min(tight_rect.y1, text_bottom + 12)
+
+            valid_diagram_rects.append(tight_rect)
 
     # Filter out false-positive table candidates that overlap validated vector diagrams
     filtered_tables = []
@@ -1609,28 +1720,20 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         if is_inside_table(bbox, valid_tables):
             continue
             
-        # Skip blocks inside diagrams (require at least 60% of block area to be inside diagram)
-        bx0, by0, bx1, by1 = bbox
-        block_area = max(1.0, (bx1 - bx0) * (by1 - by0))
-        inside_diagram = False
-        for dr in valid_diagram_rects:
-            inter_x0 = max(bx0, dr.x0)
-            inter_y0 = max(by0, dr.y0)
-            inter_x1 = min(bx1, dr.x1)
-            inter_y1 = min(by1, dr.y1)
-            if inter_x1 > inter_x0 and inter_y1 > inter_y0:
-                inter_area = (inter_x1 - inter_x0) * (inter_y1 - inter_y0)
-                if (inter_area / block_area) >= 0.60:
-                    inside_diagram = True
-                    break
-        if inside_diagram:
-            continue
-
-            
         for line in block.get("lines", []):
-            ly0 = line["bbox"][1]
-            ly1 = line["bbox"][3]
+            lx0, ly0, lx1, ly1 = line["bbox"]
+            lcx = (lx0 + lx1) / 2
+            lcy = (ly0 + ly1) / 2
             
+            # Skip lines strictly inside valid diagram images
+            line_inside_diagram = False
+            for dr in valid_diagram_rects:
+                if dr.x0 <= lcx <= dr.x1 and dr.y0 <= lcy <= dr.y1:
+                    line_inside_diagram = True
+                    break
+            if line_inside_diagram:
+                continue
+
             # Skip header and footer zones (ly1 < 75 skips running headers)
             if ly1 < 75 or ly0 > page_height - 75:
                 continue
@@ -1709,7 +1812,9 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         is_bullet = is_bullet_span(spans[0])
         is_all_bold = all("Bold" in s.get("font", "") for s in spans)
         text_content = "".join(decode_span_text(s) for s in spans).strip()
-        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".")
+        callout_kws = ("special techniques", "important practice", "important terms")
+        is_callout_title = any(kw in text_content.lower() for kw in callout_kws)
+        is_heading = is_all_bold and not is_bullet and len(text_content) < 80 and not text_content.endswith(".") and not is_callout_title
         if is_heading and current_lines:
             prev_line = current_lines[-1]
             prev_spans = [s for s in prev_line.get("spans", []) if s.get("text", "").strip()]
@@ -1939,6 +2044,50 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             merged_elements.append(el)
             i += 1
             
+    page_elements = merged_elements
+    
+    # 5.2 Merge Callout Box Blocks (group callout title header + consecutive bullet list items)
+    merged_elements = []
+    i = 0
+    callout_kws = ("special techniques", "important practice", "important terms")
+    while i < len(page_elements):
+        el = page_elements[i]
+        if el["type"] == "text":
+            lines = el["data"].get("lines", [])
+            txt = "".join(decode_span_text(s) for line in lines for s in line.get("spans", []) if s.get("text", "").strip()).strip().lower()
+            if any(kw in txt for kw in callout_kws):
+                merged_lines = list(lines)
+                j = i + 1
+                while j < len(page_elements):
+                    next_el = page_elements[j]
+                    if next_el["type"] == "text":
+                        next_lines = next_el["data"].get("lines", [])
+                        next_spans = [s for line in next_lines for s in line.get("spans", []) if s.get("text", "").strip()]
+                        next_txt = "".join(decode_span_text(s) for s in next_spans).strip().lower()
+                        
+                        # Stop merging if next block is a new major section (e.g. CITRUS, PAPAYA, BANANA, GRAPES, Diseases, etc.)
+                        section_kws = ("diseases", "papaya", "citrus", "grapes", "mango", "banana", "sapota", "litchi", "guava", "disorders", "insect- pests")
+                        if any(next_txt.startswith(kw) or next_txt == kw for kw in section_kws):
+                            break
+
+                        gap = next_el["bbox"][1] - el["bbox"][3]
+                        if gap < 40:
+                            merged_lines.extend(next_lines)
+                            el["bbox"] = [
+                                min(el["bbox"][0], next_el["bbox"][0]),
+                                min(el["bbox"][1], next_el["bbox"][1]),
+                                max(el["bbox"][2], next_el["bbox"][2]),
+                                max(el["bbox"][3], next_el["bbox"][3])
+                            ]
+                            j += 1
+                            continue
+                    break
+                el["data"]["lines"] = merged_lines
+                merged_elements.append(el)
+                i = j
+                continue
+        merged_elements.append(el)
+        i += 1
     page_elements = merged_elements
     
     # 5.5 Detect and merge captions for images/diagrams

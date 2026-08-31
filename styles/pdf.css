@@ -367,3 +367,35 @@ figcaption {
     text-align: center;
     line-height: 1.4;
 }
+
+/* =========================================================
+   CALLOUT BOX (Flat Warm Orange Card Style)
+   ========================================================= */
+.callout-box {
+    margin: 1.5rem 0;
+    padding: 1.5rem 1.75rem;
+    border-radius: 14px;
+    border-left: 6px solid #e67e22;
+    background: linear-gradient(135deg, #fffaf5 0%, #fff2e6 100%);
+    border-top: 1px solid #fcdcc5;
+    border-right: 1px solid #fcdcc5;
+    border-bottom: 1px solid #fcdcc5;
+    box-shadow: none;
+    transition: transform 0.2s ease;
+}
+.callout-box:hover {
+    transform: translateY(-2px);
+    box-shadow: none;
+}
+.callout-title, .callout-box p strong, .callout-box h3 {
+    color: #d35400 !important;
+    font-weight: 700;
+}
+.callout-box ul.notes-list li {
+    margin-bottom: 0.6rem;
+    line-height: 1.65;
+    color: #2c3e50;
+}
+.callout-box ul.notes-list li strong {
+    color: #d35400 !important;
+}
