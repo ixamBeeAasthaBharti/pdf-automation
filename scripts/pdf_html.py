@@ -2499,14 +2499,19 @@ def main() -> None:
  
     pdf_path = args.pdf
     
-    # If the input looks like a numeric MySQL ID, try to resolve it from the queue
+    # If the input looks like a numeric MySQL ID, try to resolve it from queue or archive
     if str(pdf_path).isdigit():
         mysql_id = int(str(pdf_path))
         queue_pdf = Path(__file__).parent.parent / "storage" / "queue" / str(mysql_id) / "document.pdf"
+        archive_pdf = Path(__file__).parent.parent / "storage" / "archive" / str(mysql_id) / "document.pdf"
         if queue_pdf.exists():
             pdf_path = queue_pdf
             if args.html is None:
                 args.html = Path(__file__).parent.parent / "storage" / "queue" / str(mysql_id) / "document.html"
+        elif archive_pdf.exists():
+            pdf_path = archive_pdf
+            if args.html is None:
+                args.html = Path(__file__).parent.parent / "storage" / "archive" / str(mysql_id) / "document.html"
 
     if not pdf_path.exists():
         print(f"Input PDF not found: {pdf_path}", file=sys.stderr)

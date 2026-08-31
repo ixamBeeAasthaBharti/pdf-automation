@@ -109,20 +109,32 @@ PENDING_QUERY, STATUS_QUERY = load_queries_from_file()
 
 
 def fetch_pending_ids(count=None, target_id=None):
-    conn   = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    if target_id:
-        cursor.execute("""
-            SELECT id, content FROM tbl_studymaterial_lang_map
-            WHERE id = %s AND type_order = 2 AND status = 1
-        """, (target_id,))
-    else:
-        query = PENDING_QUERY
-        if count:
-            query += f" LIMIT {int(count)}"
-        cursor.execute(query)
-    rows = cursor.fetchall()
-    cursor.close(); conn.close()
+    rows = []
+    try:
+        conn   = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        if target_id:
+            cursor.execute("""
+                SELECT id, content FROM tbl_studymaterial_lang_map
+                WHERE id = %s
+            """, (target_id,))
+        else:
+            query = PENDING_QUERY
+            if count:
+                query += f" LIMIT {int(count)}"
+            cursor.execute(query)
+        rows = cursor.fetchall() or []
+        cursor.close(); conn.close()
+    except Exception as e:
+        print(f"Warning: Database query failed: {e}", file=sys.stderr)
+
+    if target_id and not rows:
+        # Fallback to local archived or queued PDF if exists
+        archived_pdf = ARCHIVE_DIR / str(target_id) / "document.pdf"
+        queued_pdf   = QUEUE_DIR / str(target_id) / "document.pdf"
+        if archived_pdf.exists() or queued_pdf.exists():
+            rows = [{"id": target_id, "content": "document.pdf"}]
+
     return rows
 
 
