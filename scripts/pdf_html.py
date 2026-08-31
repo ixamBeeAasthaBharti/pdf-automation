@@ -1538,7 +1538,20 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         if c.y1 < 80 or c.y0 > page_height - 75:
             continue
         if is_valid_vector_diagram(c, page, text_dict, valid_tables):
-            valid_diagram_rects.append(c)
+            # Trim section headings / pink title bars sitting at the bottom edge of the diagram cluster
+            c_rect = fitz.Rect(c)
+            for tb in text_dict.get("blocks", []):
+                if tb.get("type", 0) == 0:
+                    for line in tb.get("lines", []):
+                        line_bbox = line.get("bbox", [0, 0, 0, 0])
+                        ly0 = line_bbox[1]
+                        if c_rect.y1 - 35 <= ly0 <= c_rect.y1 + 10:
+                            line_txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+                            if line_txt:
+                                norm_txt = line_txt.upper().replace(" ", "").replace("-", "")
+                                if "CONTRACTOF" in norm_txt or "RIGHTSOF" in norm_txt or "TYPESOF" in norm_txt or (len(line_txt) < 45 and line_txt.isupper()):
+                                    c_rect.y1 = ly0 - 3
+            valid_diagram_rects.append(c_rect)
 
     # Filter out false-positive table candidates that overlap validated vector diagrams
     filtered_tables = []
