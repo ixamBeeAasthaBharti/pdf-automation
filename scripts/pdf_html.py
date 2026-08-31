@@ -81,6 +81,15 @@ DOC_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+ul.list-alphanumeric, ul.list-alphanumeric li {{
+    list-style-type: none !important;
+    list-style: none !important;
+}}
+ul.list-alphanumeric li::before {{
+    content: none !important;
+}}
+</style>
 </head>
 <body>
 <article>
@@ -291,7 +300,6 @@ def is_alphanumeric_prefix(text: str) -> bool:
 
 
 def is_bullet_span(span: dict) -> bool:
-
     font = span.get("font", "")
     if "Wingdings" in font or "Webdings" in font:
         return True
@@ -300,11 +308,6 @@ def is_bullet_span(span: dict) -> bool:
         return True
 
     if "Courier" in font and decoded == "o":
-        return True
-    
-    # Match MCQ options e.g. "A.", "B.", "C.", "D.", "E.", "(A)", "(B)", "a)", "b)" or sub-list prefixes (limit length to prevent matching normal words)
-    pattern = r'^(\(?[A-Ea-e]\)[\.\)]?|[A-Ea-e][\.\)]|\(?([a-z]{1,3}|[IVX]{1,4})\)[\.\)]?|([a-z]{1,3}|[IVX]{1,4})[\.\)])$'
-    if re.match(pattern, decoded):
         return True
 
     return False
@@ -502,115 +505,34 @@ def is_watermark_image(block: dict, page: fitz.Page) -> bool:
 
 def is_valid_vector_diagram(cluster: fitz.Rect, page: fitz.Page, text_dict: dict, valid_tables: list) -> bool:
     """
-    Determine whether a candidate drawing cluster is a genuine vector diagram/flowchart
-    vs. a decorative background text region or watermark.
+    Determine whether a candidate drawing cluster is a genuine vector diagram/flowchart.
+    Accept any drawing cluster containing vector graphics/fills.
     """
     # 1. Dimension check
-    if cluster.width < 50 or cluster.height < 30:
+    if cluster.width < 40 or cluster.height < 25:
         print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_small", file=sys.stderr)
         return False
 
     page_h = page.rect.height
-    if cluster.height > 120 or cluster.height > page_h * 0.25:
+    if cluster.height > 420 or cluster.height > page_h * 0.60:
         print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=too_large_spans_page", file=sys.stderr)
         return False
 
     cluster_area = cluster.width * cluster.height
 
-    # 2. Table overlap check
-    for t in valid_tables:
-        tb = fitz.Rect(t.bbox)
-        intersect = cluster & tb
-        if not intersect.is_empty:
-            if (intersect.width * intersect.height) / cluster_area > 0.2:
-                print(f"  [DIAGRAM REJECT] bbox={tuple(cluster)} reason=overlaps_table", file=sys.stderr)
-                return False
-
     # 3. Inspect vector drawings inside the cluster
     all_drawings = page.get_drawings()
     total_drawings = 0
-    meaningful_drawings = 0
 
     for d in all_drawings:
         r = fitz.Rect(d["rect"])
         if cluster.x0 - 5 <= r.x0 and r.x1 <= cluster.x1 + 5 and cluster.y0 - 5 <= r.y0 and r.y1 <= cluster.y1 + 5:
             total_drawings += 1
-            fill = d.get("fill")
-            # Skip light gray watermark fills
-            if fill and len(fill) == 3:
-                r_val, g_val, b_val = fill
-                if abs(r_val - g_val) < 0.02 and abs(g_val - b_val) < 0.02 and 0.7 <= r_val <= 0.9:
-                    continue
 
-            # Simple decorative rectangular background fills, horizontal rule lines, or small inline arrow/bullet icons
-            items = d.get("items", [])
-            is_simple_bg_rect = False
-            if r.height <= 4:  # Rule lines, fraction bars, or underline paths
-                is_simple_bg_rect = True
-            elif r.width <= 35 and r.height <= 35:  # Small inline arrow/bullet icons
-                is_simple_bg_rect = True
-            elif len(items) <= 2 and fill is not None:
-                if r.width > 60 and r.height < 35:
-                    is_simple_bg_rect = True
-                elif r.width > cluster.width * 0.8 and r.height < cluster.height * 0.5:
-                    is_simple_bg_rect = True
-
-            if not is_simple_bg_rect:
-                meaningful_drawings += 1
-
-    # 4. Inspect selectable text inside the cluster
-    text_blocks_count = 0
-    text_line_count = 0
-    total_text_area = 0.0
-
-    for tb in text_dict.get("blocks", []):
-        if tb.get("type", 0) != 0:
-            continue
-        tb_bbox = tb.get("bbox", (0, 0, 0, 0))
-        tb_rect = fitz.Rect(tb_bbox)
-        tb_area = tb_rect.width * tb_rect.height
-        if tb_area <= 0:
-            continue
-
-        intersect = cluster & tb_rect
-        if not intersect.is_empty:
-            inter_area = intersect.width * intersect.height
-            if (inter_area / tb_area) >= 0.2:
-                text_blocks_count += 1
-                lines = tb.get("lines", [])
-                text_line_count += len(lines)
-                total_text_area += inter_area
-
-    text_coverage_ratio = total_text_area / cluster_area if cluster_area > 0 else 0.0
-
-    # 5. Check text density signal:
-    # Any cluster containing selectable text lines is a text region (or math formula), NOT a raster image diagram!
-    if text_line_count >= 1:
-        print(
-            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-            f"text_coverage={text_coverage_ratio:.3f} reason=contains_selectable_text",
-            file=sys.stderr
-        )
+    if total_drawings < 1:
         return False
 
-    # 6. Genuine diagram check:
-    # Genuine diagrams/flowcharts/chemical structures must have at least 2 meaningful vector drawing elements.
-    if meaningful_drawings < 2:
-        print(
-            f"  [DIAGRAM REJECT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-            f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-            f"text_coverage={text_coverage_ratio:.3f} reason=insufficient_meaningful_vector_geometry",
-            file=sys.stderr
-        )
-        return False
-
-    print(
-        f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} total_drawings={total_drawings} "
-        f"meaningful_drawings={meaningful_drawings} text_lines={text_line_count} "
-        f"text_coverage={text_coverage_ratio:.3f}",
-        file=sys.stderr
-    )
+    print(f"  [DIAGRAM ACCEPT] bbox={tuple(cluster)} total_drawings={total_drawings}", file=sys.stderr)
     return True
 
 
@@ -850,8 +772,7 @@ def find_valid_tables(page):
     if strict_tables:
         return strict_tables
 
-    # Conservative fallback for tables that contain less strict line
-    # geometry. Raw `lines` results are NEVER accepted without validation.
+    # Fallback to general line detection.
     return collect("lines")
 
 
@@ -1395,25 +1316,28 @@ def render_text_block_semantic(block: dict, body_size: float, page: fitz.Page = 
                 
                 if not active_lists:
                     is_checkmark = bullet_char in ("✓", "✔", "ü", "\u2713", "\u2714", "\uf0fc")
+                    style_attr = ' style="list-style-type: none; list-style: none;"' if is_alphanumeric else ''
                     if is_checkmark:
-                        html_out.append(f'<ul class="notes-sub{cls_extra}">')
+                        html_out.append(f'<ul class="notes-sub{cls_extra}"{style_attr}>')
                         active_lists.append(x_bullet - 20)  # Dummy parent level
                         active_lists.append(x_bullet)
                     else:
-                        html_out.append(f'<ul class="notes-list{cls_extra}">')
+                        html_out.append(f'<ul class="notes-list{cls_extra}"{style_attr}>')
                         active_lists.append(x_bullet)
                 else:
                     if x_bullet > active_lists[-1] + 5:
                         level = len(active_lists)
                         cls_name = "notes-sub" if level == 1 else "notes-subsub"
-                        html_out.append(f'<ul class="{cls_name}{cls_extra}">')
+                        style_attr = ' style="list-style-type: none; list-style: none;"' if is_alphanumeric else ''
+                        html_out.append(f'<ul class="{cls_name}{cls_extra}"{style_attr}>')
                         active_lists.append(x_bullet)
                     elif x_bullet < active_lists[-1] - 5:
                         while active_lists and x_bullet < active_lists[-1] - 5:
                             html_out.append("</li></ul>")
                             active_lists.pop()
                         if not active_lists:
-                            html_out.append(f'<ul class="notes-list{cls_extra}">')
+                            style_attr = ' style="list-style-type: none; list-style: none;"' if is_alphanumeric else ''
+                            html_out.append(f'<ul class="notes-list{cls_extra}"{style_attr}>')
                             active_lists.append(x_bullet)
                         else:
                             html_out.append("</li>")
@@ -1530,7 +1454,7 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
         for idx_c, c in enumerate(diagram_clusters):
             dx = max(0, c.x0 - r.x1, r.x0 - c.x1)
             dy = max(0, c.y0 - r.y1, r.y0 - c.y1)
-            if dx < 40 and dy < 25:
+            if dx < 60 and dy < 65:
                 diagram_clusters[idx_c] = fitz.Rect(
                     min(r.x0, c.x0), min(r.y0, c.y0),
                     max(r.x1, c.x1), max(r.y1, c.y1)
@@ -1549,11 +1473,11 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
                 c1, c2 = diagram_clusters[i_c], diagram_clusters[j_c]
                 dx = max(0, c2.x0 - c1.x1, c1.x0 - c2.x1)
                 dy = max(0, c2.y0 - c1.y1, c1.y0 - c2.y1)
-                if dx < 40 and dy < 25:
+                if dx < 60 and dy < 65:
                     diagram_clusters[i_c] = fitz.Rect(
                         min(c1.x0, c2.x0), min(c1.y0, c2.y0),
                         max(c1.x1, c2.x1), max(c1.y1, c2.y1)
-                      )
+                    )
                     diagram_clusters.pop(j_c)
                     changed = True
                     break
@@ -1571,6 +1495,22 @@ def extract_page_elements(doc: fitz.Document, page: fitz.Page, body_size: float)
             continue
         if is_valid_vector_diagram(c, page, text_dict, valid_tables):
             valid_diagram_rects.append(c)
+
+    # Filter out false-positive table candidates that overlap validated vector diagrams
+    filtered_tables = []
+    for t in valid_tables:
+        t_rect = fitz.Rect(t.bbox)
+        t_area = t_rect.width * t_rect.height
+        overlaps_diag = False
+        for dr in valid_diagram_rects:
+            intersect = t_rect & dr
+            if not intersect.is_empty:
+                if (intersect.width * intersect.height) / max(1.0, t_area) > 0.30:
+                    overlaps_diag = True
+                    break
+        if not overlaps_diag:
+            filtered_tables.append(t)
+    valid_tables = filtered_tables
 
 
     
@@ -1998,7 +1938,28 @@ def render_page_elements(page: fitz.Page, page_elements: list, body_size: float,
         el_type = element["type"]
         if el_type == "table":
             custom_mat = element.get("custom_data_matrix")
-            elements_html.append(render_table(element["data"], page, custom_matrix=custom_mat))
+            table_html = render_table(element["data"], page, custom_matrix=custom_mat)
+            if table_html and table_html.strip():
+                elements_html.append(table_html)
+            else:
+                # Fallback: preserve visual table region as an image so structure is never destroyed
+                bbox = element["bbox"]
+                clip_rect = fitz.Rect(bbox)
+                if clip_rect.width > 0 and clip_rect.height > 0:
+                    try:
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip_rect)
+                        img_bytes = pix.tobytes("png")
+                        if images_dir:
+                            img_filename = f"page_{page.number + 1}_tbl_{image_counter}.png"
+                            (images_dir / img_filename).write_bytes(img_bytes)
+                            image_counter += 1
+                            img_tag = f'<img src="images/{img_filename}" alt="Table" />'
+                        else:
+                            b64 = base64.b64encode(img_bytes).decode("ascii")
+                            img_tag = f'<img src="data:image/png;base64,{b64}" alt="Table" />'
+                        elements_html.append(f'<figure>{img_tag}</figure>')
+                    except Exception as e:
+                        print(f"Error rendering table image fallback: {e}", file=sys.stderr)
         elif el_type == "image":
             bbox = element["bbox"]
             clip_rect = fitz.Rect(bbox)
@@ -2301,19 +2262,21 @@ def post_process_worksheet_html(raw_html: str) -> str:
 
         clean_text = re.sub(r'<[^>]+>', '', stripped).strip()
 
-        # 2. Check if Question Prompt e.g. "<p>1. According to...", "9. Which of the...", "<p>38. The data..."
+        clean_text = re.sub(r'<[^>]+>', '', stripped).strip()
+
+        # 2. Check if Question Prompt e.g. "Q.1", "Question 5:", "Q12."
         m_q = re.match(r'^(?:Q(?:ues)?\.?\s*\d+|\d{1,3}\.)\s+[A-Z]', clean_text)
         is_actual_q = False
         if m_q:
-            # If it starts with "Q" / "Question" / "प्रश्" / "प्रश्न", it is a question
-            if re.match(r'^(?:Q(?:ues)?|प्रश्|प्रश्न)\b', clean_text, re.IGNORECASE):
+            # Must explicitly start with Q / Question / प्रश् / प्रश्न
+            if re.match(r'^(?:Q(?:ues)?\.?\s*\d+|Question\b|प्रश्|प्रश्न)\b', clean_text, re.IGNORECASE):
                 is_actual_q = True
             else:
-                # If it's a plain number (e.g. "1."), look ahead up to 12 lines for MCQ options
-                for lookahead_idx in range(idx + 1, min(idx + 13, num_lines)):
+                # If it's a plain number (e.g. "1."), look ahead up to 6 lines for explicit MCQ options e.g. (A) or A.
+                for lookahead_idx in range(idx + 1, min(idx + 7, num_lines)):
                     lookahead_line = lines[lookahead_idx].strip()
                     lookahead_clean = re.sub(r'<[^>]+>', '', lookahead_line).strip()
-                    if re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*\(?([A-Ga-g])\)?\s*[\.\)]', lookahead_line, re.IGNORECASE):
+                    if re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*\(?([A-Ea-e])\)?\s*[\.\)]\s+[A-Za-z0-9]', lookahead_line, re.IGNORECASE):
                         is_actual_q = True
                         break
                     # Stop if we hit a section boundary or another heading
@@ -2375,7 +2338,7 @@ def post_process_worksheet_html(raw_html: str) -> str:
             in_mcq = False
             continue
 
-        # 6. Check if MCQ Option or <li> item inside Question Section
+        # 6. Check if explicit MCQ Option inside Question Section
         m_lbl = re.match(r'^(?:<li>|<p>)?\s*(?:<strong>|<b>)?\s*([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', stripped)
         if not m_lbl:
             m_lbl = re.match(r'^([A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)', clean_text)
@@ -2383,22 +2346,18 @@ def post_process_worksheet_html(raw_html: str) -> str:
         is_explicit_opt = bool(m_lbl and len(m_lbl.group(1)) <= 4)
         is_list_item = stripped.startswith('<li>')
 
-        # If in question section but before option list started, and text does NOT start with explicit A. B. C. D. E. or <li>:
+        # If in question section but before option list started, and text does NOT start with explicit A. B. C. D. E.:
         # Join it as continuation of the question text!
         if in_q_section and not in_mcq and not is_explicit_opt and not is_list_item and not stripped.startswith('<ul'):
             if out_lines and 'class="q-text"' in out_lines[-1]:
                 out_lines[-1] = re.sub(r'</span>\s*</p>$', f' {clean_text}</span></p>', out_lines[-1])
                 continue
 
-        if in_q_section and (is_explicit_opt or is_list_item or stripped.startswith('<p>')):
+        # Only transform into MCQ option li if it is an explicit option (A., B., C., D.) or inside an active MCQ list
+        if in_q_section and is_explicit_opt:
             is_bold_opt = bool(re.search(r'<strong>|<b>', stripped, re.IGNORECASE))
-            
-            if is_explicit_opt:
-                lbl = m_lbl.group(1).strip()
-                txt = m_lbl.group(2).strip()
-            else:
-                lbl = labels[opt_index % len(labels)]
-                txt = re.sub(r'</?(?:p|li)[^>]*>', '', stripped, flags=re.IGNORECASE).strip()
+            lbl = m_lbl.group(1).strip()
+            txt = m_lbl.group(2).strip()
 
             txt_clean = re.sub(r'</?(?:p|li|span)[^>]*>', '', txt, flags=re.IGNORECASE).strip()
             txt_clean = re.sub(r'^\s*<strong>\s*', '<strong>', txt_clean)
