@@ -387,9 +387,21 @@ figcaption {
     transform: translateY(-2px);
     box-shadow: none;
 }
+.callout-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    color: #d35400 !important;
+    letter-spacing: -0.01em;
+}
 .callout-title, .callout-box p strong, .callout-box h3 {
     color: #d35400 !important;
     font-weight: 700;
+}
+.callout-box ul.notes-list {
+    margin: 0;
+    padding-left: 1.2rem;
 }
 .callout-box ul.notes-list li {
     margin-bottom: 0.6rem;
@@ -398,4 +410,9 @@ figcaption {
 }
 .callout-box ul.notes-list li strong {
     color: #d35400 !important;
+}
+.callout-box p {
+    margin: 0 0 0.5rem 0;
+    line-height: 1.6;
+    color: #34495e;
 }

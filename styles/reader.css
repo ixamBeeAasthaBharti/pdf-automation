@@ -509,8 +509,7 @@ section table,
 .notes-table {
     width: 100%;
     table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     font-family: var(--deepesh);
     font-size: .92rem;
     border: 1px solid var(--hairline);
@@ -540,12 +539,12 @@ section table td,
 section table tbody th,
 .notes-table td,
 .notes-table tbody th {
-    padding: 1.1rem 1.25rem;
+    padding: 0.6rem 0.75rem;
     border-top: 1px solid var(--hairline);
     vertical-align: top;
-    line-height: 1.65;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    line-height: 1.5;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 section table tbody td:not(:last-child),
@@ -564,6 +563,19 @@ section table tbody th,
     white-space: normal;
 }
 
+.notes-table.table-dense {
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.notes-table.table-dense th,
+.notes-table.table-dense td {
+    padding: 0.35rem 0.4rem;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: normal;
+}
+
 section table tbody tr:nth-child(odd),
 .notes-table tbody tr:nth-child(odd) {
     background: var(--row-alt);
@@ -572,23 +584,14 @@ section table tbody tr:nth-child(odd),
 /* Blue table variant */
 table.blue,
 .notes-table.blue {
-    border-color: #d0deec;
+    border-color: #3a6ea5;
+    border-collapse: collapse;
 }
 
 table.blue thead th,
 .notes-table.blue thead th {
     background: #3a6ea5 !important;
     color: #fff !important;
-}
-
-table.blue thead th:first-child,
-.notes-table.blue thead th:first-child {
-    border-top-left-radius: 8px;
-}
-
-table.blue thead th:last-child,
-.notes-table.blue thead th:last-child {
-    border-top-right-radius: 8px;
 }
 
 table.blue thead th:not(:last-child),
@@ -1227,8 +1230,10 @@ section.pdf-page .question-section .q-header,
     column-gap: 0 !important;
     align-items: start !important;
 
-    position: static !important;   /* kill the relative that anchors ::before */
-    padding: 0 !important;         /* kill the 1rem left-padding = the indentation */
+    position: static !important;
+    /* kill the relative that anchors ::before */
+    padding: 0 !important;
+    /* kill the 1rem left-padding = the indentation */
     margin: 1.2rem 0 .4rem 0 !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -1238,7 +1243,8 @@ section.pdf-page .question-section .q-header,
     font-weight: 400 !important;
     line-height: 1.5 !important;
     letter-spacing: 0 !important;
-    text-wrap: unset !important;   /* kill balance – let text fill the grid cell */
+    text-wrap: unset !important;
+    /* kill balance – let text fill the grid cell */
     border: none !important;
     background: none !important;
 }
@@ -1269,6 +1275,7 @@ section.pdf-page .question-section .q-header::before,
     overflow-wrap: normal !important;
     hyphens: none !important;
 }
+
 /* ── end question-section h3 override ── */
 
 article:not(.cover-article) section h4 {
@@ -1462,8 +1469,7 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) {
     /* Let the browser size columns naturally */
     table-layout: auto;
 
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
 
     font-family: var(--deepesh);
     font-size: .88rem;
@@ -1473,7 +1479,7 @@ article:not(.cover-article) .table-responsive>table:not(.notes-table) {
     background: var(--reader-page);
 
     border: 1px solid #b7c7df;
-    border-radius: 0 0 9px 9px;
+    border-radius: 8px;
 
     overflow: hidden;
 
@@ -1680,6 +1686,27 @@ article:not(.cover-article) .note strong,
 article:not(.cover-article) .content-note strong {
     color: var(--navy, #1b3a6b);
     font-weight: 700;
+}
+
+/* ---------- Exam Tip Simple Box ---------- */
+
+.exam-tip {
+    background: var(--page);
+    border: 1px dashed #f5b94c;
+    border-radius: 6px;
+    padding: 14px 24px;
+    margin: 12px 0;
+    color: #222;
+    font-size: 16px;
+    line-height: 1.55;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.exam-tip strong {
+    color: #f07800;
+    font-weight: 700;
+    margin-right: 6px;
 }
 
 
